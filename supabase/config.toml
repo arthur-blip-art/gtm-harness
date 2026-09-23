@@ -1,0 +1,4 @@
+# Minimal config: this repo only uses `supabase link` + `supabase db push` for migrations.
+project_id = "gtm-engine"
+[db]
+major_version = 17

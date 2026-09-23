@@ -1,0 +1,266 @@
+{
+  "title": "GTM Engine",
+  "version": "0.1.0",
+  "documents": {
+    "SKILL.md": {
+      "kind": "entrypoint",
+      "title": "GTM Engine (meta skill)",
+      "tags": [
+        "routing",
+        "policy",
+        "approval",
+        "pilot"
+      ],
+      "providers": []
+    },
+    "enriching-and-researching.md": {
+      "kind": "guide",
+      "title": "Enriching: email waterfall",
+      "tags": [
+        "waterfall",
+        "email",
+        "export",
+        "cache"
+      ],
+      "providers": [
+        "apollo",
+        "fullenrich",
+        "millionverifier",
+        "peopledatalabs",
+        "crustdata",
+        "exa"
+      ]
+    },
+    "finding-companies-and-contacts.md": {
+      "kind": "guide",
+      "title": "Finding companies and contacts (phase 2 stub)",
+      "tags": [
+        "discovery",
+        "phase2"
+      ],
+      "providers": []
+    },
+    "writing-outreach.md": {
+      "kind": "guide",
+      "title": "Writing outreach and scoring (phase 2 stub)",
+      "tags": [
+        "outreach",
+        "scoring",
+        "phase2"
+      ],
+      "providers": []
+    },
+    "recipes/name-domain-to-email.md": {
+      "kind": "specialized-workflow",
+      "title": "Name + domain → verified work email",
+      "tags": [
+        "recipe",
+        "email",
+        "pilot"
+      ],
+      "providers": [
+        "apollo",
+        "fullenrich",
+        "millionverifier",
+        "peopledatalabs"
+      ]
+    },
+    "references/email-status-policy.md": {
+      "kind": "reference",
+      "title": "Email status policy",
+      "tags": [
+        "email",
+        "status",
+        "confidence"
+      ],
+      "providers": []
+    },
+    "references/cost-receipt.md": {
+      "kind": "reference",
+      "title": "Cost receipt",
+      "tags": [
+        "cost",
+        "receipt",
+        "labels"
+      ],
+      "providers": []
+    },
+    "references/contact-accuracy.md": {
+      "kind": "reference",
+      "title": "Contact accuracy and golden records",
+      "tags": [
+        "accuracy",
+        "golden-record",
+        "audit"
+      ],
+      "providers": []
+    },
+    "references/schema.md": {
+      "kind": "reference",
+      "title": "Data dictionary and RGPD notes",
+      "tags": [
+        "schema",
+        "supabase",
+        "rgpd"
+      ],
+      "providers": []
+    },
+    "agents/execution-plan-creator.md": {
+      "kind": "agent",
+      "title": "Execution plan creator",
+      "tags": [
+        "planning",
+        "subagent"
+      ],
+      "providers": []
+    },
+    "provider-playbooks/apollo.md": {
+      "kind": "provider-playbook",
+      "title": "apollo playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "apollo"
+      ]
+    },
+    "provider-playbooks/crustdata.md": {
+      "kind": "provider-playbook",
+      "title": "crustdata playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "crustdata"
+      ]
+    },
+    "provider-playbooks/exa.md": {
+      "kind": "provider-playbook",
+      "title": "exa playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "exa"
+      ]
+    },
+    "provider-playbooks/fullenrich.md": {
+      "kind": "provider-playbook",
+      "title": "fullenrich playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "fullenrich"
+      ]
+    },
+    "provider-playbooks/millionverifier.md": {
+      "kind": "provider-playbook",
+      "title": "millionverifier playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "millionverifier"
+      ]
+    },
+    "provider-playbooks/parallel.md": {
+      "kind": "provider-playbook",
+      "title": "parallel playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "parallel"
+      ]
+    },
+    "provider-playbooks/peopledatalabs.md": {
+      "kind": "provider-playbook",
+      "title": "peopledatalabs playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "peopledatalabs"
+      ]
+    },
+    "scripts/contact-accuracy-audit.py": {
+      "kind": "script",
+      "title": "contact-accuracy-audit.py",
+      "tags": [
+        "validator",
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/select-current-role.py": {
+      "kind": "script",
+      "title": "select-current-role.py",
+      "tags": [
+        "validator",
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/validate-emails.py": {
+      "kind": "script",
+      "title": "validate-emails.py",
+      "tags": [
+        "validator",
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/validate-linkedin-names.py": {
+      "kind": "script",
+      "title": "validate-linkedin-names.py",
+      "tags": [
+        "validator",
+        "python"
+      ],
+      "providers": []
+    }
+  },
+  "prefixes": {
+    "agents/": {
+      "kind": "agent",
+      "title": "Agent",
+      "tags": [],
+      "providers": []
+    },
+    "provider-playbooks/": {
+      "kind": "provider-playbook",
+      "title": "Provider playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": []
+    },
+    "references/": {
+      "kind": "reference",
+      "title": "Reference",
+      "tags": [],
+      "providers": []
+    },
+    "recipes/": {
+      "kind": "specialized-workflow",
+      "title": "Recipe",
+      "tags": [
+        "recipe"
+      ],
+      "providers": []
+    },
+    "scripts/": {
+      "kind": "script",
+      "title": "Script",
+      "tags": [],
+      "providers": []
+    }
+  },
+  "default_document": {
+    "kind": "other",
+    "title": "Document",
+    "tags": [],
+    "providers": []
+  }
+}
