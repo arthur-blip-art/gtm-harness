@@ -41,6 +41,14 @@ export class ToolRunner {
     return a;
   }
 
+  /** In dry-run the mock may define `provider.tool` for provider-specific behaviour, else `tool`. */
+  private toolDef(provider: string, tool: string) {
+    const adapter = this.adapter(provider);
+    const def = (this.opts.dryRun ? adapter.tools[`${provider}.${tool}`] : undefined) ?? adapter.tools[tool];
+    if (!def) throw new Error(`${adapter.name} has no tool ${tool}${this.opts.dryRun ? ` (mock: add '${provider}.${tool}' or '${tool}')` : ''}`);
+    return { adapter, def };
+  }
+
   async execute(args: ExecuteArgs): Promise<Receipt> {
     const [r] = await this.executeBatch({ ...args, inputs: [args.input] });
     return r;
@@ -48,10 +56,9 @@ export class ToolRunner {
 
   /** Cache lookup per item; only uncached items reach the provider; one receipt per item. */
   async executeBatch(args: Omit<ExecuteArgs, 'input'> & { inputs: ToolInput[] }): Promise<Receipt[]> {
-    const adapter = this.adapter(args.provider);
-    const def = adapter.tools[args.tool];
-    if (!def) throw new Error(`${adapter.name} has no tool ${args.tool}`);
-    const price = adapter.pricing.table[args.tool];
+    const { adapter, def } = this.toolDef(args.provider, args.tool);
+    const price = adapter.pricing.table[args.tool] ?? adapter.pricing.table[`${args.provider}.${args.tool}`] ?? { basis: 'unknown' as const, credits: 0 };
+    const cacheable = !this.opts.refresh && !def.noCache;
 
     const normalized = args.inputs.map((i) => def.normalize(i));
     const hashes = normalized.map(hashInput);
@@ -59,10 +66,10 @@ export class ToolRunner {
     const pending: number[] = [];
 
     for (let i = 0; i < normalized.length; i++) {
-      if (!this.opts.refresh) {
+      if (cacheable) {
         const cached = await this.store.findLatestReceipt(args.provider, args.tool, hashes[i]);
         if (cached) {
-          out[i] = { ...cached, cached: true };
+          out[i] = { ...cached, cached: true, missReason: (cached.output as any)?.miss_reason } as Receipt;
           continue;
         }
       }

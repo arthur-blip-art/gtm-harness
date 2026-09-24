@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import type { Cells, NewReceipt, Receipt, Run, RunStatus } from '../core/types.ts';
-import type { DatasetRow, GoldenCompany, GoldenPerson, Store } from './store.ts';
+import type { CompanyRow, CrmSync, DatasetRow, GoldenCompany, GoldenPerson, PersonRow, Score, Signal, Store } from './store.ts';
 
 /** Supabase Postgres store. One connection (session pooler), plain SQL, no ORM. */
 export class PgStore implements Store {
@@ -33,6 +33,11 @@ export class PgStore implements Store {
   async listReceiptsByRun(runId: string) {
     const rows = await this.sql<ReceiptRow[]>`select * from tool_receipts where run_id = ${runId} order by created_at`;
     return rows.map(toReceipt);
+  }
+
+  async getReceipt(id: string) {
+    const rows = await this.sql<ReceiptRow[]>`select * from tool_receipts where id = ${id}`;
+    return rows[0] ? toReceipt(rows[0]) : null;
   }
 
   async receiptStats() {
@@ -102,24 +107,111 @@ export class PgStore implements Store {
 
   async upsertCompany(c: GoldenCompany) {
     await this.sql`
-      insert into companies (domain, name, field_sources, raw)
-      values (${c.domain}, ${c.name ?? null}, ${this.sql.json(c.fieldSources as never)}, ${this.sql.json(c.raw as never)})
+      insert into companies (domain, name, linkedin_url, country, city, industry, headcount, employees_range, founded_year,
+        funding_total_usd, funding_last_round, funding_last_date, tech, field_sources, raw)
+      values (${c.domain}, ${c.name ?? null}, ${c.linkedinUrl ?? null}, ${c.country ?? null}, ${c.city ?? null}, ${c.industry ?? null},
+        ${c.headcount ?? null}, ${c.employeesRange ?? null}, ${c.foundedYear ?? null}, ${c.fundingTotalUsd ?? null}, ${c.fundingLastRound ?? null},
+        ${c.fundingLastDate ?? null}, ${this.sql.json((c.tech ?? []) as never)}, ${this.sql.json(c.fieldSources as never)}, ${this.sql.json(c.raw as never)})
       on conflict (domain) do update set
         name = coalesce(excluded.name, companies.name),
+        linkedin_url = coalesce(excluded.linkedin_url, companies.linkedin_url),
+        country = coalesce(excluded.country, companies.country),
+        city = coalesce(excluded.city, companies.city),
+        industry = coalesce(excluded.industry, companies.industry),
+        headcount = coalesce(excluded.headcount, companies.headcount),
+        employees_range = coalesce(excluded.employees_range, companies.employees_range),
+        founded_year = coalesce(excluded.founded_year, companies.founded_year),
+        funding_total_usd = coalesce(excluded.funding_total_usd, companies.funding_total_usd),
+        funding_last_round = coalesce(excluded.funding_last_round, companies.funding_last_round),
+        funding_last_date = coalesce(excluded.funding_last_date, companies.funding_last_date),
+        tech = case when jsonb_array_length(excluded.tech) > 0 then excluded.tech else companies.tech end,
         field_sources = companies.field_sources || excluded.field_sources,
         raw = companies.raw || excluded.raw,
         updated_at = now()`;
   }
 
+  async listCompanies(domains?: string[]) {
+    const rows = domains
+      ? await this.sql<CompanyDb[]>`select * from companies where domain = any(${domains})`
+      : await this.sql<CompanyDb[]>`select * from companies order by domain`;
+    return rows.map(toCompany);
+  }
+
+  async listPeople(domains?: string[]) {
+    const rows = domains
+      ? await this.sql<PersonDb[]>`select * from people where domain = any(${domains})`
+      : await this.sql<PersonDb[]>`select * from people order by domain, last_name`;
+    return rows.map(toPerson);
+  }
+
+  async upsertSignals(rows: Signal[]) {
+    let n = 0;
+    for (const r of rows) {
+      const res = await this.sql`
+        insert into signals (dedupe_key, domain, type, value, source, observed_at, receipt_id, company_id)
+        values (${r.dedupeKey}, ${r.domain}, ${r.type}, ${this.sql.json(r.value as never)}, ${r.source}, ${r.observedAt ?? null}, ${r.receiptId ?? null},
+          (select id from companies where domain = ${r.domain}))
+        on conflict (dedupe_key) do nothing`;
+      n += res.count;
+    }
+    return n;
+  }
+
+  async listSignals(domains: string[], since?: string) {
+    const rows = await this.sql<SignalDb[]>`
+      select * from signals where domain = any(${domains}) and (${since ?? null}::timestamptz is null or observed_at >= ${since ?? null})
+      order by observed_at desc`;
+    return rows.map((r) => ({ dedupeKey: r.dedupe_key, domain: r.domain, type: r.type, value: r.value, source: r.source, observedAt: r.observed_at?.toISOString(), receiptId: r.receipt_id ?? undefined }));
+  }
+
+  async upsertScore(sc: Score) {
+    await this.sql`
+      insert into scores (domain, model, dimension, score, tier, reasons, inputs, miss_reason, company_id)
+      values (${sc.domain}, ${sc.model}, ${sc.dimension}, ${sc.score}, ${sc.tier}, ${this.sql.json(sc.reasons as never)}, ${this.sql.json(sc.inputs as never)}, ${sc.missReason ?? null},
+        (select id from companies where domain = ${sc.domain}))
+      on conflict (domain, model, dimension) do update set
+        score = excluded.score, tier = excluded.tier, reasons = excluded.reasons, inputs = excluded.inputs, miss_reason = excluded.miss_reason, computed_at = now()`;
+  }
+
+  async listScores(model: string, domains?: string[]) {
+    const rows = domains
+      ? await this.sql<ScoreDb[]>`select * from scores where model = ${model} and domain = any(${domains})`
+      : await this.sql<ScoreDb[]>`select * from scores where model = ${model}`;
+    return rows.map((r) => ({ domain: r.domain, model: r.model, dimension: r.dimension, score: r.score === null ? null : Number(r.score), tier: r.tier, reasons: r.reasons, inputs: r.inputs, missReason: r.miss_reason }));
+  }
+
+  async getCrmSync(entityType: CrmSync['entityType'], entityId: string, crm: string) {
+    const rows = await this.sql<CrmDb[]>`select * from crm_sync where entity_type = ${entityType} and entity_id = ${entityId} and crm = ${crm}`;
+    const r = rows[0];
+    return r ? { entityType: r.entity_type, entityId: r.entity_id, crm: r.crm, crmObjectType: r.crm_object_type ?? undefined, crmId: r.crm_id ?? undefined, lastHash: r.last_hash ?? undefined, lastSyncedAt: r.last_synced_at?.toISOString(), status: r.status ?? undefined, error: r.error ?? undefined } : null;
+  }
+
+  async upsertCrmSync(c: CrmSync) {
+    await this.sql`
+      insert into crm_sync (entity_type, entity_id, crm, crm_object_type, crm_id, last_hash, last_synced_at, status, error)
+      values (${c.entityType}, ${c.entityId}, ${c.crm}, ${c.crmObjectType ?? null}, ${c.crmId ?? null}, ${c.lastHash ?? null}, ${c.lastSyncedAt ?? null}, ${c.status ?? null}, ${c.error ?? null})
+      on conflict (entity_type, entity_id, crm) do update set
+        crm_object_type = coalesce(excluded.crm_object_type, crm_sync.crm_object_type), crm_id = coalesce(excluded.crm_id, crm_sync.crm_id),
+        last_hash = coalesce(excluded.last_hash, crm_sync.last_hash), last_synced_at = coalesce(excluded.last_synced_at, crm_sync.last_synced_at),
+        status = excluded.status, error = excluded.error`;
+  }
+
   async upsertPerson(p: GoldenPerson) {
     await this.sql`
-      insert into people (person_key, first_name, last_name, title, domain, linkedin_url, email, email_status,
-        email_source, email_verified_at, confidence, field_sources, raw, company_id)
+      insert into people (person_key, first_name, last_name, title, domain, linkedin_url, linkedin_source, linkedin_confidence, email, email_status,
+        email_source, email_verified_at, confidence, phone, phone_status, phone_source, phone_verified_at, field_sources, raw, company_id)
       values (${p.personKey}, ${p.firstName ?? null}, ${p.lastName ?? null}, ${p.title ?? null}, ${p.domain ?? null},
-        ${p.linkedinUrl ?? null}, ${p.email}, ${p.emailStatus}, ${p.emailSource},
-        ${p.email ? new Date() : null}, ${p.confidence}, ${this.sql.json(p.fieldSources as never)}, ${this.sql.json(p.raw as never)},
+        ${p.linkedinUrl ?? null}, ${p.linkedinSource ?? null}, ${p.linkedinConfidence ?? null}, ${p.email}, ${p.emailStatus}, ${p.emailSource},
+        ${p.email ? new Date() : null}, ${p.confidence}, ${p.phone ?? null}, ${p.phoneStatus ?? null}, ${p.phoneSource ?? null}, ${p.phone ? new Date() : null},
+        ${this.sql.json(p.fieldSources as never)}, ${this.sql.json(p.raw as never)},
         (select id from companies where domain = ${p.domain ?? null}))
       on conflict (person_key) do update set
+        linkedin_source = coalesce(excluded.linkedin_source, people.linkedin_source),
+        linkedin_confidence = coalesce(excluded.linkedin_confidence, people.linkedin_confidence),
+        phone = coalesce(excluded.phone, people.phone),
+        phone_status = coalesce(excluded.phone_status, people.phone_status),
+        phone_source = coalesce(excluded.phone_source, people.phone_source),
+        phone_verified_at = coalesce(excluded.phone_verified_at, people.phone_verified_at),
         first_name = coalesce(excluded.first_name, people.first_name),
         last_name = coalesce(excluded.last_name, people.last_name),
         title = coalesce(excluded.title, people.title),
@@ -160,6 +252,17 @@ function toReceipt(r: ReceiptRow): Receipt {
     runId: r.run_id ?? undefined, createdAt: r.created_at.toISOString(),
   };
 }
+type CompanyDb = { id: string; domain: string; name: string | null; linkedin_url: string | null; country: string | null; city: string | null; industry: string | null; headcount: number | null; employees_range: string | null; founded_year: number | null; funding_total_usd: string | null; funding_last_round: string | null; funding_last_date: Date | null; tech: string[]; field_sources: Record<string, string>; raw: Record<string, unknown> };
+function toCompany(r: CompanyDb): CompanyRow {
+  return { id: r.id, domain: r.domain, name: r.name ?? undefined, linkedinUrl: r.linkedin_url ?? undefined, country: r.country ?? undefined, city: r.city ?? undefined, industry: r.industry ?? undefined, headcount: r.headcount ?? undefined, employeesRange: r.employees_range ?? undefined, foundedYear: r.founded_year ?? undefined, fundingTotalUsd: r.funding_total_usd === null ? undefined : Number(r.funding_total_usd), fundingLastRound: r.funding_last_round ?? undefined, fundingLastDate: r.funding_last_date ? r.funding_last_date.toISOString().slice(0, 10) : undefined, tech: r.tech ?? [], fieldSources: r.field_sources ?? {}, raw: r.raw ?? {} };
+}
+type PersonDb = { id: string; person_key: string; first_name: string | null; last_name: string | null; title: string | null; domain: string | null; linkedin_url: string | null; linkedin_source: string | null; linkedin_confidence: string | null; email: string | null; email_status: string | null; email_source: string | null; confidence: string | null; phone: string | null; phone_status: string | null; phone_source: string | null; field_sources: Record<string, string>; raw: Record<string, unknown>; do_not_contact: boolean };
+function toPerson(r: PersonDb): PersonRow {
+  return { id: r.id, personKey: r.person_key, firstName: r.first_name ?? undefined, lastName: r.last_name ?? undefined, title: r.title ?? undefined, domain: r.domain ?? undefined, linkedinUrl: r.linkedin_url ?? undefined, linkedinSource: r.linkedin_source ?? undefined, linkedinConfidence: r.linkedin_confidence ?? undefined, email: r.email, emailStatus: r.email_status, emailSource: r.email_source, confidence: r.confidence ?? 'LOW', phone: r.phone, phoneStatus: r.phone_status, phoneSource: r.phone_source, fieldSources: r.field_sources ?? {}, raw: r.raw ?? {}, doNotContact: r.do_not_contact };
+}
+type SignalDb = { dedupe_key: string; domain: string; type: string; value: Record<string, unknown>; source: string; observed_at: Date | null; receipt_id: string | null };
+type ScoreDb = { domain: string; model: string; dimension: Score['dimension']; score: string | null; tier: string | null; reasons: unknown[]; inputs: Record<string, unknown>; miss_reason: string | null };
+type CrmDb = { entity_type: CrmSync['entityType']; entity_id: string; crm: string; crm_object_type: string | null; crm_id: string | null; last_hash: string | null; last_synced_at: Date | null; status: string | null; error: string | null };
 type RunRow = {
   id: string; play: string; dataset_id: string | null; status: RunStatus; input_summary: Record<string, unknown>;
   rows_in: number; rows_out: number; total_cost_credits: string; total_cost_usd: string; receipt: unknown;

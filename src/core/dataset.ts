@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
-import type { Cells, EmailCell, LegCell, RowState } from './types.ts';
+import type { Cells, FieldCell, LegCell, RowState } from './types.ts';
 import { apexDomain, norm } from './normalize.ts';
 import { personKey } from './keys.ts';
 
@@ -62,10 +62,10 @@ export function loadCsv(file: string, overrides: Record<string, string> = {}, li
   return { path: file, headers, columns, rows };
 }
 
-export function toRowStates(rows: Record<string, string>[], existing: Map<string, Cells>): RowState[] {
+export function toRowStates(rows: Record<string, string>[], existing: Map<string, Cells>, keyFn: (r: Record<string, string>) => string = personKey): RowState[] {
   return rows.map((input) => {
-    const rowKey = personKey(input);
-    return { rowKey, input, cells: existing.get(rowKey) ?? {}, candidates: [] };
+    const rowKey = keyFn(input);
+    return { rowKey, input, cells: existing.get(rowKey) ?? {}, candidates: {} };
   });
 }
 
@@ -81,21 +81,21 @@ export function summarizeCsv(file: string): string {
   return lines.join('\n');
 }
 
-/** Flat export: original columns, then the decision, then one summary column per leg. */
-export function exportCsv(out: string, rows: RowState[], legIds: string[], runId: string, originalHeaders: string[]) {
+/** Flat export: original columns, then the decision for `field`, then one summary column per leg. */
+export function exportCsv(out: string, rows: RowState[], legIds: string[], runId: string, originalHeaders: string[], field = 'email') {
   const records = rows.map((r) => {
-    const email = r.cells.email as EmailCell | undefined;
+    const cell = r.cells[field] as FieldCell | undefined;
     const rec: Record<string, unknown> = {};
     for (const h of originalHeaders) rec[h] = r.input[h] ?? '';
     for (const c of ['first_name', 'last_name', 'domain']) if (!(c in rec)) rec[c] = r.input[c] ?? '';
     rec.row_key = r.rowKey;
     rec.run_id = runId;
-    rec.email = email?.value ?? '';
-    rec.email_status = email?.status ?? '';
-    rec.email_source = email?.source ?? '';
-    rec.confidence = email?.confidence ?? '';
-    rec.miss_reason = email?.missReason ?? '';
-    for (const id of legIds) rec[`email_result__${id}`] = legSummary(r.cells[`email_result__${id}`] as LegCell | undefined);
+    rec[field] = cell?.value ?? '';
+    rec[`${field}_status`] = cell?.status ?? '';
+    rec[`${field}_source`] = cell?.source ?? '';
+    rec.confidence = cell?.confidence ?? '';
+    rec.miss_reason = cell?.missReason ?? '';
+    for (const id of legIds) rec[`${field}_result__${id}`] = legSummary(r.cells[`${field}_result__${id}`] as LegCell | undefined);
     return rec;
   });
   fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
