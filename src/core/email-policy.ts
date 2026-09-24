@@ -1,5 +1,9 @@
-import type { Confidence, EmailCandidate, EmailCell, EmailStatus } from './types.ts';
+import type { Candidate, Confidence, EmailStatus, FieldCell, RowState } from './types.ts';
 import { apexDomain, normalizeEmail } from './normalize.ts';
+import type { FieldPolicy } from './waterfall.ts';
+
+type EmailCandidate = Candidate<EmailStatus>;
+type EmailCell = FieldCell<EmailStatus>;
 
 /**
  * Provider raw status → canonical status.
@@ -9,6 +13,13 @@ const MAP: Record<string, Record<string, EmailStatus>> = {
   apollo: { verified: 'valid', likely_to_engage: 'valid', guessed: 'unknown', extrapolated: 'unknown', unverified: 'unknown', unavailable: 'invalid' },
   fullenrich: { deliverable: 'valid', high_probability: 'unknown', catch_all: 'catch_all', invalid: 'invalid', unknown: 'unknown' },
   millionverifier: { ok: 'valid', catch_all: 'catch_all', unknown: 'unknown', invalid: 'invalid', disposable: 'disposable' },
+  zerobounce: { valid: 'valid', catch_all: 'catch_all', 'catch-all': 'catch_all', unknown: 'unknown', invalid: 'invalid', spamtrap: 'invalid', abuse: 'invalid', do_not_mail: 'invalid' },
+  hunter: { valid: 'valid', accept_all: 'catch_all', webmail: 'invalid', disposable: 'disposable', invalid: 'invalid', unknown: 'unknown' },
+  leadmagic: { valid: 'valid', catch_all: 'catch_all', unknown: 'unknown', invalid: 'invalid' },
+  findymail: { valid: 'valid', verified: 'valid', true: 'valid', invalid: 'invalid', false: 'invalid', unknown: 'unknown' },
+  prospeo: { verified: 'valid', valid: 'valid', catch_all: 'catch_all', 'catch-all': 'catch_all', unknown: 'unknown', invalid: 'invalid', not_found: 'invalid' },
+  kaspr: { valid: 'valid', true: 'valid', unknown: 'unknown', false: 'unknown', invalid: 'invalid' },
+  lusha: { high: 'valid', a: 'valid', medium: 'unknown', b: 'unknown', low: 'unknown', c: 'unknown' },
   peopledatalabs: { valid: 'valid', 'valid-catch_all': 'catch_all', catch_all: 'catch_all', unknown: 'unknown', invalid: 'invalid' },
   crustdata: { verified: 'valid', valid: 'valid', catch_all: 'catch_all', unknown: 'unknown', invalid: 'invalid' },
   pattern: { ok: 'valid', catch_all: 'catch_all', unknown: 'unknown', invalid: 'invalid', disposable: 'disposable' },
@@ -41,7 +52,7 @@ export function isAccepted(c: EmailCandidate): boolean {
  * Final decision after the last leg. Precedence, not averaging:
  *  valid (first in leg order)            → HIGH
  *  catch_all agreed by 2+ sources        → MEDIUM
- *  catch_all or unknown from one source  → HOLD (kept, not sendable)
+ *  catch_all or unknown from one source  → HOLD (value kept, not sendable)
  *  only invalid/disposable               → null, miss_reason=invalid_only
  *  nothing                               → null, miss_reason=no_match_all_legs
  */
@@ -50,26 +61,37 @@ export function decide(candidates: EmailCandidate[], legsTried: number): EmailCe
   if (valid) return cell(valid, 'HIGH');
 
   const catchAll = candidates.filter((c) => c.status === 'catch_all');
-  const byEmail = new Map<string, Set<string>>();
+  const byValue = new Map<string, Set<string>>();
   for (const c of catchAll) {
-    const set = byEmail.get(c.email) ?? new Set<string>();
-    set.add(c.source);
-    byEmail.set(c.email, set);
+    const set = byValue.get(c.value) ?? new Set<string>();
+    const tokens = c.source.split('+');
+    const who = tokens[tokens.length - 1];
+    if (who !== 'verify') set.add(who); // an independent finder or the second validator; MillionVerifier's own verdict is not corroboration
+    byValue.set(c.value, set);
   }
   for (const c of catchAll) {
-    if ((byEmail.get(c.email)?.size ?? 0) >= 2) return cell(c, 'MEDIUM');
+    if ((byValue.get(c.value)?.size ?? 0) >= 2) return cell(c, 'MEDIUM');
   }
   const held = candidates.find((c) => c.status === 'catch_all' || c.status === 'unknown');
-  if (held) return cell(held, 'HOLD'); // value kept, not sendable; confidence carries the hold
+  if (held) return cell(held, 'HOLD');
 
   if (candidates.length > 0) return empty('invalid_only');
   return empty(legsTried === 0 ? 'no_legs_enabled' : 'no_match_all_legs');
 }
 
 function cell(c: EmailCandidate, confidence: Confidence): EmailCell {
-  return { value: c.email, status: c.status, source: c.source, confidence, missReason: null };
+  return { value: c.value, status: c.status, source: c.source, confidence, missReason: null };
 }
 
 function empty(reason: string): EmailCell {
   return { value: null, status: null, source: null, confidence: 'LOW', missReason: reason };
 }
+
+export const emailPolicy: FieldPolicy<EmailStatus> = {
+  field: 'email',
+  normalize: (v) => normalizeEmail(v),
+  canonicalStatus: (provider, raw) => canonicalStatus(provider, raw),
+  gate: (value, row: RowState) => (row.input.domain ? checkDomain(value, row.input.domain) : { ok: true }),
+  isAccepted,
+  decide,
+};

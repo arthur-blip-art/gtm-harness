@@ -31,6 +31,8 @@ export interface ToolDef {
   maxBatch?: number;
   /** Credits charged for this result, from the static price table unless costOverride is set. */
   cost(result: ToolResult): number;
+  /** Never serve from cache and never reuse (CRM writes, live searches you want fresh). */
+  noCache?: boolean;
 }
 
 export interface PriceEntry {
@@ -76,17 +78,35 @@ export interface Receipt {
 
 export type NewReceipt = Omit<Receipt, 'id' | 'createdAt' | 'cached'>;
 
-// ---- Email policy ------------------------------------------------------------
+// ---- Field policies (email, phone, linkedin_url) ---------------------------------
 
-export type EmailStatus = 'valid' | 'catch_all' | 'unknown' | 'invalid' | 'disposable';
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW' | 'HOLD';
+export type EmailStatus = 'valid' | 'catch_all' | 'unknown' | 'invalid' | 'disposable';
+export type PhoneStatus = 'valid' | 'mobile' | 'unknown' | 'invalid';
+export type LinkedinStatus = 'name_match' | 'unknown';
 
-export interface EmailCandidate {
-  email: string;
-  status: EmailStatus;
+/** A value proposed by one leg for one field. */
+export interface Candidate<S extends string = string> {
+  value: string;
+  status: S;
   rawStatus?: string;
   source: string;
+  extra?: Record<string, unknown>;
 }
+
+/** The final decision cell for one field. */
+export interface FieldCell<S extends string = string> {
+  value: string | null;
+  status: S | null;
+  source: string | null;
+  confidence: Confidence;
+  missReason: string | null;
+}
+
+export type EmailCandidate = Candidate<EmailStatus>;
+export type EmailCell = FieldCell<EmailStatus>;
+export type PhoneCell = FieldCell<PhoneStatus>;
+export type LinkedinCell = FieldCell<LinkedinStatus>;
 
 // ---- Dataset rows & cells ------------------------------------------------------
 
@@ -103,22 +123,25 @@ export interface LegCell {
   at: string;
 }
 
-export interface EmailCell {
-  value: string | null;
-  status: EmailStatus | null;
-  source: string | null;
-  confidence: Confidence;
-  missReason: string | null;
-}
-
-export type Cells = Record<string, LegCell | EmailCell | unknown>;
+export type Cells = Record<string, LegCell | FieldCell | unknown>;
 
 export interface RowState {
   rowKey: string;
   input: Record<string, string>;
   cells: Cells;
-  /** Working memory during a run; not persisted. */
-  candidates: EmailCandidate[];
+  /** Working memory during a run, keyed by field; not persisted. */
+  candidates: Record<string, Candidate[]>;
+}
+
+/** One line of the cost receipt: a leg (or a named step) and what it reached/accepted. */
+export interface LegMeta {
+  leg: string;
+  provider: string;
+  tool: string;
+  rowsReached: number;
+  accepted: number;
+  /** Receipts attributed to this leg; when present the receipt groups by these ids instead of provider/tool. */
+  receiptIds?: string[];
 }
 
 // ---- Runs --------------------------------------------------------------------

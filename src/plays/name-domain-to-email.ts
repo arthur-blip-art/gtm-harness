@@ -1,107 +1,131 @@
-import type { EmailCandidate, EmailCell, LegCell, Receipt, RowState } from '../core/types.ts';
+import { z } from 'zod';
+import type { Candidate, EmailCell, EmailStatus, LegCell, LegMeta, Receipt, RowState } from '../core/types.ts';
 import { registry, isConfigured } from '../providers/index.ts';
 import type { Leg } from '../core/waterfall.ts';
-import { runWaterfall } from '../core/waterfall.ts';
-import type { ToolRunner } from '../core/tools.ts';
-import type { LegMeta } from '../core/receipt.ts';
+import { cellOf } from '../core/waterfall.ts';
+import type { PlayCtx } from '../core/play.ts';
+import { defineRowPlay } from '../core/row-play.ts';
 import { apexDomain, normalizeLinkedin } from '../core/normalize.ts';
-import { canonicalStatus, decide } from '../core/email-policy.ts';
+import { canonicalStatus, decide, emailPolicy } from '../core/email-policy.ts';
 import type { Store } from '../store/store.ts';
 
 export const NAME = 'name-domain-to-email';
 export const DESCRIPTION = 'Work email waterfall from first name + last name + domain (or company).';
+export const LEG_IDS = ['pattern', 'hunter', 'leadmagic', 'findymail', 'prospeo', 'apollo', 'fullenrich', 'crustdata', 'pdl'];
 
 const SOCIAL = /linkedin\.com|facebook\.com|twitter\.com|x\.com|crunchbase\.com|wikipedia\.org|glassdoor|indeed\.com|youtube\.com|instagram\.com/;
 
-export interface PlayOpts {
-  runId: string;
-  dryRun: boolean;
-  legs?: string[];
-  maxCredits?: number;
-  log: (msg: string) => void;
-  onRowUpdated?: (row: RowState) => Promise<void> | void;
+export const Input = z.object({
+  first_name: z.string().min(1),
+  last_name: z.string().min(1),
+  domain: z.string().optional(),
+  company: z.string().optional(),
+  linkedin_url: z.string().optional(),
+  title: z.string().optional(),
+});
+export type Input = z.infer<typeof Input>;
+
+/** A leg is enabled when its key is configured (or in dry-run) and it is in the --legs subset when one is given. */
+export function legEnabled(ctx: Pick<PlayCtx, 'dryRun' | 'legs'>, provider: string, id = provider): boolean {
+  if (ctx.legs && !ctx.legs.includes(id)) return false;
+  if (ctx.dryRun) return true;
+  const a = registry[provider];
+  return !!a && isConfigured(a);
 }
 
-function enabled(provider: string, dryRun: boolean, wanted?: string[], id?: string): boolean {
-  if (wanted && !wanted.includes(id ?? provider)) return false;
-  return dryRun || isConfigured(registry[provider]);
-}
+const stdInput = (r: RowState) => {
+  if (!r.input.first_name || !r.input.last_name || !r.input.domain) return null;
+  const li = normalizeLinkedin(r.input.linkedin_url);
+  return { first_name: r.input.first_name, last_name: r.input.last_name, domain: r.input.domain, ...(li ? { linkedin_url: li } : {}), ...(r.input.company ? { company: r.input.company } : {}) };
+};
+const nameDomainOnly = (r: RowState) => {
+  const i = stdInput(r);
+  return i ? { first_name: i.first_name, last_name: i.last_name, domain: i.domain } : null;
+};
+const oneEmail = (rc: Receipt) => {
+  const o = rc.output as any;
+  return o?.email ? [{ value: String(o.email), rawStatus: o.email_status ?? o.result }] : [];
+};
 
 /** Legs in order. Order IS the economics: cheapest and most precise first, PDL last. */
-export function buildLegs(opts: PlayOpts): Leg[] {
-  const std = (r: RowState) => (r.input.first_name && r.input.last_name && r.input.domain
-    ? { first_name: r.input.first_name, last_name: r.input.last_name, domain: r.input.domain, ...(normalizeLinkedin(r.input.linkedin_url) ? { linkedin_url: normalizeLinkedin(r.input.linkedin_url) } : {}) }
-    : null);
-  const one = (rc: Receipt) => {
-    const o = rc.output as any;
-    return o?.email ? [{ email: String(o.email), rawStatus: o.email_status ?? o.result }] : [];
-  };
+export function buildLegs(ctx: Pick<PlayCtx, 'dryRun' | 'legs'>): Leg[] {
+  const leg = (id: string, provider: string, tool: string, buildInput: Leg['buildInput'], extract: Leg['extract'] = oneEmail): Leg =>
+    ({ id, provider, tool, enabled: legEnabled(ctx, provider, id), buildInput, extract });
   return [
-    { id: 'pattern', provider: 'millionverifier', tool: 'verify_patterns', enabled: enabled('millionverifier', opts.dryRun, opts.legs, 'pattern'),
-      buildInput: (r) => { const i = std(r); if (!i) return null; const { linkedin_url: _l, ...rest } = i; return rest; }, extract: one },
-    { id: 'apollo', provider: 'apollo', tool: 'people_match', enabled: enabled('apollo', opts.dryRun, opts.legs), buildInput: std, extract: one },
-    { id: 'fullenrich', provider: 'fullenrich', tool: 'bulk_enrich', enabled: enabled('fullenrich', opts.dryRun, opts.legs), buildInput: std, extract: one },
-    { id: 'crustdata', provider: 'crustdata', tool: 'person_enrich', enabled: enabled('crustdata', opts.dryRun, opts.legs),
-      buildInput: (r) => { const li = normalizeLinkedin(r.input.linkedin_url); return li ? { linkedin_url: li } : null; }, extract: one },
-    { id: 'pdl', provider: 'peopledatalabs', tool: 'person_enrich', enabled: enabled('peopledatalabs', opts.dryRun, opts.legs), buildInput: std, extract: one },
+    leg('pattern', 'millionverifier', 'verify_patterns', nameDomainOnly),
+    leg('hunter', 'hunter', 'email_finder', nameDomainOnly),
+    leg('leadmagic', 'leadmagic', 'email_finder', nameDomainOnly),
+    leg('findymail', 'findymail', 'find_from_name', nameDomainOnly),
+    leg('prospeo', 'prospeo', 'enrich_person', stdInput),
+    leg('apollo', 'apollo', 'people_match', stdInput),
+    leg('fullenrich', 'fullenrich', 'bulk_enrich', stdInput),
+    leg('crustdata', 'crustdata', 'person_enrich', (r) => { const li = normalizeLinkedin(r.input.linkedin_url); return li ? { linkedin_url: li } : null; }),
+    leg('pdl', 'peopledatalabs', 'person_enrich', stdInput),
   ];
 }
 
-export const LEG_IDS = ['pattern', 'apollo', 'fullenrich', 'crustdata', 'pdl'];
-
 /** Rows with a company name but no domain: one cheap search, pick the first non-social result. */
-export async function resolveDomains(rows: RowState[], runner: ToolRunner, opts: PlayOpts): Promise<LegMeta> {
-  const meta: LegMeta = { leg: 'resolve_domain', provider: 'exa', tool: 'search', rowsReached: 0, accepted: 0 };
+export async function resolveDomains(rows: RowState[], ctx: PlayCtx): Promise<LegMeta> {
+  const meta: LegMeta = { leg: 'resolve_domain', provider: 'exa', tool: 'search', rowsReached: 0, accepted: 0, receiptIds: [] };
   const todo = rows.filter((r) => !r.input.domain && r.input.company);
   if (!todo.length) return meta;
-  if (!enabled('exa', opts.dryRun)) {
-    opts.log(`${todo.length} rows have a company but no domain and EXA_API_KEY is missing: they will be skipped`);
+  if (!legEnabled(ctx, 'exa')) {
+    ctx.log(`${todo.length} rows have a company but no domain and EXA_API_KEY is missing: they will be skipped`);
     return meta;
   }
   meta.rowsReached = todo.length;
   for (const r of todo) {
-    const rc = await runner.execute({ provider: 'exa', tool: 'search', input: { query: `${r.input.company} official website`, numResults: 3 }, runId: opts.runId });
+    const rc = await ctx.runner.execute({ provider: 'exa', tool: 'search', input: { query: `${r.input.company} official website`, numResults: 3 }, runId: ctx.runId });
+    meta.receiptIds!.push(rc.id);
+    if (!rc.cached) ctx.spent.credits += rc.costCredits;
     const results: { url: string }[] = (rc.output as any)?.results ?? [];
     const pick = results.find((x) => x.url && !SOCIAL.test(x.url));
     const apex = pick ? apexDomain(pick.url) : null;
-    r.cells.domain_resolution = { status: apex ? 'hit' : 'miss', value: apex ?? undefined, receiptId: rc.id, cached: rc.cached ?? false, costCredits: rc.cached ? 0 : rc.costCredits, at: new Date().toISOString(), missReason: apex ? undefined : 'no_website_found' };
+    r.cells.domain_resolution = cellOf(apex ? 'hit' : 'miss', { value: apex ?? undefined, receiptId: rc.id, cached: rc.cached ?? false, costCredits: rc.cached ? 0 : rc.costCredits, missReason: apex ? undefined : 'no_website_found' });
     if (apex) { r.input.domain = apex; meta.accepted++; }
   }
+  ctx.metas.push(meta);
   return meta;
 }
 
 /**
- * Validate once per final address, not during each leg: candidates left in HOLD (unknown /
- * lone catch_all) get one verifier call. A `valid` verdict promotes them to HIGH.
+ * Validate once per final address, not during each leg: candidates left in HOLD get one
+ * MillionVerifier check, then ZeroBounce as an independent second opinion for catch-alls.
+ * `ok`/`valid` promotes to HIGH; two independent `catch_all` verdicts on the same address → MEDIUM.
  */
-export async function verifyHeld(rows: RowState[], runner: ToolRunner, opts: PlayOpts): Promise<LegMeta> {
-  const meta: LegMeta = { leg: 'verify', provider: 'millionverifier', tool: 'verify', rowsReached: 0, accepted: 0 };
-  if (!enabled('millionverifier', opts.dryRun, opts.legs, 'verify')) return meta;
-  const held = rows.filter((r) => (r.cells.email as EmailCell)?.confidence === 'HOLD');
-  meta.rowsReached = held.length;
-  for (const r of held) {
-    const cell = r.cells.email as EmailCell;
-    const rc = await runner.execute({ provider: 'millionverifier', tool: 'verify', input: { email: cell.value }, runId: opts.runId });
-    const result = (rc.output as any)?.result;
-    const status = canonicalStatus('millionverifier', result);
-    r.cells.email_result__verify = { status: rc.status === 'error' ? 'error' : rc.status, value: cell.value ?? undefined, rawStatus: result, receiptId: rc.id, cached: rc.cached ?? false, costCredits: rc.cached ? 0 : rc.costCredits, at: new Date().toISOString(), missReason: rc.status === 'hit' ? undefined : String(result ?? rc.error) } satisfies LegCell;
-    if (rc.status !== 'error') {
-      const verified: EmailCandidate = { email: cell.value!, status, rawStatus: result, source: `${cell.source}+verify` };
-      r.candidates = [verified, ...r.candidates.filter((c) => c.email !== cell.value)];
-      r.cells.email = decide(r.candidates, 1);
-      if (status === 'valid') meta.accepted++;
+export async function verifyHeld(rows: RowState[], ctx: PlayCtx): Promise<LegMeta[]> {
+  const out: LegMeta[] = [];
+  for (const [id, provider, tool] of [['verify', 'millionverifier', 'verify'], ['zerobounce', 'zerobounce', 'validate']] as const) {
+    const meta: LegMeta = { leg: id, provider, tool, rowsReached: 0, accepted: 0, receiptIds: [] };
+    out.push(meta);
+    ctx.metas.push(meta);
+    if (!legEnabled(ctx, provider, id)) continue;
+    const held = rows.filter((r) => (r.cells.email as EmailCell | undefined)?.confidence === 'HOLD');
+    meta.rowsReached = held.length;
+    for (const r of held) {
+      const cell = r.cells.email as EmailCell;
+      const rc = await ctx.runner.execute({ provider, tool, input: { email: cell.value }, runId: ctx.runId });
+      meta.receiptIds!.push(rc.id);
+      if (!rc.cached) ctx.spent.credits += rc.costCredits;
+      const raw = (rc.output as any)?.result ?? (rc.output as any)?.email_status ?? (rc.output as any)?.status;
+      const status = canonicalStatus(provider, raw);
+      r.cells[`email_result__${id}`] = cellOf(rc.status === 'error' ? 'error' : rc.status, { value: cell.value ?? undefined, rawStatus: String(raw ?? ''), receiptId: rc.id, cached: rc.cached ?? false, costCredits: rc.cached ? 0 : rc.costCredits, missReason: rc.status === 'hit' ? undefined : String(raw ?? rc.error ?? '') });
+      if (rc.status !== 'error') {
+        const verified: Candidate<EmailStatus> = { value: cell.value!, status, rawStatus: String(raw ?? ''), source: `${cell.source}+${id}` };
+        const list = (r.candidates.email ??= []) as Candidate<EmailStatus>[];
+        list.unshift(verified);
+        r.cells.email = decide(list, 1);
+        if (status === 'valid') meta.accepted++;
+      }
     }
-    await opts.onRowUpdated?.(r);
   }
-  return meta;
+  return out;
 }
 
-export async function run(rows: RowState[], runner: ToolRunner, opts: PlayOpts): Promise<LegMeta[]> {
-  const resolve = await resolveDomains(rows, runner, opts);
-  const legs = buildLegs(opts);
-  const metas = await runWaterfall(rows, legs, runner, { runId: opts.runId, maxCredits: opts.maxCredits, log: opts.log, onRowUpdated: opts.onRowUpdated });
-  metas.push(await verifyHeld(rows, runner, opts));
-  return [resolve, ...metas];
+export async function steps(rows: RowState[], ctx: PlayCtx): Promise<void> {
+  await resolveDomains(rows, ctx);
+  await ctx.waterfall(rows, buildLegs(ctx), emailPolicy);
+  await verifyHeld(rows, ctx);
 }
 
 /** Golden records: precedence not averaging; every field names its source. */
@@ -109,7 +133,7 @@ export async function writeGolden(rows: RowState[], store: Store) {
   for (const r of rows) {
     const domain = apexDomain(r.input.domain);
     if (domain) await store.upsertCompany({ domain, name: r.input.company || undefined, fieldSources: r.input.company ? { name: 'csv' } : {}, raw: {} });
-    const email = r.cells.email as EmailCell;
+    const email = r.cells.email as EmailCell | undefined;
     const raw: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(r.cells)) if (k.startsWith('email_result__') && (v as LegCell).status === 'hit') raw[k.replace('email_result__', '')] = v;
     await store.upsertPerson({
@@ -120,3 +144,8 @@ export async function writeGolden(rows: RowState[], store: Store) {
     });
   }
 }
+
+export const { scalar, batch } = defineRowPlay<Input, EmailCell>({
+  name: NAME, description: DESCRIPTION, input: Input, field: 'email', legIds: [...LEG_IDS, 'verify', 'zerobounce'],
+  steps, output: (row) => row.cells.email as EmailCell, golden: writeGolden,
+});

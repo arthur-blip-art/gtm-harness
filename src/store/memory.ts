@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Cells, NewReceipt, Receipt, Run, RunStatus } from '../core/types.ts';
-import type { DatasetRow, GoldenCompany, GoldenPerson, Store } from './store.ts';
+import type { CompanyRow, CrmSync, DatasetRow, GoldenCompany, GoldenPerson, PersonRow, Score, Signal, Store } from './store.ts';
 
 /** In-memory store for --dry-run and tests. Same semantics as Postgres, nothing persisted. */
 export class MemoryStore implements Store {
@@ -9,8 +9,11 @@ export class MemoryStore implements Store {
   runs = new Map<string, Run>();
   datasets = new Map<string, { id: string; slug: string; play: string }>();
   rows = new Map<string, Map<string, DatasetRow>>();
-  people = new Map<string, GoldenPerson>();
-  companies = new Map<string, GoldenCompany>();
+  people = new Map<string, PersonRow>();
+  companies = new Map<string, CompanyRow>();
+  signals = new Map<string, Signal>();
+  scores = new Map<string, Score>();
+  crm = new Map<string, CrmSync>();
 
   async findLatestReceipt(provider: string, tool: string, inputHash: string) {
     for (let i = this.receipts.length - 1; i >= 0; i--) {
@@ -26,6 +29,9 @@ export class MemoryStore implements Store {
   }
   async listReceiptsByRun(runId: string) {
     return this.receipts.filter((r) => r.runId === runId);
+  }
+  async getReceipt(id: string) {
+    return this.receipts.find((r) => r.id === id) ?? null;
   }
   async receiptStats() {
     const byProvider: Record<string, { count: number; credits: number }> = {};
@@ -85,13 +91,58 @@ export class MemoryStore implements Store {
   }
 
   async upsertCompany(c: GoldenCompany) {
-    this.companies.set(c.domain, c);
+    const prev = this.companies.get(c.domain);
+    this.companies.set(c.domain, mergeDefined(prev ?? { id: randomUUID(), domain: c.domain, fieldSources: {}, raw: {} }, c, ['fieldSources', 'raw']) as CompanyRow);
   }
   async upsertPerson(p: GoldenPerson) {
-    this.people.set(p.personKey, p);
+    const prev = this.people.get(p.personKey);
+    const merged = mergeDefined(prev ?? { id: randomUUID(), personKey: p.personKey, doNotContact: false, email: null, emailStatus: null, emailSource: null, confidence: 'LOW', fieldSources: {}, raw: {} }, p, ['fieldSources', 'raw']) as PersonRow;
+    merged.confidence = p.confidence;
+    this.people.set(p.personKey, merged);
+  }
+  async listCompanies(domains?: string[]) {
+    const all = [...this.companies.values()];
+    return domains ? all.filter((c) => domains.includes(c.domain)) : all;
+  }
+  async listPeople(domains?: string[]) {
+    const all = [...this.people.values()];
+    return domains ? all.filter((p) => p.domain && domains.includes(p.domain)) : all;
+  }
+  async upsertSignals(rows: Signal[]) {
+    let n = 0;
+    for (const r of rows) {
+      if (!this.signals.has(r.dedupeKey)) n++;
+      this.signals.set(r.dedupeKey, r);
+    }
+    return n;
+  }
+  async listSignals(domains: string[], since?: string) {
+    return [...this.signals.values()].filter((s) => domains.includes(s.domain) && (!since || !s.observedAt || s.observedAt >= since));
+  }
+  async upsertScore(sc: Score) {
+    this.scores.set(`${sc.domain}|${sc.model}|${sc.dimension}`, sc);
+  }
+  async listScores(model: string, domains?: string[]) {
+    return [...this.scores.values()].filter((s) => s.model === model && (!domains || domains.includes(s.domain)));
+  }
+  async getCrmSync(entityType: CrmSync['entityType'], entityId: string, crm: string) {
+    return this.crm.get(`${entityType}|${entityId}|${crm}`) ?? null;
+  }
+  async upsertCrmSync(c: CrmSync) {
+    this.crm.set(`${c.entityType}|${c.entityId}|${c.crm}`, c);
   }
   async ping() {
-    return ['(memory) runs', 'tool_receipts', 'datasets', 'dataset_rows', 'companies', 'people'];
+    return ['(memory) runs', 'tool_receipts', 'datasets', 'dataset_rows', 'companies', 'people', 'signals', 'scores', 'crm_sync'];
   }
   async close() {}
+}
+
+/** Coalesce semantics like the SQL upserts: defined values win, null/undefined keep the previous; jsonb maps are merged. */
+function mergeDefined<T extends object>(prev: T, next: object, mapKeys: string[]): T {
+  const out: Record<string, unknown> = { ...(prev as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(next)) {
+    if (mapKeys.includes(k)) out[k] = { ...((prev as Record<string, unknown>)[k] as object), ...(v as object) };
+    else if (v !== undefined && v !== null) out[k] = v;
+  }
+  return out as unknown as T;
 }

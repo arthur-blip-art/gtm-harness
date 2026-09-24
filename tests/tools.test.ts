@@ -8,8 +8,8 @@ describe('ToolRunner cache + receipts', () => {
   it('serves the second identical call from cache at zero cost', async () => {
     const store = new MemoryStore();
     const runner = new ToolRunner(store, registry, { dryRun: true });
-    const a = await runner.execute({ provider: 'apollo', tool: 'people_match', input: { first_name: 'Ida', last_name: 'Klein', domain: 'x.com' }, runId: 'r1' });
-    const b = await runner.execute({ provider: 'apollo', tool: 'people_match', input: { last_name: ' KLEIN', first_name: 'ida ', domain: 'x.com' }, runId: 'r2' });
+    const a = await runner.execute({ provider: 'apollo', tool: 'people_match', input: { first_name: 'Ida', last_name: 'Moreau', domain: 'x.com' }, runId: 'r1' });
+    const b = await runner.execute({ provider: 'apollo', tool: 'people_match', input: { last_name: ' MOREAU', first_name: 'ida ', domain: 'x.com' }, runId: 'r2' });
     expect(a.status).toBe('hit');
     expect(a.costCredits).toBe(1);
     expect(b.cached).toBe(true);

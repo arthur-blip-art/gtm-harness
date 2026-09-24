@@ -1,4 +1,5 @@
-import type { Receipt } from './types.ts';
+import type { LegMeta, Receipt } from './types.ts';
+export type { LegMeta } from './types.ts';
 
 export interface LegStat {
   leg: string;
@@ -27,14 +28,6 @@ export interface CostReceipt {
   legs: LegStat[];
 }
 
-export interface LegMeta {
-  leg: string;
-  provider: string;
-  tool: string;
-  rowsReached: number;
-  accepted: number;
-}
-
 /**
  * Marginal, never amortized: only this run's non-cached receipts count as spend.
  * Labels: NEVER REACHED (0 rows reached), CUT CANDIDATE (spent credits, accepted nothing),
@@ -42,13 +35,19 @@ export interface LegMeta {
  */
 export function buildReceipt(runId: string, rowsIn: number, receipts: Receipt[], legs: LegMeta[]): CostReceipt {
   const byKey = new Map<string, Receipt[]>();
+  const byId = new Map<string, Receipt>();
   for (const r of receipts) {
     const k = `${r.provider}/${r.tool}`;
     (byKey.get(k) ?? byKey.set(k, []).get(k)!).push(r);
+    byId.set(r.id, r);
   }
+  const seen = new Set<string>();
   const stats: LegStat[] = legs.map((m) => {
-    const rs = byKey.get(`${m.provider}/${m.tool}`) ?? [];
-    const fresh = rs.filter((r) => !r.cached);
+    const rs = m.receiptIds
+      ? m.receiptIds.map((id) => byId.get(id)).filter((r): r is Receipt => !!r)
+      : byKey.get(`${m.provider}/${m.tool}`) ?? [];
+    // Spend belongs to the run that created the receipt, and is attributed once (first leg that used it).
+    const fresh = rs.filter((r) => !r.cached && r.runId === runId && !seen.has(r.id) && (seen.add(r.id), true));
     const credits = sum(fresh.map((r) => r.costCredits));
     const usd = sum(fresh.map((r) => r.costUsd));
     return {

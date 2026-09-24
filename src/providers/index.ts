@@ -8,9 +8,21 @@ import { millionverifier } from './millionverifier.ts';
 import { mock } from './mock.ts';
 import { parallel } from './parallel.ts';
 import { peopledatalabs } from './peopledatalabs.ts';
+import { hunter } from './hunter.ts';
+import { zerobounce } from './zerobounce.ts';
+import { leadmagic } from './leadmagic.ts';
+import { prospeo } from './prospeo.ts';
+import { findymail } from './findymail.ts';
+import { serper } from './serper.ts';
+import { theirstack } from './theirstack.ts';
+import { predictleads } from './predictleads.ts';
+import { lusha } from './lusha.ts';
+import { kaspr } from './kaspr.ts';
+import { hubspot } from './hubspot.ts';
 
 export const registry: Record<string, Adapter> = {
   mock, apollo, fullenrich, millionverifier, peopledatalabs, crustdata, exa, parallel,
+  hunter, zerobounce, leadmagic, prospeo, findymail, serper, theirstack, predictleads, lusha, kaspr, hubspot,
 };
 
 export function isConfigured(a: Adapter): boolean {
