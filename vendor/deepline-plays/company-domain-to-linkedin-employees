@@ -1,0 +1,298 @@
+/** @mermaid
+ * flowchart TD
+ * companyPage["Normalize the company with People Data Labs"] --> canonicalCompany["Resolve the canonical company with native HarvestAPI"]
+ * canonicalCompany --> pageFound{"Exact LinkedIn company found?"}
+ * pageFound -->|found| employees["Fetch native HarvestAPI employee pages"]
+ * pageFound -->|not found| noPage(["No company, so no employees"])
+ * employees --> rows[("Employee rows")]
+ * noPage --> rows
+ * rows --> out["Return the company URL and rows"]
+ * class noPage sketch
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { definePlay } from 'deepline';
+
+type ProfileDepth = 'short' | 'full' | 'full_with_email';
+
+type EmployeeRow = {
+  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  title: string | null;
+  linkedin_url: string | null;
+  company_name: string | null;
+  company_linkedin_url: string | null;
+  location: string | null;
+};
+
+type CompanyIdentity = {
+  linkedinId: string;
+  linkedinUrl: string;
+  name: string | null;
+};
+
+type CompanySeed = {
+  linkedinUrl: string | null;
+  name: string | null;
+};
+
+type HarvestPagination = {
+  totalPages?: number;
+  totalElements?: number;
+  previousElements?: number;
+  pageSize?: number;
+};
+
+function normalizeDomain(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split(/[/?#]/, 1)[0]
+    .toLowerCase();
+}
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function toolData(output: any): any {
+  const root =
+    output?.toolResponse?.rawV2 ?? output?.toolResponse?.raw ?? output;
+  return root?.data?.data ?? root?.data ?? root;
+}
+
+function normalizeLinkedinCompanyUrl(value: unknown): string | null {
+  const raw = text(value);
+  if (!raw) return null;
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  const match = withProtocol.match(/^https?:\/\/[^/]+\/company\/([^/?#]+)/i);
+  return match?.[1] ? `https://www.linkedin.com/company/${match[1]}/` : null;
+}
+
+function companySeedFromPdl(output: any): CompanySeed | null {
+  const company = toolData(output);
+  if (!company || typeof company !== 'object' || Array.isArray(company)) {
+    return null;
+  }
+  const linkedinUrl = normalizeLinkedinCompanyUrl(
+    company.linkedin_url ?? company.linkedinUrl,
+  );
+  const name = text(company.name) ?? text(company.normalized);
+  return linkedinUrl || name ? { linkedinUrl, name } : null;
+}
+
+function companyIdentityFromHarvest(
+  output: any,
+  domain: string,
+  seed: CompanySeed,
+): CompanyIdentity | null {
+  const data = toolData(output);
+  const company = data?.element ?? data;
+  if (!company || typeof company !== 'object' || Array.isArray(company)) {
+    return null;
+  }
+  const linkedinId = text(company.id);
+  const linkedinUrl = normalizeLinkedinCompanyUrl(company.linkedinUrl);
+  if (!linkedinId || !linkedinUrl) return null;
+
+  const websiteMatches = normalizeDomain(company.website) === domain;
+  if (!websiteMatches) return null;
+
+  return {
+    linkedinId,
+    linkedinUrl,
+    name: text(company.name) ?? seed.name,
+  };
+}
+
+function pageFromSearch(output: any): {
+  elements: any[];
+  pagination: HarvestPagination;
+} {
+  const data = toolData(output);
+  return {
+    elements: Array.isArray(data?.elements) ? data.elements : [],
+    pagination:
+      data?.pagination && typeof data.pagination === 'object'
+        ? data.pagination
+        : {},
+  };
+}
+
+function matchingCurrentPosition(lead: any, companyId: string): any | null {
+  const positions = Array.isArray(lead?.currentPositions)
+    ? lead.currentPositions
+    : [];
+  return (
+    positions.find(
+      (position: any) => text(position?.companyId) === companyId,
+    ) ?? null
+  );
+}
+
+function normalizeLocation(value: any): string | null {
+  return (
+    text(value) ??
+    text(value?.linkedinText) ??
+    text(value?.text) ??
+    text(value?.name)
+  );
+}
+
+function normalizeEmployee(
+  lead: any,
+  company: CompanyIdentity,
+): EmployeeRow | null {
+  const position = matchingCurrentPosition(lead, company.linkedinId);
+  if (!position) return null;
+
+  const firstName = text(lead?.firstName);
+  const lastName = text(lead?.lastName);
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+  const linkedinUrl = text(lead?.linkedinUrl);
+  const title = text(position?.title);
+  if (!fullName && !linkedinUrl && !title) return null;
+
+  return {
+    full_name: fullName,
+    first_name: firstName,
+    last_name: lastName,
+    title,
+    linkedin_url: linkedinUrl,
+    company_name: text(position?.companyName) ?? company.name,
+    company_linkedin_url:
+      text(position?.companyLinkedinUrl) ??
+      text(position?.company_linkedin_url) ??
+      text(position?.companyUrl) ??
+      text(position?.company_url) ??
+      company.linkedinUrl,
+    location: normalizeLocation(lead?.location),
+  };
+}
+
+function hasAnotherLeadPage(
+  pagination: HarvestPagination,
+  requestedPage: number,
+  elementCount: number,
+): boolean {
+  if (elementCount === 0 || requestedPage >= 100) return false;
+  const totalPages = Number(pagination.totalPages ?? 0);
+  if (totalPages > 0) return requestedPage < totalPages;
+
+  const totalElements = Number(pagination.totalElements ?? 0);
+  const previousElements = Number(pagination.previousElements ?? 0);
+  if (totalElements > 0 && previousElements + elementCount >= totalElements) {
+    return false;
+  }
+
+  const pageSize = Number(pagination.pageSize ?? 0);
+  return pageSize <= 0 || elementCount >= pageSize;
+}
+
+export default definePlay(
+  'company-domain-to-linkedin-employees',
+  async (
+    ctx,
+    input: {
+      domain: string;
+      max_items?: number;
+      /**
+       * Accepted for compatibility with the former Apify-backed play. Native
+       * HarvestAPI does not expose an equivalent profile-depth setting.
+       */
+      profile_depth?: ProfileDepth;
+    },
+  ): Promise<{
+    domain: string;
+    linkedin_company_url: string | null;
+    rows: unknown;
+  }> => {
+    const domain = normalizeDomain(input.domain);
+    if (!domain) throw new Error('domain is required.');
+    const maxItems = Math.max(
+      1,
+      Math.min(Math.floor(Number(input.max_items ?? 25)), 1000),
+    );
+
+    // @mermaid-node companyPage out:"companyLookup"
+    const companyLookup = await ctx.tools.execute({
+      id: 'pdl_company_from_domain',
+      tool: 'peopledatalabs_company_clean',
+      input: { website: domain },
+      description:
+        'Resolve the canonical LinkedIn company URL and ID from the company domain.',
+    });
+    const companySeed = companySeedFromPdl(companyLookup);
+    let company: CompanyIdentity | null = null;
+    if (companySeed) {
+      // @mermaid-node canonicalCompany out:"canonicalCompanyLookup"
+      const canonicalCompanyLookup = await ctx.tools.execute({
+        id: 'harvestapi_company_from_pdl',
+        tool: 'harvestapi_get_company',
+        input: companySeed.linkedinUrl
+          ? { url: companySeed.linkedinUrl }
+          : { search: companySeed.name },
+        description:
+          'Resolve and verify the canonical LinkedIn company before searching employees.',
+      });
+      company = companyIdentityFromHarvest(
+        canonicalCompanyLookup,
+        domain,
+        companySeed,
+      );
+    }
+
+    // @mermaid-node pageFound type:"decision" out:"linkedinCompanyUrl"
+    const linkedinCompanyUrl = company?.linkedinUrl ?? null;
+    const employees: EmployeeRow[] = [];
+    if (company) {
+      const seen = new Set<string>();
+      const sessionId = `${ctx.run.id}:company-employees`;
+      let page = 1;
+
+      while (employees.length < maxItems) {
+        // @mermaid-node employees out:"employeesPage"
+        const employeesPage = await ctx.tools.execute({
+          id: 'harvestapi_employee_page',
+          tool: 'harvestapi_search_leads',
+          input: {
+            currentCompanies: company.linkedinUrl,
+            sessionId,
+            page,
+          },
+          description:
+            'Fetch one native HarvestAPI page of employees for the resolved LinkedIn company.',
+        });
+        const { elements, pagination } = pageFromSearch(employeesPage);
+        for (const lead of elements) {
+          const employee = normalizeEmployee(lead, company);
+          if (!employee) continue;
+          const identity =
+            employee.linkedin_url?.toLowerCase() ??
+            `${employee.full_name ?? 'employee'}:${employee.title ?? ''}`.toLowerCase();
+          if (seen.has(identity)) continue;
+          seen.add(identity);
+          employees.push(employee);
+          if (employees.length >= maxItems) break;
+        }
+        if (!hasAnotherLeadPage(pagination, page, elements.length)) break;
+        page += 1;
+      }
+    }
+
+    // @mermaid-node rows type:"dataset" out:"rows"
+    const rows = await ctx.dataset('employees', employees).run({
+      key: (row, index) =>
+        `${row.linkedin_url ?? row.full_name ?? 'employee'}:${index}`,
+      description: 'Persist native HarvestAPI employee rows.',
+    });
+
+    // @mermaid-node out out:"$output"
+    return { domain, linkedin_company_url: linkedinCompanyUrl, rows };
+  },
+  {
+    description:
+      'Resolve a company domain with People Data Labs and return exact-company LinkedIn employees through native HarvestAPI.',
+  },
+);

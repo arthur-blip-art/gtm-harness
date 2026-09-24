@@ -1,0 +1,125 @@
+/** @mermaid
+ * flowchart TD
+ * judge["Score the person against the ICP"] --> tier["Read the tier and the reason"]
+ * tier --> out["Return the qualification"]
+ */
+import { definePlay } from 'deepline';
+
+type IcpTier = 'tier1' | 'tier2' | 'tier3';
+
+type QualificationResult = {
+  icp_tier: IcpTier;
+  icp_reason: string;
+  icp_qualification_valid: true;
+  miss_reason: null;
+};
+
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function parseJsonObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    return recordOrNull(JSON.parse(value));
+  } catch {
+    return null;
+  }
+}
+
+function parseQualification(raw: unknown): QualificationResult {
+  const root = recordOrNull(raw) ?? {};
+  const result = recordOrNull(root.result) ?? root;
+  const parsed =
+    recordOrNull(result.extracted_json) ??
+    recordOrNull(result.object) ??
+    recordOrNull(result.output) ??
+    parseJsonObject(result.output) ??
+    result;
+  const tier = parsed.tier;
+  const reason = parsed.reason;
+  if (tier !== 'tier1' && tier !== 'tier2' && tier !== 'tier3') {
+    throw new Error(
+      'deeplineagent qualification returned malformed output: missing tier1/tier2/tier3 tier.',
+    );
+  }
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new Error(
+      'deeplineagent qualification returned malformed output: missing reason.',
+    );
+  }
+  return {
+    icp_tier: tier,
+    icp_reason: reason.trim(),
+    icp_qualification_valid: true,
+    miss_reason: null,
+  };
+}
+
+/**
+ * Classify a person against an ICP using their name and position/headline. Returns {icp_tier, icp_reason} via deeplineagent.
+ *
+ */
+export default definePlay(
+  'engagers-to-icp-qualification',
+  async (
+    ctx,
+    input: {
+      first_name: string;
+      last_name: string;
+      position: string;
+      company?: string;
+      icp_description: string;
+    },
+  ): Promise<Record<string, unknown>> => {
+    // Step: deeplineagent_qualification
+    // @mermaid-node judge out:"deeplineagent_qualification_raw"
+    const deeplineagent_qualification_raw = await ctx.tools.execute({
+      id: 'deeplineagent_qualification',
+      tool: 'deeplineagent',
+      input: {
+        prompt: `Qualify this person against the ICP.
+
+Person: ${input.first_name ?? ''} ${input.last_name ?? ''}
+Position: ${input.position}
+Company: ${input.company}
+
+ICP:
+${input.icp_description}
+
+Return JSON with "tier" (tier1/tier2/tier3) and "reason" (one sentence).`,
+        jsonSchema: {
+          type: 'object',
+          properties: {
+            tier: {
+              type: 'string',
+              enum: ['tier1', 'tier2', 'tier3'],
+            },
+            reason: {
+              type: 'string',
+            },
+          },
+          required: ['tier', 'reason'],
+          additionalProperties: false,
+        },
+      },
+      description: 'deeplineagent_qualification',
+    });
+    // @mermaid-node tier out:"deeplineagent_qualification"
+    const deeplineagent_qualification = parseQualification(
+      deeplineagent_qualification_raw.toolResponse?.raw,
+    );
+
+    // @mermaid-node out out:"$output"
+    return {
+      ...deeplineagent_qualification,
+      deeplineagent_qualification,
+    };
+  },
+  {
+    description:
+      'Score and qualify LinkedIn engagers against an ICP description.',
+  },
+);

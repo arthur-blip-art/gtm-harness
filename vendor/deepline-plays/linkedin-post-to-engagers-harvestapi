@@ -1,0 +1,224 @@
+/** @mermaid
+ * flowchart TD
+ * post["Validate the LinkedIn post URL"] --> engagementPages["Fetch native reaction and comment pages"]
+ * engagementPages --> people["Union reactors and commenters"]
+ * people --> rows[("Engager rows")]
+ * rows --> out["Return the engagers"]
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { definePlay } from 'deepline';
+
+type EngagerRow = {
+  first_name: string;
+  last_name: string;
+  linkedin_url: string;
+  position: string;
+  engagement_type: string;
+};
+
+type HarvestPage = {
+  elements: any[];
+  pagination: {
+    totalPages?: number;
+    paginationToken?: string | null;
+  };
+};
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizePostUrl(value: unknown): string {
+  const post = text(value);
+  if (/^urn:li:(?:activity|ugcPost|share):[0-9]+$/.test(post)) {
+    return `https://www.linkedin.com/feed/update/${post}/`;
+  }
+  return post;
+}
+
+function harvestPage(output: any): HarvestPage {
+  const root =
+    output?.toolResponse?.rawV2 ?? output?.toolResponse?.raw ?? output;
+  const data = root?.data?.data ?? root?.data ?? root;
+  return {
+    elements: Array.isArray(data?.elements) ? data.elements : [],
+    pagination:
+      data?.pagination && typeof data.pagination === 'object'
+        ? data.pagination
+        : {},
+  };
+}
+
+function nextPage(
+  page: HarvestPage,
+  requestedPage: number,
+  usePaginationToken: boolean,
+): { page: number; paginationToken?: string } | null {
+  if (page.elements.length === 0) return null;
+  const paginationToken = text(page.pagination.paginationToken);
+  if (paginationToken) {
+    return {
+      page: requestedPage + 1,
+      ...(usePaginationToken ? { paginationToken } : {}),
+    };
+  }
+  const totalPages = Number(page.pagination.totalPages ?? 0);
+  return totalPages > requestedPage ? { page: requestedPage + 1 } : null;
+}
+
+function actorIdentity(item: any): string {
+  const actor = item?.actor ?? {};
+  return (
+    text(actor.id) ||
+    text(actor.linkedinUrl).toLowerCase() ||
+    text(item?.id) ||
+    `${text(actor.name)}:${text(actor.position)}`.toLowerCase()
+  );
+}
+
+function personName(value: unknown): { firstName: string; lastName: string } {
+  const parts = text(value).split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' '),
+  };
+}
+
+function mergeEngagers(
+  reactions: any[],
+  comments: any[],
+  maxItems: number,
+): EngagerRow[] {
+  const byIdentity = new Map<
+    string,
+    EngagerRow & { engagementTypes: string[] }
+  >();
+
+  const add = (item: any, engagementType: string): void => {
+    const identity = actorIdentity(item);
+    if (!identity) return;
+    const actor = item?.actor ?? {};
+    const existing = byIdentity.get(identity);
+    if (existing) {
+      if (!existing.engagementTypes.includes(engagementType)) {
+        existing.engagementTypes.push(engagementType);
+      }
+      return;
+    }
+    const { firstName, lastName } = personName(actor.name);
+    byIdentity.set(identity, {
+      first_name: firstName,
+      last_name: lastName,
+      linkedin_url: text(actor.linkedinUrl),
+      position: text(actor.position),
+      engagement_type: engagementType,
+      engagementTypes: [engagementType],
+    });
+  };
+
+  for (const reaction of reactions) {
+    add(reaction, text(reaction?.reactionType) || 'reaction');
+  }
+  for (const comment of comments) add(comment, 'comment');
+
+  return Array.from(byIdentity.values())
+    .slice(0, maxItems)
+    .map(({ engagementTypes, ...row }) => ({
+      ...row,
+      engagement_type: engagementTypes.join(','),
+    }));
+}
+
+export default definePlay(
+  'linkedin-post-to-engagers-harvestapi',
+  async (
+    ctx,
+    input: {
+      post_url: string;
+      max_items?: number;
+    },
+  ): Promise<Record<string, unknown>> => {
+    // @mermaid-node post out:"postUrl"
+    const postUrl = normalizePostUrl(input.post_url);
+    if (!postUrl) throw new Error('post_url is required.');
+    const maxItems = Math.max(
+      1,
+      Math.min(Number(input.max_items ?? 1000), 1000),
+    );
+
+    const fetchReactions = async (): Promise<any[]> => {
+      const collected: any[] = [];
+      let cursor: { page: number; paginationToken?: string } | null = {
+        page: 1,
+      };
+      while (cursor && collected.length < maxItems) {
+        const reactionResponse = await ctx.tools.execute({
+          id: 'harvestapi_reaction_page',
+          tool: 'harvestapi_get_post_reactions',
+          input: {
+            post: postUrl,
+            page: cursor.page,
+            ...(cursor.paginationToken
+              ? { paginationToken: cursor.paginationToken }
+              : {}),
+          },
+          description: 'Fetch one native HarvestAPI post-reaction page.',
+        });
+        const result = harvestPage(reactionResponse);
+        collected.push(...result.elements);
+        // The post-reactions action accepts `post` + `page` only. HarvestAPI's
+        // token requirement applies to profile reactions, a different action.
+        cursor = nextPage(result, cursor.page, false);
+      }
+      return collected.slice(0, maxItems);
+    };
+
+    const fetchComments = async (): Promise<any[]> => {
+      const collected: any[] = [];
+      let cursor: { page: number; paginationToken?: string } | null = {
+        page: 1,
+      };
+      while (cursor && collected.length < maxItems) {
+        const commentResponse = await ctx.tools.execute({
+          id: 'harvestapi_comment_page',
+          tool: 'harvestapi_get_post_comments',
+          input: {
+            post: postUrl,
+            page: cursor.page,
+            ...(cursor.paginationToken
+              ? { paginationToken: cursor.paginationToken }
+              : {}),
+          },
+          description: 'Fetch one native HarvestAPI post-comment page.',
+        });
+        const result = harvestPage(commentResponse);
+        collected.push(...result.elements);
+        cursor = nextPage(result, cursor.page, true);
+      }
+      return collected.slice(0, maxItems);
+    };
+
+    // @mermaid-node engagementPages out:"reactions,comments"
+    const [reactions, comments] = await Promise.all([
+      fetchReactions(),
+      fetchComments(),
+    ]);
+
+    // @mermaid-node people out:"engagers"
+    const engagers = mergeEngagers(reactions, comments, maxItems);
+
+    // @mermaid-node rows type:"dataset" out:"rows"
+    const rows = await ctx.dataset('engagers', engagers).run({
+      key: (row, index) =>
+        `${ctx.run.id}:${row.linkedin_url || 'engager'}:${index}`,
+      description: 'Persist native HarvestAPI post engager rows.',
+    });
+
+    // @mermaid-node out out:"$output"
+    return { rows };
+  },
+  {
+    description:
+      'Return a deduplicated, multi-page LinkedIn reactor and commenter dataset through native HarvestAPI while preserving the existing public row contract.',
+  },
+);

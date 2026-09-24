@@ -32,6 +32,12 @@ gtm audit --csv out.csv
 
 `--dry-run` fait tourner tout le flux avec des providers simulés, sans base ni clé.
 
+## Ce que le moteur sait faire (phase 2)
+
+- 18 providers (`gtm providers`) ; 11 plays (`gtm plays`) : e-mails, LinkedIn, téléphones, profil entreprise, ICP → entreprises, entreprise → personnes, signaux, scoring, synchro HubSpot, pipeline complet composé.
+- Cascade générique par champ (`src/core/waterfall.ts` + politiques `email`, `phone`, `linkedin_url`), composition de plays (`ctx.runPlay`), batch sur CSV avec cellules persistées (`defineRowPlay`).
+- Compétences annexes copiées de Deepline : `research.md`, `scoring.md`, `writing-outreach.md`, 181 prompts (`gtm prompts`), validateurs et scripts Python, 28 plays Deepline en référence sous `vendor/` (privé, voir `vendor/NOTICE.md`).
+
 ## Structure
 
 - `SKILL.md`, `enriching-and-researching.md`, `recipes/`, `provider-playbooks/`, `references/`, `agents/` : ce que Claude lit.

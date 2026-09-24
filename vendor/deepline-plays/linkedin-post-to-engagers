@@ -1,0 +1,83 @@
+/** @mermaid
+ * flowchart TD
+ * reactions["Pull everyone who reacted to the post"] --> people["Read each reactor's name and role"]
+ * people --> rows[("Engager rows")]
+ * rows --> out["Return the engagers"]
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { definePlay } from 'deepline';
+
+type EngagerRow = {
+  first_name: string;
+  last_name: string;
+  linkedin_url: string;
+  position: string;
+  engagement_type: string;
+};
+
+/**
+ * Scrape all reactors and commenters from a LinkedIn post via harvestapi/linkedin-post-reactions. Returns an array of {first_name, last_name, linkedin_url, position, engagement_type} per engager.
+ *
+ */
+export default definePlay(
+  'linkedin-post-to-engagers',
+  async (
+    ctx,
+    input: {
+      post_url: string;
+      max_items?: number;
+    },
+  ): Promise<Record<string, unknown>> => {
+    const playInput = {
+      ...input,
+    } as Record<string, unknown> & typeof input;
+
+    // Step: linkedin_reactions
+    // @mermaid-node reactions out:"linkedin_reactions_raw"
+    const linkedin_reactions_raw = await ctx.tools.execute({
+      id: 'linkedin_reactions',
+      tool: 'apify_run_actor_sync',
+      input: {
+        actorId: 'harvestapi/linkedin-post-reactions',
+        input: {
+          posts: [input.post_url],
+          maxItems: input.max_items,
+          profileScraperMode: 'short',
+        },
+      },
+      description: 'linkedin_reactions',
+    });
+    // @mermaid-node people out:"linkedin_reactions"
+    const linkedin_reactions: EngagerRow[] = ((d: unknown, row: any) => {
+      if ((d as any)?.state === 'awaiting_apify') {
+        throw new Error(
+          'Apify is still running. Use the recovery commands in toolResponse.raw.next.',
+        );
+      }
+      const root = d as any;
+      const items = Array.isArray(root) ? root : [];
+      return items.map((r: any) => ({
+        first_name: (r.actor?.name || '').split(' ')[0] || '',
+        last_name: (r.actor?.name || '').split(' ').slice(1).join(' ') || '',
+        linkedin_url: r.actor?.linkedinUrl || r.actor?.linkedin_url || '',
+        position: r.actor?.position || '',
+        engagement_type: r.reactionType || 'reaction',
+      }));
+    })(linkedin_reactions_raw.toolResponse?.raw, playInput);
+
+    // @mermaid-node rows type:"dataset" out:"rows"
+    const rows = await ctx
+      .dataset('linkedin_post_engagers', linkedin_reactions)
+      .run({
+        key: (row, index) => `${row.linkedin_url || 'engager'}:${index}`,
+        description: 'Persist LinkedIn post engager rows.',
+      });
+
+    // @mermaid-node out out:"$output"
+    return { rows };
+  },
+  {
+    description:
+      'Pull the people who reacted to or commented on a LinkedIn post.',
+  },
+);

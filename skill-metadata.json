@@ -1,6 +1,6 @@
 {
   "title": "GTM Engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "documents": {
     "SKILL.md": {
       "kind": "entrypoint",
@@ -15,40 +15,84 @@
     },
     "enriching-and-researching.md": {
       "kind": "guide",
-      "title": "Enriching: email waterfall",
+      "title": "Enriching: email, LinkedIn, phone waterfalls",
       "tags": [
         "waterfall",
         "email",
+        "phone",
+        "linkedin",
         "export",
         "cache"
       ],
       "providers": [
         "apollo",
         "fullenrich",
+        "hunter",
+        "leadmagic",
+        "findymail",
+        "prospeo",
         "millionverifier",
+        "zerobounce",
         "peopledatalabs",
         "crustdata",
+        "lusha",
+        "kaspr",
+        "serper",
         "exa"
       ]
     },
     "finding-companies-and-contacts.md": {
       "kind": "guide",
-      "title": "Finding companies and contacts (phase 2 stub)",
+      "title": "Finding companies and contacts",
       "tags": [
         "discovery",
-        "phase2"
+        "icp",
+        "pipeline"
       ],
-      "providers": []
+      "providers": [
+        "apollo",
+        "theirstack",
+        "crustdata",
+        "prospeo"
+      ]
     },
     "writing-outreach.md": {
       "kind": "guide",
-      "title": "Writing outreach and scoring (phase 2 stub)",
+      "title": "Writing outreach and qualification",
       "tags": [
         "outreach",
-        "scoring",
-        "phase2"
+        "qualification",
+        "prompts"
       ],
       "providers": []
+    },
+    "research.md": {
+      "kind": "guide",
+      "title": "Research: source discovery before spending",
+      "tags": [
+        "research",
+        "datasets",
+        "sources"
+      ],
+      "providers": [
+        "serper",
+        "exa",
+        "parallel"
+      ]
+    },
+    "scoring.md": {
+      "kind": "guide",
+      "title": "Scoring accounts and leads",
+      "tags": [
+        "scoring",
+        "signals",
+        "evaluation"
+      ],
+      "providers": [
+        "predictleads",
+        "theirstack",
+        "crustdata"
+      ]
     },
     "recipes/name-domain-to-email.md": {
       "kind": "specialized-workflow",
@@ -58,20 +102,21 @@
         "email",
         "pilot"
       ],
-      "providers": [
-        "apollo",
-        "fullenrich",
-        "millionverifier",
-        "peopledatalabs"
-      ]
+      "providers": []
     },
-    "references/email-status-policy.md": {
+    "references/ads-audiences.md": {
       "kind": "reference",
-      "title": "Email status policy",
+      "title": "Ads audiences",
       "tags": [
-        "email",
-        "status",
-        "confidence"
+        "reference"
+      ],
+      "providers": []
+    },
+    "references/contact-accuracy.md": {
+      "kind": "reference",
+      "title": "Contact accuracy",
+      "tags": [
+        "reference"
       ],
       "providers": []
     },
@@ -79,29 +124,207 @@
       "kind": "reference",
       "title": "Cost receipt",
       "tags": [
-        "cost",
-        "receipt",
-        "labels"
+        "reference"
       ],
       "providers": []
     },
-    "references/contact-accuracy.md": {
+    "references/deepline-authoring-notes.md": {
       "kind": "reference",
-      "title": "Contact accuracy and golden records",
+      "title": "Deepline authoring notes",
       "tags": [
-        "accuracy",
-        "golden-record",
-        "audit"
+        "reference"
+      ],
+      "providers": []
+    },
+    "references/email-status-policy.md": {
+      "kind": "reference",
+      "title": "Email status policy",
+      "tags": [
+        "reference"
+      ],
+      "providers": []
+    },
+    "references/prompts-index.md": {
+      "kind": "reference",
+      "title": "Prompts index",
+      "tags": [
+        "reference"
+      ],
+      "providers": []
+    },
+    "references/review-loop.md": {
+      "kind": "reference",
+      "title": "Review loop",
+      "tags": [
+        "reference"
       ],
       "providers": []
     },
     "references/schema.md": {
       "kind": "reference",
-      "title": "Data dictionary and RGPD notes",
+      "title": "Schema",
       "tags": [
-        "schema",
-        "supabase",
-        "rgpd"
+        "reference"
+      ],
+      "providers": []
+    },
+    "references/research/fanout-consolidation.md": {
+      "kind": "reference",
+      "title": "research: fanout-consolidation",
+      "tags": [
+        "research"
+      ],
+      "providers": []
+    },
+    "references/research/last30days-gtm-corpus.md": {
+      "kind": "reference",
+      "title": "research: last30days-gtm-corpus",
+      "tags": [
+        "research"
+      ],
+      "providers": []
+    },
+    "references/research/query-design.md": {
+      "kind": "reference",
+      "title": "research: query-design",
+      "tags": [
+        "research"
+      ],
+      "providers": []
+    },
+    "references/research/source-map.md": {
+      "kind": "reference",
+      "title": "research: source-map",
+      "tags": [
+        "research"
+      ],
+      "providers": []
+    },
+    "references/scoring/buyer-language-research.md": {
+      "kind": "reference",
+      "title": "scoring: buyer-language-research",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/capacity-evidence.md": {
+      "kind": "reference",
+      "title": "scoring: capacity-evidence",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/dedupe.md": {
+      "kind": "reference",
+      "title": "scoring: dedupe",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/keyword-catalog.md": {
+      "kind": "reference",
+      "title": "scoring: keyword-catalog",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/pitfalls.md": {
+      "kind": "reference",
+      "title": "scoring: pitfalls",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/proven-signals.md": {
+      "kind": "reference",
+      "title": "scoring: proven-signals",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/quality-gate.md": {
+      "kind": "reference",
+      "title": "scoring: quality-gate",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/report-template.md": {
+      "kind": "reference",
+      "title": "scoring: report-template",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/scorecard-creation.md": {
+      "kind": "reference",
+      "title": "scoring: scorecard-creation",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/scoring-delivery.md": {
+      "kind": "reference",
+      "title": "scoring: scoring-delivery",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/scoring-diagnostics.md": {
+      "kind": "reference",
+      "title": "scoring: scoring-diagnostics",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/scoring-pitfalls.md": {
+      "kind": "reference",
+      "title": "scoring: scoring-pitfalls",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/signal-interpretation.md": {
+      "kind": "reference",
+      "title": "scoring: signal-interpretation",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/step-7-prospects.md": {
+      "kind": "reference",
+      "title": "scoring: step-7-prospects",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/technology-evidence.md": {
+      "kind": "reference",
+      "title": "scoring: technology-evidence",
+      "tags": [
+        "scoring"
+      ],
+      "providers": []
+    },
+    "references/scoring/testing-and-evaluation.md": {
+      "kind": "reference",
+      "title": "scoring: testing-and-evaluation",
+      "tags": [
+        "scoring"
       ],
       "providers": []
     },
@@ -144,6 +367,16 @@
         "exa"
       ]
     },
+    "provider-playbooks/findymail.md": {
+      "kind": "provider-playbook",
+      "title": "findymail playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "findymail"
+      ]
+    },
     "provider-playbooks/fullenrich.md": {
       "kind": "provider-playbook",
       "title": "fullenrich playbook",
@@ -152,6 +385,56 @@
       ],
       "providers": [
         "fullenrich"
+      ]
+    },
+    "provider-playbooks/hubspot.md": {
+      "kind": "provider-playbook",
+      "title": "hubspot playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "hubspot"
+      ]
+    },
+    "provider-playbooks/hunter.md": {
+      "kind": "provider-playbook",
+      "title": "hunter playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "hunter"
+      ]
+    },
+    "provider-playbooks/kaspr.md": {
+      "kind": "provider-playbook",
+      "title": "kaspr playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "kaspr"
+      ]
+    },
+    "provider-playbooks/leadmagic.md": {
+      "kind": "provider-playbook",
+      "title": "leadmagic playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "leadmagic"
+      ]
+    },
+    "provider-playbooks/lusha.md": {
+      "kind": "provider-playbook",
+      "title": "lusha playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "lusha"
       ]
     },
     "provider-playbooks/millionverifier.md": {
@@ -184,11 +467,92 @@
         "peopledatalabs"
       ]
     },
+    "provider-playbooks/predictleads.md": {
+      "kind": "provider-playbook",
+      "title": "predictleads playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "predictleads"
+      ]
+    },
+    "provider-playbooks/prospeo.md": {
+      "kind": "provider-playbook",
+      "title": "prospeo playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "prospeo"
+      ]
+    },
+    "provider-playbooks/serper.md": {
+      "kind": "provider-playbook",
+      "title": "serper playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "serper"
+      ]
+    },
+    "provider-playbooks/theirstack.md": {
+      "kind": "provider-playbook",
+      "title": "theirstack playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "theirstack"
+      ]
+    },
+    "provider-playbooks/zerobounce.md": {
+      "kind": "provider-playbook",
+      "title": "zerobounce playbook",
+      "tags": [
+        "provider"
+      ],
+      "providers": [
+        "zerobounce"
+      ]
+    },
+    "scripts/analyze_signals_v2.py": {
+      "kind": "script",
+      "title": "analyze_signals_v2.py",
+      "tags": [
+        "python"
+      ],
+      "providers": []
+    },
     "scripts/contact-accuracy-audit.py": {
       "kind": "script",
       "title": "contact-accuracy-audit.py",
       "tags": [
-        "validator",
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/dedupe_utils_v2.py": {
+      "kind": "script",
+      "title": "dedupe_utils_v2.py",
+      "tags": [
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/evaluate_public_private_corpus.py": {
+      "kind": "script",
+      "title": "evaluate_public_private_corpus.py",
+      "tags": [
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/query_design.py": {
+      "kind": "script",
+      "title": "query_design.py",
+      "tags": [
         "python"
       ],
       "providers": []
@@ -197,7 +561,14 @@
       "kind": "script",
       "title": "select-current-role.py",
       "tags": [
-        "validator",
+        "python"
+      ],
+      "providers": []
+    },
+    "scripts/technology_evidence.py": {
+      "kind": "script",
+      "title": "technology_evidence.py",
+      "tags": [
         "python"
       ],
       "providers": []
@@ -206,7 +577,6 @@
       "kind": "script",
       "title": "validate-emails.py",
       "tags": [
-        "validator",
         "python"
       ],
       "providers": []
@@ -215,8 +585,31 @@
       "kind": "script",
       "title": "validate-linkedin-names.py",
       "tags": [
-        "validator",
         "python"
+      ],
+      "providers": []
+    },
+    "prompts.json": {
+      "kind": "reference",
+      "title": "181 prompt templates (Deepline/Clay)",
+      "tags": [
+        "prompts"
+      ],
+      "providers": []
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "kind": "notice",
+      "title": "MIT notice for last30days-skill logic",
+      "tags": [
+        "license"
+      ],
+      "providers": []
+    },
+    "vendor/NOTICE.md": {
+      "kind": "notice",
+      "title": "Provenance and private-use rule for vendored Deepline material",
+      "tags": [
+        "license"
       ],
       "providers": []
     }
@@ -254,6 +647,14 @@
       "kind": "script",
       "title": "Script",
       "tags": [],
+      "providers": []
+    },
+    "vendor/": {
+      "kind": "other",
+      "title": "Vendored (private)",
+      "tags": [
+        "vendor"
+      ],
       "providers": []
     }
   },

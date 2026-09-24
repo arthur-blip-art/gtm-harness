@@ -1,0 +1,125 @@
+/** @mermaid
+ * flowchart TD
+ * fetch["Poll the funding-rounds radar"] --> rows[("Funding update rows")]
+ * rows --> out["Return the rows, has_more, and next_cursor"]
+ */
+import { definePlay } from 'deepline';
+import type { DeeplinePlayRuntimeContext } from 'deepline';
+
+type FundingUpdateRow = {
+  update_id: string | null;
+  discovered_at: string | null;
+  round: string | null;
+  amount_usd: number | null;
+  announced_at: string | null;
+  company_name: string | null;
+  company_domain: string | null;
+  company_hq_country: string | null;
+  company_profile_url: string | null;
+  references: string[];
+};
+
+type RawFundingUpdate = {
+  update_id?: string;
+  discovered_at?: string;
+  content?: {
+    round?: string;
+    amount_usd?: number;
+    announced_at?: string;
+    company?: {
+      name?: string;
+      domain?: string;
+      hq_country?: string;
+      profile_url?: string;
+    };
+    references?: string[];
+  };
+};
+
+type FundingUpdatesResponseMeta = {
+  has_more?: boolean;
+  next_cursor?: string | null;
+};
+
+function normalizeLimit(value: unknown): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return undefined;
+  return Math.max(1, Math.min(Math.trunc(numeric), 100));
+}
+
+function normalizeFundingUpdateRow(update: unknown): FundingUpdateRow {
+  const row = (update ?? {}) as RawFundingUpdate;
+  const content = row.content ?? {};
+  const company = content.company ?? {};
+  return {
+    update_id: row.update_id ?? null,
+    discovered_at: row.discovered_at ?? null,
+    round: content.round ?? null,
+    amount_usd:
+      typeof content.amount_usd === 'number' ? content.amount_usd : null,
+    announced_at: content.announced_at ?? null,
+    company_name: company.name ?? null,
+    company_domain: company.domain ?? null,
+    company_hq_country: company.hq_country ?? null,
+    company_profile_url: company.profile_url ?? null,
+    references: Array.isArray(content.references) ? content.references : [],
+  };
+}
+
+type Input = {
+  limit?: number;
+  since?: string;
+};
+
+export async function fundingUpdatesHandler(
+  ctx: DeeplinePlayRuntimeContext,
+  input: Input,
+): Promise<{
+  rows: unknown;
+  has_more: boolean;
+  next_cursor: string | null;
+}> {
+  const limit = normalizeLimit(input.limit);
+
+  // @mermaid-node fetch out:"fundingUpdates"
+  const fundingUpdates = await ctx.tools.execute({
+    id: 'funding_updates',
+    tool: 'deepline_native_get_funding_updates',
+    input: {
+      ...(limit !== undefined ? { limit } : {}),
+      ...(input.since ? { since: input.since } : {}),
+    },
+    description: 'Poll the Deepline funding-rounds radar for new updates.',
+  });
+
+  const normalizedRows = fundingUpdates.extractedLists.updates
+    .get()
+    .map((update: unknown) => normalizeFundingUpdateRow(update));
+
+  const meta = fundingUpdates.toolResponse.raw as
+    | FundingUpdatesResponseMeta
+    | undefined;
+  const hasMore = Boolean(meta?.has_more);
+  const nextCursor = meta?.next_cursor ?? null;
+
+  // @mermaid-node rows type:"dataset" out:"rows"
+  const rows = await ctx.dataset('funding_updates', normalizedRows).run({
+    key: (row: FundingUpdateRow, index: number) =>
+      `${row.update_id ?? 'update'}:${index}`,
+    description: 'Persist funding-round update rows.',
+  });
+
+  // @mermaid-node out out:"$output"
+  return {
+    rows,
+    has_more: hasMore,
+    next_cursor: nextCursor,
+  };
+}
+
+export default definePlay('funding-updates', fundingUpdatesHandler, {
+  description:
+    'Fetch a single page (up to 100) of new funding-round updates from the Deepline funding-rounds radar. Pass since to filter by discovery time and use the returned next_cursor to fetch the next page in a subsequent run.',
+  billing: { maxCreditsPerRun: 5 },
+});

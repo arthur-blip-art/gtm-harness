@@ -1,0 +1,5464 @@
+{
+  "plays": [
+    {
+      "playKey": "prebuilt/company-domain-to-linkedin-employees",
+      "reference": "prebuilt/company-domain-to-linkedin-employees",
+      "name": "company-domain-to-linkedin-employees",
+      "displayName": "LinkedIn Employees from Company Domain",
+      "description": "Resolve a company domain with People Data Labs and return exact-company LinkedIn employees through native HarvestAPI.",
+      "pinned": false,
+      "providers": [
+        "peopledatalabs",
+        "harvestapi"
+      ],
+      "toolCategories": [
+        "company_enrich",
+        "people_search"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Company domain to resolve into a LinkedIn company page before employee scraping."
+          },
+          "max_items": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Maximum employee rows to request."
+          },
+          "profile_depth": {
+            "type": "string",
+            "enum": [
+              "short",
+              "full",
+              "full_with_email"
+            ],
+            "description": "Accepted for compatibility with the former Apify-backed play. Native HarvestAPI does not expose a scraper-depth setting."
+          }
+        },
+        "fields": [
+          {
+            "name": "domain",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "max_items",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "name": "profile_depth",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain",
+          "linkedin_company_url",
+          "rows"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "linkedin_company_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable employee-row dataset with profile, company, title, and location columns."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "mixed_run_and_row_costs",
+        "message": "This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/company-domain-to-linkedin-employees-harvestapi",
+      "reference": "prebuilt/company-domain-to-linkedin-employees-harvestapi",
+      "name": "company-domain-to-linkedin-employees-harvestapi",
+      "displayName": "LinkedIn Employees from Company Domain (HarvestAPI)",
+      "description": "Resolve a domain and return an exact-company, multi-page LinkedIn employee dataset through native HarvestAPI.",
+      "pinned": false,
+      "providers": [
+        "harvestapi",
+        "serper"
+      ],
+      "toolCategories": [
+        "company_enrich",
+        "people_search",
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Company domain to resolve into an exact LinkedIn company before native employee search."
+          },
+          "max_items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "Maximum employee rows to return."
+          },
+          "profile_depth": {
+            "type": "string",
+            "enum": [
+              "short",
+              "full",
+              "full_with_email"
+            ],
+            "description": "Accepted for compatibility with the original play. Native HarvestAPI returns the normalized row contract without a scraper-depth setting."
+          }
+        },
+        "fields": [
+          {
+            "name": "domain",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "max_items",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "name": "profile_depth",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain",
+          "linkedin_company_url",
+          "rows"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "linkedin_company_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable employee-row dataset with profile, company, title, and location columns."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "mixed_run_and_row_costs",
+        "message": "This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/engagers-to-icp-qualification",
+      "reference": "prebuilt/engagers-to-icp-qualification",
+      "name": "engagers-to-icp-qualification",
+      "displayName": "ICP Qualification for Engagers",
+      "description": "Score and qualify LinkedIn engagers against an ICP description.",
+      "pinned": false,
+      "providers": [
+        "deeplineagent"
+      ],
+      "toolCategories": [
+        "automation",
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "position",
+          "icp_description"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "icp_description": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "position",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "company",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "icp_description",
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "icp_tier",
+          "icp_reason",
+          "icp_qualification_valid",
+          "miss_reason",
+          "deeplineagent_qualification"
+        ],
+        "properties": {
+          "icp_tier": {
+            "type": "string",
+            "enum": [
+              "tier1",
+              "tier2",
+              "tier3"
+            ]
+          },
+          "icp_reason": {
+            "type": "string"
+          },
+          "icp_qualification_valid": {
+            "type": "boolean",
+            "const": true
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deeplineagent_qualification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "icp_tier",
+              "icp_reason",
+              "icp_qualification_valid",
+              "miss_reason"
+            ],
+            "properties": {
+              "icp_tier": {
+                "type": "string",
+                "enum": [
+                  "tier1",
+                  "tier2",
+                  "tier3"
+                ]
+              },
+              "icp_reason": {
+                "type": "string"
+              },
+              "icp_qualification_valid": {
+                "type": "boolean",
+                "const": true
+              },
+              "miss_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 1,
+        "highCredits": 1.5,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/engineering-team-size",
+      "reference": "prebuilt/engineering-team-size",
+      "name": "engineering-team-size",
+      "displayName": "Cost-Optimized Engineering Team Size",
+      "description": "Estimate engineering-team size via a free identity resolution and title roster, then a cost-ordered ladder: a limit=1 CrustData title count, CrustData company enrichment, and a final PDL company-enrich fallback.",
+      "pinned": false,
+      "providers": [
+        "peopledatalabs",
+        "crustdata",
+        "crustdata_v3"
+      ],
+      "toolCategories": [
+        "company_enrich",
+        "company_search",
+        "people_search"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "company_headcount": {
+            "type": "number",
+            "minimum": 1
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "cost_optimized",
+              "crust_only",
+              "waterfall_only",
+              "pdl_only",
+              "validate"
+            ]
+          },
+          "waterfall_page_size": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain",
+          "status",
+          "estimated_engineering_count",
+          "estimated_range",
+          "confidence",
+          "selected_method",
+          "estimated_count_relation",
+          "company_title_count",
+          "matched_engineering_title_count",
+          "matched_engineering_titles",
+          "crustdata_title_phrase_count",
+          "waterfall_exact_title_count",
+          "waterfall_count_relation",
+          "pdl_role_count",
+          "pdl_expanded_title_count",
+          "review_reasons",
+          "provider_attempts"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "estimated_engineering_count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "estimated_range": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "selected_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estimated_count_relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company_title_count": {
+            "type": "number"
+          },
+          "matched_engineering_title_count": {
+            "type": "number"
+          },
+          "matched_engineering_titles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "crustdata_title_phrase_count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "waterfall_exact_title_count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "waterfall_count_relation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pdl_role_count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "pdl_expanded_title_count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "query_disagreement_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "company_headcount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "engineering_to_company_ratio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "review_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_attempts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 1.82,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/funding-updates",
+      "reference": "prebuilt/funding-updates",
+      "name": "funding-updates",
+      "displayName": "Funding-Round Updates",
+      "description": "Fetch a single page (up to 100) of new funding-round updates from the Deepline funding-rounds radar. Pass since to filter by discovery time and use the returned next_cursor to fetch the next page in a subsequent run.",
+      "pinned": false,
+      "providers": [],
+      "toolCategories": [
+        "admin"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum number of updates to return in this page. Defaults to 100."
+          },
+          "since": {
+            "type": "string",
+            "description": "Optional ISO 8601 timestamp. Return only updates discovered at or after this time."
+          }
+        },
+        "fields": [
+          {
+            "name": "limit",
+            "required": false,
+            "type": "number"
+          },
+          {
+            "name": "since",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows",
+          "has_more",
+          "next_cursor"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable row dataset with one row per funding-round update: update_id, discovered_at, round, amount_usd, announced_at, company_name, company_domain, company_hq_country, company_profile_url, and references columns."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True if another page is available. Rerun with since or a later cursor to continue (this play does not paginate automatically)."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque pagination token from the underlying tool call."
+          }
+        },
+        "rowOutputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "update_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "discovered_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "round": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "amount_usd": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "announced_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "company_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "company_domain": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "company_hq_country": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "company_profile_url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "references": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "mixed_run_and_row_costs",
+        "message": "This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/job-change-check",
+      "reference": "prebuilt/job-change-check",
+      "name": "job-change-check",
+      "displayName": "Job Change Detection",
+      "description": "Detect job changes and return the new company, title, date, and validation evidence.",
+      "pinned": false,
+      "providers": [],
+      "toolCategories": [
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "linkedin_url": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/in/[^/?#]+/?$",
+            "description": "LinkedIn profile URL (primary; wins over contact_linkedin). Query strings and fragments are stripped to a canonical URL before validation."
+          },
+          "contact_linkedin": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/in/[^/?#]+/?$",
+            "description": "LinkedIn profile URL alias for linkedin_url (used only when linkedin_url is absent or invalid)."
+          },
+          "current_domain": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!-)(?:[a-z0-9-]{1,63}\\.)+[a-z]{2,63}$",
+            "not": {
+              "enum": [
+                "bit.ly",
+                "t.co",
+                "lnkd.in",
+                "tinyurl.com",
+                "goo.gl"
+              ]
+            },
+            "description": "Bare current-company domain (primary; wins over company_domain)."
+          },
+          "company_domain": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!-)(?:[a-z0-9-]{1,63}\\.)+[a-z]{2,63}$",
+            "not": {
+              "enum": [
+                "bit.ly",
+                "t.co",
+                "lnkd.in",
+                "tinyurl.com",
+                "goo.gl"
+              ]
+            },
+            "description": "Bare current-company domain alias for current_domain (used only when current_domain is absent or invalid)."
+          },
+          "company_linkedin_url": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/company/[^/?#]+/?$",
+            "description": "Current company LinkedIn URL (primary; wins over company_linkedin). Query strings and fragments are stripped to a canonical URL before validation."
+          },
+          "company_linkedin": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/company/[^/?#]+/?$",
+            "description": "Current company LinkedIn URL alias for company_linkedin_url (used only when company_linkedin_url is absent or invalid)."
+          },
+          "contact_full_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Contact full name (primary; wins over full_name)."
+          },
+          "full_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Contact full name alias for contact_full_name (used only when contact_full_name is absent)."
+          },
+          "professional_email": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Work email (primary; wins over work_email)."
+          },
+          "work_email": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Work email alias for professional_email (used only when professional_email is absent or invalid)."
+          },
+          "personal_email": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Personal email anchor."
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Generic email. Treated as work email when it matches the company domain, otherwise personal email."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Current title, passed through custom_fields."
+          },
+          "company_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Current company name, passed through custom_fields."
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source label, passed through custom_fields."
+          },
+          "custom_fields": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Extra scalar context to send with the job-change request."
+          },
+          "csv": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Runtime CSV input path. Headers are matched case-insensitively and tolerate spaces/dashes (e.g. LinkedIn_URL, CURRENT_DOMAIN, \"Company LinkedIn URL\" all resolve). Source columns are canonicalized in the exported output to SQL-safe snake_case identifiers (trimmed, lowercased, non-alphanumerics folded to \"_\", leading/trailing \"_\" stripped) — e.g. LinkedIn_URL -> linkedin_url, \"Lead Score\" -> lead_score, _anchor_note -> anchor_note. Supported headers include linkedin_url/contact_linkedin, current_domain/company_domain, company_linkedin/company_linkedin_url, contact_full_name/full_name, professional_email/work_email, personal_email, email, title, company_name, and source."
+          }
+        },
+        "fields": [
+          {
+            "name": "linkedin_url",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contact_linkedin",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "current_domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_linkedin",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_linkedin_url",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "contact_full_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "full_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "professional_email",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "work_email",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "personal_email",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "source",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "custom_fields",
+            "required": false,
+            "type": "object"
+          },
+          {
+            "name": "csv",
+            "required": false,
+            "type": "CsvInput"
+          }
+        ],
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [],
+            "properties": {
+              "linkedin_url": {
+                "type": "string",
+                "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/in/[^/?#]+/?$"
+              },
+              "contact_linkedin": {
+                "type": "string",
+                "pattern": "^https?://([a-z]{2,3}\\.)?linkedin\\.com/in/[^/?#]+/?$"
+              },
+              "current_domain": {
+                "type": "string",
+                "pattern": "^(?!-)(?:[a-z0-9-]{1,63}\\.)+[a-z]{2,63}$",
+                "not": {
+                  "enum": [
+                    "bit.ly",
+                    "t.co",
+                    "lnkd.in",
+                    "tinyurl.com",
+                    "goo.gl"
+                  ]
+                },
+                "description": "Bare current company domain. URL shorteners are rejected before provider execution."
+              },
+              "company_domain": {
+                "type": "string"
+              },
+              "company_linkedin": {
+                "type": "string"
+              },
+              "company_linkedin_url": {
+                "type": "string"
+              },
+              "contact_full_name": {
+                "type": "string"
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "professional_email": {
+                "type": "string"
+              },
+              "work_email": {
+                "type": "string"
+              },
+              "personal_email": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "company_name": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          },
+          "defaultColumns": {
+            "linkedin_url": "linkedin_url",
+            "current_domain": "current_domain",
+            "company_linkedin_url": "company_linkedin_url",
+            "contact_full_name": "contact_full_name",
+            "professional_email": "professional_email",
+            "personal_email": "personal_email",
+            "email": "email"
+          }
+        },
+        "variants": [
+          {
+            "label": "Single record",
+            "fields": [
+              {
+                "name": "linkedin_url",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "contact_linkedin",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "current_domain",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "company_domain",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "company_linkedin",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "company_linkedin_url",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "contact_full_name",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "full_name",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "professional_email",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "work_email",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "personal_email",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "email",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "title",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "company_name",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "source",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "custom_fields",
+                "required": false,
+                "type": "unknown"
+              },
+              {
+                "name": "validation_warnings",
+                "required": false,
+                "type": "unknown"
+              }
+            ],
+            "required": []
+          },
+          {
+            "label": "CSV",
+            "fields": [
+              {
+                "name": "csv",
+                "required": true,
+                "type": "CsvInput"
+              }
+            ],
+            "required": [
+              "csv"
+            ]
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable result dataset with one row per LinkedIn profile and current domain."
+          }
+        },
+        "rowOutputSchema": {
+          "type": "object",
+          "additionalProperties": true,
+          "preservesSourceColumns": true,
+          "exportHeaders": [
+            "linkedin_url",
+            "current_domain",
+            "company_linkedin_url",
+            "contact_full_name",
+            "professional_email",
+            "personal_email",
+            "validation_status",
+            "miss_reason",
+            "validation_warnings",
+            "job_change_input_fields",
+            "job_change_raw",
+            "job_change.status",
+            "job_change.date",
+            "job_change.new_company",
+            "job_change.new_title",
+            "job_change.id",
+            "job_change.first_name",
+            "job_change.last_name",
+            "job_change.linkedin_id",
+            "job_change.linkedin_url",
+            "job_change.about",
+            "job_change.location",
+            "job_change.country",
+            "job_change.company_linkedin_id",
+            "job_change.company_name",
+            "job_change.company_domain",
+            "job_change.title",
+            "job_change.seniority",
+            "job_change.department",
+            "job_change.experiences",
+            "job_change.payload"
+          ],
+          "pricing": {
+            "billingMode": "result_priced",
+            "billableResult": "confirmed moved status",
+            "description": "Deepline Native job-change is billed only when the provider confirms a successful job change."
+          },
+          "freshness": {
+            "staleContact": "reuse forever",
+            "otherStatuses": "refresh after 30 days",
+            "description": "stale_contact rows persist without a next expiry. All other statuses are eligible for monthly recheck."
+          },
+          "addedColumns": {
+            "validation_status": {
+              "type": "string",
+              "description": "ready, invalid, or missing_input. Only rows meeting the provider minimum input (an email, or a company anchor plus a contact identifier) reach ready and execute; rows below the minimum are missing_input and never call the provider."
+            },
+            "miss_reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Why a row did not run, or null when ready/executed."
+            },
+            "validation_warnings": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Semicolon-joined provenance/conflict/dropped-field notes. Populated when a field was resolved from a non-primary alias column, when a primary and alias were both valid but differed (primary wins), or when a provided value was invalid and dropped. Null when there is nothing to report."
+            },
+            "job_change_input_fields": {
+              "type": "string",
+              "description": "Comma-separated fields sent to deepline_native_job_change."
+            },
+            "job_change_raw": {
+              "additionalProperties": true,
+              "description": "Raw deepline_native_job_change tool result (provider evidence)."
+            },
+            "job_change": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new_company": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new_title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "first_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "last_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "linkedin_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "linkedin_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "about": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "country": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_linkedin_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_domain": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "seniority": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "department": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "experiences": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "payload": {
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "properties": {
+            "linkedin_url": {
+              "type": "string"
+            },
+            "current_domain": {
+              "type": "string"
+            },
+            "company_linkedin_url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "contact_full_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "professional_email": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "personal_email": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "validation_status": {
+              "type": "string"
+            },
+            "miss_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "validation_warnings": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "job_change_input_fields": {
+              "type": "string"
+            },
+            "job_change_raw": {
+              "additionalProperties": true,
+              "description": "Raw deepline_native_job_change tool result (provider evidence)."
+            },
+            "job_change": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new_company": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new_title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "first_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "last_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "linkedin_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "linkedin_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "about": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "country": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_linkedin_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company_domain": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "seniority": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "department": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "experiences": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "payload": {
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 1.96,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/linkedin-post-to-engagers",
+      "reference": "prebuilt/linkedin-post-to-engagers",
+      "name": "linkedin-post-to-engagers",
+      "displayName": "LinkedIn Post Engagers",
+      "description": "Pull the people who reacted to or commented on a LinkedIn post.",
+      "pinned": false,
+      "providers": [
+        "apify"
+      ],
+      "toolCategories": [
+        "automation"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "post_url"
+        ],
+        "properties": {
+          "post_url": {
+            "type": "string"
+          },
+          "max_items": {
+            "type": "number"
+          }
+        },
+        "fields": [
+          {
+            "name": "post_url",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "max_items",
+            "required": false,
+            "type": "number"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable engager-row dataset with first_name, last_name, linkedin_url, position, and engagement_type columns."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "mixed_run_and_row_costs",
+        "message": "This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/linkedin-post-to-engagers-harvestapi",
+      "reference": "prebuilt/linkedin-post-to-engagers-harvestapi",
+      "name": "linkedin-post-to-engagers-harvestapi",
+      "displayName": "LinkedIn Post Engagers (HarvestAPI)",
+      "description": "Return a deduplicated, multi-page LinkedIn reactor and commenter dataset through native HarvestAPI while preserving the existing public row contract.",
+      "pinned": false,
+      "providers": [
+        "harvestapi"
+      ],
+      "toolCategories": [
+        "admin"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "post_url"
+        ],
+        "properties": {
+          "post_url": {
+            "type": "string"
+          },
+          "max_items": {
+            "type": "number"
+          }
+        },
+        "fields": [
+          {
+            "name": "post_url",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "max_items",
+            "required": false,
+            "type": "number"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable engager-row dataset with first_name, last_name, linkedin_url, position, and engagement_type columns."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "mixed_run_and_row_costs",
+        "message": "This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/llc-to-owner",
+      "reference": "prebuilt/llc-to-owner",
+      "name": "llc-to-owner",
+      "displayName": "Find SMB Owners from Legal Entity",
+      "description": "Find recorded members and officers of an exact US legal entity. Filing roles are candidate evidence, not confirmation of beneficial ownership.",
+      "pinned": false,
+      "providers": [
+        "enformion"
+      ],
+      "toolCategories": [
+        "company_search",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "legal_name",
+          "state"
+        ],
+        "properties": {
+          "legal_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2}$"
+          },
+          "city": {
+            "type": "string"
+          },
+          "registry_number": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_match",
+          "matched_entity",
+          "owner_candidates",
+          "held_relationships",
+          "candidate_count",
+          "search_truncated",
+          "miss_reason"
+        ],
+        "properties": {
+          "entity_match": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "ambiguous",
+              "not_found"
+            ]
+          },
+          "matched_entity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "legal_name",
+              "state",
+              "registry_number"
+            ],
+            "properties": {
+              "legal_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "registry_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "owner_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id",
+                "recorded_role",
+                "relationship",
+                "eligible_for_contact",
+                "filing_id",
+                "reported_date"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "recorded_role": {
+                  "type": "string"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "member_or_owner",
+                    "officer",
+                    "registered_agent",
+                    "entity",
+                    "unknown"
+                  ]
+                },
+                "eligible_for_contact": {
+                  "type": "boolean"
+                },
+                "filing_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reported_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "held_relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id",
+                "recorded_role",
+                "relationship",
+                "eligible_for_contact",
+                "filing_id",
+                "reported_date"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "recorded_role": {
+                  "type": "string"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "member_or_owner",
+                    "officer",
+                    "registered_agent",
+                    "entity",
+                    "unknown"
+                  ]
+                },
+                "eligible_for_contact": {
+                  "type": "boolean"
+                },
+                "filing_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reported_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "candidate_count": {
+            "type": "number"
+          },
+          "search_truncated": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 3.5,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/llc-to-owner-batch",
+      "reference": "prebuilt/llc-to-owner-batch",
+      "name": "llc-to-owner-batch",
+      "displayName": "Find SMB Owners from Legal Entities",
+      "description": "Find recorded member and officer candidates for a CSV of US legal entities.",
+      "pinned": false,
+      "providers": [
+        "enformion"
+      ],
+      "toolCategories": [
+        "company_search",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "legal_name",
+              "state"
+            ],
+            "properties": {
+              "legal_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "pattern": "^[A-Za-z]{2}$"
+              },
+              "city": {
+                "type": "string"
+              },
+              "registry_number": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_match",
+          "matched_entity",
+          "owner_candidates",
+          "held_relationships",
+          "candidate_count",
+          "search_truncated",
+          "miss_reason"
+        ],
+        "properties": {
+          "entity_match": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "ambiguous",
+              "not_found"
+            ]
+          },
+          "matched_entity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "legal_name",
+              "state",
+              "registry_number"
+            ],
+            "properties": {
+              "legal_name": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "registry_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "owner_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id",
+                "recorded_role",
+                "relationship",
+                "eligible_for_contact",
+                "filing_id",
+                "reported_date"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "recorded_role": {
+                  "type": "string"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "member_or_owner",
+                    "officer",
+                    "registered_agent",
+                    "entity",
+                    "unknown"
+                  ]
+                },
+                "eligible_for_contact": {
+                  "type": "boolean"
+                },
+                "filing_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reported_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "held_relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id",
+                "recorded_role",
+                "relationship",
+                "eligible_for_contact",
+                "filing_id",
+                "reported_date"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "recorded_role": {
+                  "type": "string"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "member_or_owner",
+                    "officer",
+                    "registered_agent",
+                    "entity",
+                    "unknown"
+                  ]
+                },
+                "eligible_for_contact": {
+                  "type": "boolean"
+                },
+                "filing_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reported_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "candidate_count": {
+            "type": "number"
+          },
+          "search_truncated": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 3.5,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/name-and-domain-to-email-waterfall",
+      "reference": "prebuilt/name-and-domain-to-email-waterfall",
+      "name": "name-and-domain-to-email-waterfall",
+      "displayName": "Work Email from Name and Domain",
+      "description": "Find a mailbox-verified work email at the supplied company domain, cascading across providers until one returns a matching hit.",
+      "pinned": false,
+      "providers": [
+        "zerobounce",
+        "hunter",
+        "leadmagic",
+        "datagma",
+        "findymail",
+        "icypeas",
+        "prospeo",
+        "fullenrich",
+        "lusha",
+        "contactout"
+      ],
+      "toolCategories": [
+        "automation",
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_enrich",
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "first_name",
+          "last_name",
+          "domain"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Contact first name."
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Contact last name."
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Company website domain."
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Optional company name for provider context."
+          },
+          "linkedin_url": {
+            "type": "string",
+            "description": "Optional LinkedIn profile URL for provider context."
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "domain",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "company_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "linkedin_url",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_validated": {
+            "type": "boolean"
+          },
+          "email_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 0.55,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/name-and-domain-to-email-waterfall-batch",
+      "reference": "prebuilt/name-and-domain-to-email-waterfall-batch",
+      "name": "name-and-domain-to-email-waterfall-batch",
+      "displayName": "Work Email CSV from Names and Domains",
+      "description": "Resolve mailbox-verified work emails at each supplied company domain for a CSV of contacts with first name, last name, and company domain columns.",
+      "pinned": false,
+      "providers": [
+        "zerobounce",
+        "hunter",
+        "leadmagic",
+        "datagma",
+        "findymail",
+        "icypeas",
+        "prospeo",
+        "fullenrich",
+        "lusha",
+        "contactout"
+      ],
+      "toolCategories": [
+        "automation",
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_enrich",
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Runtime CSV input path supplied through plays run --input, for example {\"csv\":\"leads.csv\"}."
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "description": "Optional CSV header aliases keyed by canonical play input field."
+          }
+        },
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "first_name",
+              "last_name",
+              "domain"
+            ],
+            "properties": {
+              "first_name": {
+                "type": "string"
+              },
+              "last_name": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "company_name": {
+                "type": "string"
+              },
+              "linkedin_url": {
+                "type": "string"
+              }
+            }
+          },
+          "defaultColumns": {
+            "first_name": "FIRST_NAME",
+            "last_name": "LAST_NAME",
+            "domain": "COMPANY_DOMAIN",
+            "company_name": "COMPANY_NAME",
+            "linkedin_url": "LINKEDIN_URL"
+          },
+          "columnFlags": {
+            "first_name": "--columns.first_name",
+            "last_name": "--columns.last_name",
+            "domain": "--columns.domain",
+            "company_name": "--columns.company_name",
+            "linkedin_url": "--columns.linkedin_url"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable row dataset. Each row preserves the original CSV columns and adds an email column."
+          }
+        },
+        "rowOutputSchema": {
+          "type": "object",
+          "additionalProperties": true,
+          "preservesSourceColumns": true,
+          "addedColumns": {
+            "email": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Resolved email address, or null if none was found."
+            },
+            "email_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Waterfall step that produced the resolved email."
+            },
+            "email_validated": {
+              "type": "boolean",
+              "description": "True when the final email passed validation before being returned."
+            }
+          },
+          "properties": {
+            "email": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Resolved email address, or null if none was found."
+            },
+            "email_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Waterfall step that produced the resolved email."
+            },
+            "email_validated": {
+              "type": "boolean",
+              "description": "True when the final email passed validation before being returned."
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 0.55,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-linkedin-to-email",
+      "reference": "prebuilt/person-linkedin-to-email",
+      "name": "person-linkedin-to-email",
+      "displayName": "Work Email from LinkedIn Profile",
+      "description": "Turn a LinkedIn profile URL into a verified work email.",
+      "pinned": false,
+      "providers": [
+        "prospeo",
+        "zerobounce",
+        "findymail",
+        "lusha",
+        "contactout",
+        "forager",
+        "leadmagic",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "linkedin_url"
+        ],
+        "properties": {
+          "linkedin_url": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "linkedin_url",
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "email_source",
+          "email_validated",
+          "email_found_and_valid",
+          "miss_reason"
+        ],
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_validated": {
+            "type": "boolean"
+          },
+          "email_found_and_valid": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-linkedin-to-email-batch",
+      "reference": "prebuilt/person-linkedin-to-email-batch",
+      "name": "person-linkedin-to-email-batch",
+      "displayName": "Work Email CSV from LinkedIn Profiles",
+      "description": "Resolve verified work emails for a CSV of LinkedIn profile URLs.",
+      "pinned": false,
+      "providers": [
+        "prospeo",
+        "zerobounce",
+        "findymail",
+        "lusha",
+        "contactout",
+        "forager",
+        "leadmagic",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "email_source",
+          "email_validated",
+          "email_found_and_valid",
+          "miss_reason",
+          "waterfall_attempts"
+        ],
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_validated": {
+            "type": "boolean"
+          },
+          "email_found_and_valid": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-to-linkedin",
+      "reference": "prebuilt/person-to-linkedin",
+      "name": "person-to-linkedin",
+      "displayName": "LinkedIn Profile from Name and Company",
+      "description": "Find a LinkedIn profile from a person name and company context.",
+      "pinned": false,
+      "providers": [
+        "serper"
+      ],
+      "toolCategories": [
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "linkedin_url",
+          "serper_name_validate"
+        ],
+        "properties": {
+          "linkedin_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedin_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serper_name_validate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Per-provider execution details, including unavailable provider outcomes."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 0.02,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-to-linkedin-harvestapi",
+      "reference": "prebuilt/person-to-linkedin-harvestapi",
+      "name": "person-to-linkedin-harvestapi",
+      "displayName": "LinkedIn Profile from Name and Company (HarvestAPI)",
+      "description": "Find a LinkedIn profile from a person name and company context.",
+      "pinned": false,
+      "providers": [
+        "serper",
+        "crustdata_v2",
+        "harvestapi"
+      ],
+      "toolCategories": [
+        "admin",
+        "people_enrich",
+        "research"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_name",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "linkedin_url",
+          "serper_name_validate"
+        ],
+        "properties": {
+          "linkedin_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedin_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serper_name_validate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Per-provider execution details, including unavailable provider outcomes."
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-to-phone",
+      "reference": "prebuilt/person-to-phone",
+      "name": "person-to-phone",
+      "displayName": "Mobile Phone from Person",
+      "description": "Find a mobile phone number for one person using a provider waterfall.",
+      "pinned": false,
+      "providers": [
+        "wiza",
+        "trestle",
+        "datagma",
+        "leadmagic",
+        "fullenrich",
+        "ai_ark"
+      ],
+      "toolCategories": [
+        "automation",
+        "people_enrich",
+        "phone_finder",
+        "phone_verify"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "domain": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "linkedin_url",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phone"
+        ],
+        "properties": {
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_validated": {
+            "type": "boolean"
+          },
+          "phone_validation_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_activity_score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "phone_activity_band": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_line_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_carrier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_reject_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 4.9,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/person-to-phone-batch",
+      "reference": "prebuilt/person-to-phone-batch",
+      "name": "person-to-phone-batch",
+      "displayName": "Mobile Phone CSV from People",
+      "description": "Find mobile phone numbers for a CSV of people in one pass.",
+      "pinned": false,
+      "providers": [
+        "wiza",
+        "trestle",
+        "datagma",
+        "leadmagic",
+        "fullenrich",
+        "ai_ark"
+      ],
+      "toolCategories": [
+        "automation",
+        "people_enrich",
+        "phone_finder",
+        "phone_verify"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Runtime CSV input path supplied through plays run --input, for example {\"csv\":\"leads.csv\"}."
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "description": "Optional CSV header aliases keyed by canonical play input field."
+          }
+        },
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "first_name",
+              "last_name"
+            ],
+            "properties": {
+              "first_name": {
+                "type": "string"
+              },
+              "last_name": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "linkedin_url": {
+                "type": "string"
+              }
+            }
+          },
+          "defaultColumns": {
+            "first_name": "FIRST_NAME",
+            "last_name": "LAST_NAME",
+            "domain": "COMPANY_DOMAIN",
+            "email": "CONTACT_EMAIL",
+            "linkedin_url": "LINKEDIN_URL"
+          },
+          "columnFlags": {
+            "first_name": "--columns.first_name",
+            "last_name": "--columns.last_name",
+            "domain": "--columns.domain",
+            "email": "--columns.email",
+            "linkedin_url": "--columns.linkedin_url"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable row dataset. Each row preserves the original CSV columns and adds a phone column."
+          }
+        },
+        "rowOutputSchema": {
+          "type": "object",
+          "additionalProperties": true,
+          "preservesSourceColumns": true,
+          "addedColumns": {
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Resolved phone number, or null if none was found."
+            },
+            "phone_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Waterfall step that produced the resolved phone."
+            },
+            "phone_validated": {
+              "type": "boolean",
+              "description": "True when the final phone passed Trestle validation before being returned."
+            },
+            "phone_validation_status": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle validation status for the returned phone."
+            },
+            "phone_activity_score": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Trestle activity score for the returned phone, when provided."
+            },
+            "phone_activity_band": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Derived activity band: active, risky, stale, unknown, or null."
+            },
+            "phone_line_type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle line type for the returned phone, when provided."
+            },
+            "phone_carrier": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle carrier for the returned phone, when provided."
+            },
+            "phone_reject_reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Reason a returned phone was rejected, if any."
+            }
+          },
+          "properties": {
+            "phone": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Resolved phone number, or null if none was found."
+            },
+            "phone_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Waterfall step that produced the resolved phone."
+            },
+            "phone_validated": {
+              "type": "boolean",
+              "description": "True when the final phone passed Trestle validation before being returned."
+            },
+            "phone_validation_status": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle validation status for the returned phone."
+            },
+            "phone_activity_score": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Trestle activity score for the returned phone, when provided."
+            },
+            "phone_activity_band": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Derived activity band: active, risky, stale, unknown, or null."
+            },
+            "phone_line_type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle line type for the returned phone, when provided."
+            },
+            "phone_carrier": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Trestle carrier for the returned phone, when provided."
+            },
+            "phone_reject_reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Reason a returned phone was rejected, if any."
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 4.9,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/personal-email",
+      "reference": "prebuilt/personal-email",
+      "name": "personal-email",
+      "displayName": "Personal Email Finder",
+      "description": "Find a personal email address for a contact using personal-email providers.",
+      "pinned": false,
+      "providers": [
+        "contactout",
+        "aviato",
+        "limadata",
+        "leadmagic",
+        "wiza",
+        "icypeas",
+        "forager",
+        "datagma",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "admin",
+        "automation",
+        "email_finder",
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "first_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "last_name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "linkedin_url",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "domain",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "company_name",
+            "required": false,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "personal_email",
+          "email_source",
+          "email_validated",
+          "email_found_and_valid",
+          "miss_reason"
+        ],
+        "properties": {
+          "personal_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_validated": {
+            "type": "boolean"
+          },
+          "email_found_and_valid": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/personal-email-batch",
+      "reference": "prebuilt/personal-email-batch",
+      "name": "personal-email-batch",
+      "displayName": "Personal Email CSV Finder",
+      "description": "Resolve personal emails for a CSV of contacts.",
+      "pinned": false,
+      "providers": [
+        "contactout",
+        "aviato",
+        "limadata",
+        "leadmagic",
+        "wiza",
+        "icypeas",
+        "forager",
+        "datagma",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "admin",
+        "automation",
+        "email_finder",
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "personal_email",
+          "email_source",
+          "email_validated",
+          "email_found_and_valid",
+          "miss_reason",
+          "waterfall_attempts"
+        ],
+        "properties": {
+          "personal_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_validated": {
+            "type": "boolean"
+          },
+          "email_found_and_valid": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/personal-email-to-linkedin",
+      "reference": "prebuilt/personal-email-to-linkedin",
+      "name": "personal-email-to-linkedin",
+      "displayName": "LinkedIn Profile from Personal Email",
+      "description": "Resolve a personal email address to the matching LinkedIn profile and identity context.",
+      "pinned": false,
+      "providers": [
+        "forager",
+        "findymail",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "personal_email"
+        ],
+        "properties": {
+          "personal_email": {
+            "type": "string"
+          }
+        },
+        "fields": [
+          {
+            "name": "personal_email",
+            "required": true,
+            "type": "string"
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "personal_email",
+          "normalized_email",
+          "linkedin_url",
+          "linkedin_source",
+          "name",
+          "company",
+          "title",
+          "linkedin_profile_found",
+          "miss_reason"
+        ],
+        "properties": {
+          "personal_email": {
+            "type": "string"
+          },
+          "normalized_email": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedin_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedin_profile_found": {
+            "type": "boolean"
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "waterfall_attempts": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "run",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/personal-email-to-linkedin-batch",
+      "reference": "prebuilt/personal-email-to-linkedin-batch",
+      "name": "personal-email-to-linkedin-batch",
+      "displayName": "LinkedIn Profile CSV from Personal Emails",
+      "description": "Resolve LinkedIn profiles for a CSV of personal email addresses.",
+      "pinned": false,
+      "providers": [
+        "forager",
+        "findymail",
+        "peopledatalabs"
+      ],
+      "toolCategories": [
+        "people_enrich"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Durable row dataset. Each row preserves the source columns and adds LinkedIn identity resolution fields."
+          }
+        },
+        "rowOutputSchema": {
+          "type": "object",
+          "additionalProperties": true,
+          "preservesSourceColumns": true,
+          "addedColumns": {
+            "normalized_email": {
+              "type": "string"
+            },
+            "linkedin_url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "linkedin_source": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "company": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "linkedin_profile_found": {
+              "type": "boolean"
+            },
+            "miss_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "available",
+        "source": "static",
+        "unit": "row",
+        "lowCredits": 0,
+        "highCredits": 2,
+        "sampleRunCount": 0,
+        "basedOnRunId": null,
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-business-email",
+      "reference": "prebuilt/smb-business-email",
+      "name": "smb-business-email",
+      "displayName": "Business Email for an SMB",
+      "description": "Find up to three business email candidates with OpenMart and validate them with LeadMagic. Select only a valid address on the supplied business domain; retain off-domain addresses and catch-all results for review. The supplied domain must already identify the business.",
+      "pinned": false,
+      "providers": [
+        "openmart",
+        "leadmagic"
+      ],
+      "toolCategories": [
+        "company_enrich",
+        "email_finder",
+        "email_verify",
+        "outbound_tools"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "business_name",
+          "domain"
+        ],
+        "properties": {
+          "business_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-business-email-batch",
+      "reference": "prebuilt/smb-business-email-batch",
+      "name": "smb-business-email-batch",
+      "displayName": "Business Emails for an SMB CSV",
+      "description": "Find business email candidates for CSV rows using the same bounded lookup and validation as smb-business-email.",
+      "pinned": false,
+      "providers": [
+        "openmart",
+        "leadmagic"
+      ],
+      "toolCategories": [
+        "company_enrich",
+        "email_finder",
+        "email_verify",
+        "outbound_tools"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-owner-contact",
+      "reference": "prebuilt/smb-owner-contact",
+      "name": "smb-owner-contact",
+      "displayName": "Find SMB Principal Contact",
+      "description": "Find validated personal email or mobile for a known SMB contact by exact Enformion person ID. Name and locality searches return review-only identities; email is the default channel.",
+      "pinned": false,
+      "providers": [
+        "enformion",
+        "leadmagic",
+        "trestle"
+      ],
+      "toolCategories": [
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_search",
+        "phone_verify",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "tahoe_id"
+            ]
+          },
+          {
+            "required": [
+              "first_name",
+              "last_name",
+              "city",
+              "state"
+            ]
+          }
+        ],
+        "properties": {
+          "tahoe_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "first_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2}$"
+          },
+          "channels": {
+            "type": "string",
+            "enum": [
+              "email",
+              "mobile",
+              "both"
+            ],
+            "default": "email"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "person",
+          "identity_match",
+          "held_people",
+          "personal_email",
+          "mobile",
+          "miss_reason"
+        ],
+        "properties": {
+          "person": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "tahoe_id"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "tahoe_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "identity_match": {
+            "type": "string",
+            "enum": [
+              "exact_id",
+              "review_required",
+              "ambiguous",
+              "not_found"
+            ]
+          },
+          "held_people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "personal_email": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "validation_status",
+              "attempted_candidates"
+            ],
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "validation_status": {
+                "type": "string"
+              },
+              "attempted_candidates": {
+                "type": "number"
+              }
+            }
+          },
+          "mobile": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "validation_status",
+              "attempted_candidates"
+            ],
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "validation_status": {
+                "type": "string"
+              },
+              "attempted_candidates": {
+                "type": "number"
+              }
+            }
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-owner-contact-batch",
+      "reference": "prebuilt/smb-owner-contact-batch",
+      "name": "smb-owner-contact-batch",
+      "displayName": "Find SMB Principal Contacts",
+      "description": "Validate personal email or mobile for a CSV of known SMB person identifiers.",
+      "pinned": false,
+      "providers": [
+        "enformion",
+        "leadmagic",
+        "trestle"
+      ],
+      "toolCategories": [
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_search",
+        "phone_verify",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "anyOf": [
+              {
+                "required": [
+                  "tahoe_id"
+                ]
+              },
+              {
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "city",
+                  "state"
+                ]
+              }
+            ],
+            "properties": {
+              "tahoe_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "first_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "last_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "pattern": "^[A-Za-z]{2}$"
+              },
+              "channels": {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "mobile",
+                  "both"
+                ],
+                "default": "email"
+              }
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "person",
+          "identity_match",
+          "held_people",
+          "personal_email",
+          "mobile",
+          "miss_reason"
+        ],
+        "properties": {
+          "person": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "tahoe_id"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "tahoe_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "identity_match": {
+            "type": "string",
+            "enum": [
+              "exact_id",
+              "review_required",
+              "ambiguous",
+              "not_found"
+            ]
+          },
+          "held_people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "tahoe_id"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "tahoe_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "personal_email": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "validation_status",
+              "attempted_candidates"
+            ],
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "validation_status": {
+                "type": "string"
+              },
+              "attempted_candidates": {
+                "type": "number"
+              }
+            }
+          },
+          "mobile": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "validation_status",
+              "attempted_candidates"
+            ],
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "validation_status": {
+                "type": "string"
+              },
+              "attempted_candidates": {
+                "type": "number"
+              }
+            }
+          },
+          "miss_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-to-owner-contact",
+      "reference": "prebuilt/smb-to-owner-contact",
+      "name": "smb-to-owner-contact",
+      "displayName": "Find SMB Business and Principal Contact",
+      "description": "Resolve an exact US legal entity to its recorded principals and validate contact for one unambiguous, active filing candidate with a person ID. Preserves unresolved entity and contact results; does not confirm beneficial ownership.",
+      "pinned": false,
+      "providers": [
+        "enformion",
+        "leadmagic",
+        "trestle"
+      ],
+      "toolCategories": [
+        "company_search",
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_search",
+        "phone_verify",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "legal_name",
+          "state"
+        ],
+        "properties": {
+          "legal_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2}$"
+          },
+          "city": {
+            "type": "string"
+          },
+          "registry_number": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "string",
+            "enum": [
+              "email",
+              "mobile",
+              "both"
+            ],
+            "default": "email"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity",
+          "contact",
+          "contact_status"
+        ],
+        "properties": {
+          "entity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entity_match",
+              "matched_entity",
+              "owner_candidates",
+              "held_relationships",
+              "candidate_count",
+              "search_truncated",
+              "miss_reason"
+            ],
+            "properties": {
+              "entity_match": {
+                "type": "string",
+                "enum": [
+                  "matched",
+                  "ambiguous",
+                  "not_found"
+                ]
+              },
+              "matched_entity": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "legal_name",
+                  "state",
+                  "registry_number"
+                ],
+                "properties": {
+                  "legal_name": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "registry_number": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "owner_candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id",
+                    "recorded_role",
+                    "relationship",
+                    "eligible_for_contact",
+                    "filing_id",
+                    "reported_date"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recorded_role": {
+                      "type": "string"
+                    },
+                    "relationship": {
+                      "type": "string",
+                      "enum": [
+                        "member_or_owner",
+                        "officer",
+                        "registered_agent",
+                        "entity",
+                        "unknown"
+                      ]
+                    },
+                    "eligible_for_contact": {
+                      "type": "boolean"
+                    },
+                    "filing_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reported_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "held_relationships": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id",
+                    "recorded_role",
+                    "relationship",
+                    "eligible_for_contact",
+                    "filing_id",
+                    "reported_date"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recorded_role": {
+                      "type": "string"
+                    },
+                    "relationship": {
+                      "type": "string",
+                      "enum": [
+                        "member_or_owner",
+                        "officer",
+                        "registered_agent",
+                        "entity",
+                        "unknown"
+                      ]
+                    },
+                    "eligible_for_contact": {
+                      "type": "boolean"
+                    },
+                    "filing_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reported_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "candidate_count": {
+                "type": "number"
+              },
+              "search_truncated": {
+                "type": "boolean"
+              },
+              "miss_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "contact": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "person",
+              "identity_match",
+              "held_people",
+              "personal_email",
+              "mobile",
+              "miss_reason"
+            ],
+            "properties": {
+              "person": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "tahoe_id"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "tahoe_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "identity_match": {
+                "type": "string",
+                "enum": [
+                  "exact_id",
+                  "review_required",
+                  "ambiguous",
+                  "not_found"
+                ]
+              },
+              "held_people": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "personal_email": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "validation_status",
+                  "attempted_candidates"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "validation_status": {
+                    "type": "string"
+                  },
+                  "attempted_candidates": {
+                    "type": "number"
+                  }
+                }
+              },
+              "mobile": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "validation_status",
+                  "attempted_candidates"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "validation_status": {
+                    "type": "string"
+                  },
+                  "attempted_candidates": {
+                    "type": "number"
+                  }
+                }
+              },
+              "miss_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "contact_status": {
+            "type": "string",
+            "enum": [
+              "resolved",
+              "no_validated_contact",
+              "review_required",
+              "no_entity_match"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    },
+    {
+      "playKey": "prebuilt/smb-to-owner-contact-batch",
+      "reference": "prebuilt/smb-to-owner-contact-batch",
+      "name": "smb-to-owner-contact-batch",
+      "displayName": "Find SMB Businesses and Principal Contacts",
+      "description": "Resolve a CSV of exact US legal entities to recorded principal candidates and validated contacts.",
+      "pinned": false,
+      "providers": [
+        "enformion",
+        "leadmagic",
+        "trestle"
+      ],
+      "toolCategories": [
+        "company_search",
+        "email_finder",
+        "email_verify",
+        "outbound_tools",
+        "people_search",
+        "phone_verify",
+        "smb"
+      ],
+      "origin": "prebuilt",
+      "ownerType": "deepline",
+      "ownerSlug": "deepline",
+      "canEdit": false,
+      "canClone": true,
+      "orgId": "deepline",
+      "userId": "deepline",
+      "runCount": 0,
+      "updatedAt": 0,
+      "createdAt": 0,
+      "currentPublishedVersion": 1,
+      "isDraftDirty": false,
+      "hasInputSchema": true,
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "csv"
+        ],
+        "properties": {
+          "csv": {
+            "type": "string",
+            "minLength": 1
+          },
+          "columns": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "csvInput": {
+          "inputField": "csv",
+          "execution": "native_batch",
+          "preservesSourceColumns": true,
+          "rowInputSchema": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "legal_name",
+              "state"
+            ],
+            "properties": {
+              "legal_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "pattern": "^[A-Za-z]{2}$"
+              },
+              "city": {
+                "type": "string"
+              },
+              "registry_number": {
+                "type": "string"
+              },
+              "channels": {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "mobile",
+                  "both"
+                ],
+                "default": "email"
+              }
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity",
+          "contact",
+          "contact_status"
+        ],
+        "properties": {
+          "entity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entity_match",
+              "matched_entity",
+              "owner_candidates",
+              "held_relationships",
+              "candidate_count",
+              "search_truncated",
+              "miss_reason"
+            ],
+            "properties": {
+              "entity_match": {
+                "type": "string",
+                "enum": [
+                  "matched",
+                  "ambiguous",
+                  "not_found"
+                ]
+              },
+              "matched_entity": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "legal_name",
+                  "state",
+                  "registry_number"
+                ],
+                "properties": {
+                  "legal_name": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "registry_number": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "owner_candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id",
+                    "recorded_role",
+                    "relationship",
+                    "eligible_for_contact",
+                    "filing_id",
+                    "reported_date"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recorded_role": {
+                      "type": "string"
+                    },
+                    "relationship": {
+                      "type": "string",
+                      "enum": [
+                        "member_or_owner",
+                        "officer",
+                        "registered_agent",
+                        "entity",
+                        "unknown"
+                      ]
+                    },
+                    "eligible_for_contact": {
+                      "type": "boolean"
+                    },
+                    "filing_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reported_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "held_relationships": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id",
+                    "recorded_role",
+                    "relationship",
+                    "eligible_for_contact",
+                    "filing_id",
+                    "reported_date"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "recorded_role": {
+                      "type": "string"
+                    },
+                    "relationship": {
+                      "type": "string",
+                      "enum": [
+                        "member_or_owner",
+                        "officer",
+                        "registered_agent",
+                        "entity",
+                        "unknown"
+                      ]
+                    },
+                    "eligible_for_contact": {
+                      "type": "boolean"
+                    },
+                    "filing_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reported_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "candidate_count": {
+                "type": "number"
+              },
+              "search_truncated": {
+                "type": "boolean"
+              },
+              "miss_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "contact": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "person",
+              "identity_match",
+              "held_people",
+              "personal_email",
+              "mobile",
+              "miss_reason"
+            ],
+            "properties": {
+              "person": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "tahoe_id"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "tahoe_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "identity_match": {
+                "type": "string",
+                "enum": [
+                  "exact_id",
+                  "review_required",
+                  "ambiguous",
+                  "not_found"
+                ]
+              },
+              "held_people": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "tahoe_id"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "tahoe_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "personal_email": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "validation_status",
+                  "attempted_candidates"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "validation_status": {
+                    "type": "string"
+                  },
+                  "attempted_candidates": {
+                    "type": "number"
+                  }
+                }
+              },
+              "mobile": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "validation_status",
+                  "attempted_candidates"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "validation_status": {
+                    "type": "string"
+                  },
+                  "attempted_candidates": {
+                    "type": "number"
+                  }
+                }
+              },
+              "miss_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "contact_status": {
+            "type": "string",
+            "enum": [
+              "resolved",
+              "no_validated_contact",
+              "review_required",
+              "no_entity_match"
+            ]
+          }
+        }
+      },
+      "aliases": [],
+      "costEstimate": {
+        "status": "unavailable",
+        "reason": "unbounded_loop",
+        "message": "This play contains a loop whose iteration count is not statically bounded.",
+        "modelVersion": "define-play-cost-paths-v2"
+      }
+    }
+  ],
+  "count": 28,
+  "has_more": false,
+  "is_truncated": false,
+  "next_cursor": null,
+  "next": {
+    "page": null
+  },
+  "render": {
+    "sections": [
+      {
+        "title": "plays",
+        "lines": [
+          "28 plays in this page:",
+          "  prebuilt/company-domain-to-linkedin-employees [category:company_enrich, category:people_search, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+          "    run: deepline plays run prebuilt/company-domain-to-linkedin-employees --watch",
+          "  prebuilt/company-domain-to-linkedin-employees-harvestapi [category:company_enrich, category:people_search, category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+          "    run: deepline plays run prebuilt/company-domain-to-linkedin-employees-harvestapi --watch",
+          "  prebuilt/engagers-to-icp-qualification [category:automation, category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 1–1.5 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/engagers-to-icp-qualification --watch",
+          "  prebuilt/engineering-team-size [category:company_enrich, category:company_search, category:people_search, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–1.82 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/engineering-team-size --watch",
+          "  prebuilt/funding-updates [category:admin, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+          "    run: deepline plays run prebuilt/funding-updates --watch",
+          "  prebuilt/job-change-check [category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–1.96 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/job-change-check --watch",
+          "  prebuilt/linkedin-post-to-engagers [category:automation, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+          "    run: deepline plays run prebuilt/linkedin-post-to-engagers --watch",
+          "  prebuilt/linkedin-post-to-engagers-harvestapi [category:admin, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play mixes per-run work with per-row work, so a row estimate needs an input row count.",
+          "    run: deepline plays run prebuilt/linkedin-post-to-engagers-harvestapi --watch",
+          "  prebuilt/llc-to-owner [category:company_search, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–3.5 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/llc-to-owner --watch",
+          "  prebuilt/llc-to-owner-batch [category:company_search, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–3.5 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/llc-to-owner-batch --watch",
+          "  prebuilt/name-and-domain-to-email-waterfall [category:automation, category:email_finder, category:email_verify, category:outbound_tools, category:people_enrich, category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–0.55 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/name-and-domain-to-email-waterfall --watch",
+          "  prebuilt/name-and-domain-to-email-waterfall-batch [category:automation, category:email_finder, category:email_verify, category:outbound_tools, category:people_enrich, category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–0.55 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/name-and-domain-to-email-waterfall-batch --watch",
+          "  prebuilt/person-linkedin-to-email [category:email_finder, category:email_verify, category:outbound_tools, category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/person-linkedin-to-email --watch",
+          "  prebuilt/person-linkedin-to-email-batch [category:email_finder, category:email_verify, category:outbound_tools, category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/person-linkedin-to-email-batch --watch",
+          "  prebuilt/person-to-linkedin [category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–0.02 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/person-to-linkedin --watch",
+          "  prebuilt/person-to-linkedin-harvestapi [category:admin, category:people_enrich, category:research, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/person-to-linkedin-harvestapi --watch",
+          "  prebuilt/person-to-phone [category:automation, category:people_enrich, category:phone_finder, category:phone_verify, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–4.9 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/person-to-phone --watch",
+          "  prebuilt/person-to-phone-batch [category:automation, category:people_enrich, category:phone_finder, category:phone_verify, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–4.9 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/person-to-phone-batch --watch",
+          "  prebuilt/personal-email [category:admin, category:automation, category:email_finder, category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/personal-email --watch",
+          "  prebuilt/personal-email-batch [category:admin, category:automation, category:email_finder, category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/personal-email-batch --watch",
+          "  prebuilt/personal-email-to-linkedin [category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per run (static estimate)",
+          "    run: deepline plays run prebuilt/personal-email-to-linkedin --watch",
+          "  prebuilt/personal-email-to-linkedin-batch [category:people_enrich, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: 0–2 Deepline credits per output row (static estimate)",
+          "    run: deepline plays run prebuilt/personal-email-to-linkedin-batch --watch",
+          "  prebuilt/smb-business-email [category:company_enrich, category:email_finder, category:email_verify, category:outbound_tools, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-business-email --watch",
+          "  prebuilt/smb-business-email-batch [category:company_enrich, category:email_finder, category:email_verify, category:outbound_tools, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-business-email-batch --watch",
+          "  prebuilt/smb-owner-contact [category:email_finder, category:email_verify, category:outbound_tools, category:people_search, category:phone_verify, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-owner-contact --watch",
+          "  prebuilt/smb-owner-contact-batch [category:email_finder, category:email_verify, category:outbound_tools, category:people_search, category:phone_verify, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-owner-contact-batch --watch",
+          "  prebuilt/smb-to-owner-contact [category:company_search, category:email_finder, category:email_verify, category:outbound_tools, category:people_search, category:phone_verify, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-to-owner-contact --watch",
+          "  prebuilt/smb-to-owner-contact-batch [category:company_search, category:email_finder, category:email_verify, category:outbound_tools, category:people_search, category:phone_verify, category:smb, prebuilt, readonly]",
+          "    inputSchema: yes",
+          "    scheduled execution: not configured",
+          "    cost estimate: unavailable: This play contains a loop whose iteration count is not statically bounded.",
+          "    run: deepline plays run prebuilt/smb-to-owner-contact-batch --watch"
+        ]
+      }
+    ]
+  },
+  "command_context": {
+    "active_organization": {
+      "org_id": "jh7a8b5z6zzd6a2ydvsbnx4syn8ezpky",
+      "org_name": "Arthur's solo"
+    },
+    "auth_scope": "global",
+    "metadata_source": "host_env"
+  }
+}

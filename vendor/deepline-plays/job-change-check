@@ -1,0 +1,716 @@
+/** @mermaid
+ * flowchart TD
+ * source{"A CSV or one contact?"} -->|csv| csvRows(["Every row of the file"])
+ * source -->|one contact| single(["One contact, validated up front"])
+ * csvRows --> checked[("Job change rows")]
+ * single --> checked
+ * checked --> loop
+ * subgraph loop["For each contact"]
+ *   anchors["Check the contact has an anchor to match on"] --> moved["Ask whether they moved"]
+ * end
+ * loop --> out["Return the checked rows"]
+ * class csvRows sketch
+ * class single sketch
+ * class out sketch
+ */
+import { definePlay } from 'deepline';
+import type {
+  CsvInput,
+  JobChangeStatus,
+  PlayDatasetInput,
+  ToolExecuteResult,
+} from 'deepline';
+
+const MONTH_SECONDS = 30 * 24 * 60 * 60;
+const PROFILE = /^https?:\/\/([a-z]{2,3}\.)?linkedin\.com\/in\/[^/?#]+\/?$/i;
+const COMPANY =
+  /^https?:\/\/([a-z]{2,3}\.)?linkedin\.com\/company\/[^/?#]+\/?$/i;
+const DOMAIN = /^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const SHORTENERS = new Set([
+  'bit.ly',
+  't.co',
+  'lnkd.in',
+  'tinyurl.com',
+  'goo.gl',
+]);
+
+type JsonPrimitive = string | number | boolean;
+
+type Row = Record<string, unknown> & {
+  linkedin_url?: string | null;
+  contact_linkedin?: string | null;
+  current_domain?: string | null;
+  company_domain?: string | null;
+  company_linkedin?: string | null;
+  company_linkedin_url?: string | null;
+  contact_full_name?: string | null;
+  full_name?: string | null;
+  professional_email?: string | null;
+  work_email?: string | null;
+  personal_email?: string | null;
+  email?: string | null;
+  title?: string | null;
+  company_name?: string | null;
+  source?: string | null;
+  custom_fields?: Record<string, unknown>;
+  validation_warnings?: string | null;
+};
+
+type ToolInput = {
+  company_domain?: string;
+  company_linkedin?: string;
+  professional_email?: string;
+  personal_email?: string;
+  contact_linkedin?: string;
+  contact_full_name?: string;
+  custom_fields?: Record<string, JsonPrimitive>;
+};
+
+type JobChange = {
+  status: JobChangeStatus | 'stale_contact';
+  date: string | null;
+  new_company: string | null;
+  new_title: string | null;
+  id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  linkedin_id: string | null;
+  linkedin_url: string | null;
+  about: string | null;
+  location: string | null;
+  country: string | null;
+  company_linkedin_id: string | null;
+  company_name: string | null;
+  company_domain: string | null;
+  title: string | null;
+  seniority: string | null;
+  department: string | null;
+  experiences: Array<Record<string, unknown>>;
+  payload: unknown;
+};
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+// Normalize a header/logical-field name for case-insensitive, whitespace- and
+// separator-tolerant matching: trim, lowercase, and fold spaces and dashes to
+// underscores. `LinkedIn_URL`, `LINKEDIN URL`, `linkedin-url` all normalize to
+// `linkedin_url`.
+function normalizeKey(key: string): string {
+  return key
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+// Per-row accessor that resolves a logical field name against the row's ACTUAL
+// raw keys case-insensitively. Built once per row. Exact-key match always wins
+// over a case-insensitive match. When two different raw headers normalize to
+// the same logical field with different non-empty values, that's an ambiguous-
+// casing conflict: we pick deterministically (first raw header in row key
+// order) and record a warning the caller can surface.
+type RowAccessor = {
+  get(field: string): unknown;
+  warnings: string[];
+};
+
+function makeAccessor(row: Row): RowAccessor {
+  // Normalized-key -> raw keys (in row insertion order) that fold to it. Plain
+  // object (the play sandbox lib has no Map); keys are prefixed so raw headers
+  // like "constructor" can't collide with Object prototype properties.
+  const byNormalized: Record<string, string[]> = {};
+  const bucketFor = (norm: string): string[] | undefined =>
+    byNormalized[`k:${norm}`];
+  const warnings: string[] = [];
+  for (const rawKey of Object.keys(row)) {
+    const norm = normalizeKey(rawKey);
+    const existing = bucketFor(norm);
+    if (existing) existing.push(rawKey);
+    else byNormalized[`k:${norm}`] = [rawKey];
+  }
+
+  // Emit an ambiguity warning once per logical field whose distinct casings
+  // carry conflicting non-empty values.
+  const warnedAmbiguous = new Set<string>();
+  const noteAmbiguity = (field: string, rawKeys: string[]) => {
+    const norm = normalizeKey(field);
+    if (warnedAmbiguous.has(norm)) return;
+    const values = rawKeys.map((k) => text(row[k]));
+    const distinct = new Set(values.filter((v): v is string => v !== null));
+    if (distinct.size > 1) {
+      warnedAmbiguous.add(norm);
+      warnings.push(`ambiguous header casing for ${norm}`);
+    }
+  };
+
+  return {
+    warnings,
+    get(field: string): unknown {
+      const rawKeys = bucketFor(normalizeKey(field));
+      // Detect conflicting casings even when an exact match exists, so an
+      // ambiguous header is always reported (not silently shadowed by the
+      // exact-cased sibling).
+      if (rawKeys && rawKeys.length > 1) noteAmbiguity(field, rawKeys);
+      // Exact match wins for the returned value. The exact key, if present,
+      // lives in this bucket (it normalizes to itself); plain loop because the
+      // play sandbox lib exposes no Object.prototype/indexOf.
+      if (!rawKeys || rawKeys.length === 0) return undefined;
+      for (const k of rawKeys) {
+        if (k === field) return row[field];
+      }
+      // Deterministic pick: first raw header in row key order with a value;
+      // otherwise the first raw header.
+      for (const k of rawKeys) {
+        if (text(row[k]) !== null) return row[k];
+      }
+      return row[rawKeys[0]];
+    },
+  };
+}
+
+function first(accessor: RowAccessor, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = text(accessor.get(key));
+    if (value) return value;
+  }
+  return null;
+}
+
+// Strip query string + hash + trailing slash from a LinkedIn URL and lowercase
+// the host, BEFORE validating the path shape. The canonical form is what we
+// store and key on. Genuinely malformed URLs return the original (so the
+// validator regex rejects them loudly).
+function canonicalizeLinkedin(value: unknown): string | null {
+  const raw = text(value)?.replace(/^http:\/\//i, 'https://');
+  if (!raw) return null;
+  // Manual parse (the play sandbox lib has no URL value): protocol://host then
+  // path up to the first ? or #. Unparseable values return the original so the
+  // validator regex rejects them loudly.
+  const match = raw.match(/^https:\/\/([^/?#]+)([^?#]*)/i);
+  if (!match) return raw;
+  const host = match[1].toLowerCase();
+  const path = (match[2] ?? '').replace(/\/+$/, '');
+  return `https://${host}${path}`;
+}
+
+function profile(value: unknown): string | null {
+  const url = canonicalizeLinkedin(value);
+  return url && PROFILE.test(url) ? url : null;
+}
+
+function companyLinkedin(value: unknown): string | null {
+  const url = canonicalizeLinkedin(value);
+  return url && COMPANY.test(url) ? url : null;
+}
+
+function domain(value: unknown): string | null {
+  const host = text(value)
+    ?.toLowerCase()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split(/[/?#]/, 1)[0];
+  return host && DOMAIN.test(host) && !SHORTENERS.has(host) ? host : null;
+}
+
+function email(value: unknown): string | null {
+  const address = text(value)?.toLowerCase();
+  return address && EMAIL.test(address) ? address : null;
+}
+
+function emailDomain(value: unknown): string | null {
+  const address = email(value);
+  const host = address?.replace(/^[^@]+@/, '');
+  return host && host !== address ? domain(host) : null;
+}
+
+// Per-field resolution: walk candidate columns in PRIMARY-FIRST order, pick the
+// first value that passes this field's validator. Records provenance (resolved
+// from a non-primary column), conflicts (primary + alias both valid but
+// different — primary wins), and dropped invalid values.
+type Validator = (value: unknown) => string | null;
+
+type FieldCandidate = { column: string; raw: string };
+
+type ResolvedField = {
+  value: string | null;
+  warnings: string[];
+};
+
+function resolveField(
+  accessor: RowAccessor,
+  validator: Validator,
+  columns: string[],
+): ResolvedField {
+  const warnings: string[] = [];
+  const present: FieldCandidate[] = [];
+  for (const column of columns) {
+    const raw = text(accessor.get(column));
+    if (raw) present.push({ column, raw });
+  }
+
+  // Validate each present candidate.
+  const valid: Array<{ column: string; value: string }> = [];
+  for (const candidate of present) {
+    const value = validator(candidate.raw);
+    if (value) {
+      valid.push({ column: candidate.column, value });
+    } else {
+      warnings.push(`invalid ${candidate.column} dropped`);
+    }
+  }
+
+  const chosen = valid[0];
+  if (!chosen) {
+    return { value: null, warnings };
+  }
+
+  const primaryColumn = columns[0];
+
+  // Provenance: resolved from a non-primary column.
+  if (chosen.column !== primaryColumn) {
+    warnings.push(`${primaryColumn} resolved from ${chosen.column}`);
+  }
+
+  // Conflict: primary + a non-primary candidate both valid but different.
+  for (const other of valid) {
+    if (other.column !== chosen.column && other.value !== chosen.value) {
+      warnings.push(
+        `conflicting ${chosen.column}/${other.column}; using ${chosen.column}`,
+      );
+    }
+  }
+
+  return { value: chosen.value, warnings };
+}
+
+// Centralized resolution of every job-change field for a row, primary-first.
+type Resolved = {
+  linkedin_url: string | null;
+  current_domain: string | null;
+  company_linkedin_url: string | null;
+  contact_full_name: string | null;
+  professional_email: string | null;
+  personal_email: string | null;
+  warnings: string[];
+};
+
+function resolve(row: Row): Resolved {
+  const accessor = makeAccessor(row);
+  const warnings: string[] = [];
+  const push = (field: ResolvedField): string | null => {
+    warnings.push(...field.warnings);
+    return field.value;
+  };
+
+  const linkedinUrl = push(
+    resolveField(accessor, profile, ['linkedin_url', 'contact_linkedin']),
+  );
+  const companyLinkedinUrl = push(
+    resolveField(accessor, companyLinkedin, [
+      'company_linkedin_url',
+      'company_linkedin',
+    ]),
+  );
+  const contactFullName = push(
+    resolveField(accessor, text, ['contact_full_name', 'full_name']),
+  );
+  const professionalEmail = push(
+    resolveField(accessor, email, ['professional_email', 'work_email']),
+  );
+
+  // current_domain resolves primary-first across the explicit domain columns,
+  // then falls back to the work-email domain (no warning — derived, not
+  // overriding a provided column).
+  let currentDomain = push(
+    resolveField(accessor, domain, ['current_domain', 'company_domain']),
+  );
+  if (!currentDomain && professionalEmail) {
+    currentDomain = emailDomain(professionalEmail);
+  }
+
+  // Generic `email` splits to work vs personal based on the company domain.
+  const fallbackEmail = email(first(accessor, 'email'));
+  const isWorkFallback = Boolean(
+    fallbackEmail &&
+    currentDomain &&
+    fallbackEmail.endsWith(`@${currentDomain}`),
+  );
+
+  const resolvedProfessional =
+    professionalEmail ?? (isWorkFallback ? fallbackEmail : null);
+  const personalEmail =
+    push(resolveField(accessor, email, ['personal_email'])) ??
+    (isWorkFallback ? null : fallbackEmail);
+
+  // Fold in any ambiguous-header-casing warnings the accessor recorded while
+  // logical fields were resolved above.
+  warnings.push(...accessor.warnings);
+
+  return {
+    linkedin_url: linkedinUrl,
+    current_domain: currentDomain,
+    company_linkedin_url: companyLinkedinUrl,
+    contact_full_name: contactFullName,
+    professional_email: resolvedProfessional,
+    personal_email: personalEmail,
+    warnings,
+  };
+}
+
+// custom_fields, when present, must be a plain object. A non-object value is a
+// loud error (defense-in-depth alongside server-side schema enforcement) — we
+// never silently coerce it to `{}`.
+function customFieldsError(row: Row): string | null {
+  const value = makeAccessor(row).get('custom_fields');
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return 'invalid custom_fields (expected object)';
+  }
+  return null;
+}
+
+function pickCustomFields(row: Row): Record<string, JsonPrimitive> {
+  const accessor = makeAccessor(row);
+  const out: Record<string, JsonPrimitive> = {};
+  const add = (key: string, value: unknown) => {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      out[key] = value;
+    }
+  };
+
+  const customFields = accessor.get('custom_fields');
+  if (
+    customFields &&
+    typeof customFields === 'object' &&
+    !Array.isArray(customFields)
+  ) {
+    for (const key of Object.keys(customFields)) {
+      add(key, (customFields as Record<string, unknown>)[key]);
+    }
+  }
+
+  add('title', accessor.get('title'));
+  add('company_name', accessor.get('company_name'));
+  add('source', accessor.get('source'));
+  return out;
+}
+
+// The resolved-or-raw value stored in an output column. We store the canonical
+// VALID value when one resolves; otherwise we echo the primary-first raw value
+// so the export still shows what the caller provided (and validation reports
+// the invalid reason). Validity is decided in `validation()`, not here.
+function normalize(row: Row): Row {
+  const accessor = makeAccessor(row);
+  const resolved = resolve(row);
+
+  const rawLinkedin = first(accessor, 'linkedin_url', 'contact_linkedin');
+  const rawCurrentDomain = first(accessor, 'current_domain', 'company_domain');
+  const rawCompanyLinkedin = first(
+    accessor,
+    'company_linkedin_url',
+    'company_linkedin',
+  );
+
+  // The case-insensitive accessor above resolves uppercase/spaced source
+  // headers without requiring ctx.csv to rewrite every user-provided column.
+  return {
+    ...row,
+    linkedin_url: resolved.linkedin_url ?? rawLinkedin,
+    current_domain: resolved.current_domain ?? rawCurrentDomain,
+    company_linkedin_url: resolved.company_linkedin_url ?? rawCompanyLinkedin,
+    contact_full_name: resolved.contact_full_name,
+    professional_email: resolved.professional_email,
+    personal_email: resolved.personal_email,
+    title: text(accessor.get('title')),
+    company_name: text(accessor.get('company_name')),
+    source: text(accessor.get('source')),
+    validation_warnings: resolved.warnings.length
+      ? resolved.warnings.join('; ')
+      : null,
+  };
+}
+
+// Provider minimum (mirrors waterfall `job_change` server rule):
+//   hasEmail = professional_email || personal_email
+//   hasCompany = current_domain || company_linkedin_url
+//   hasContact = linkedin_url || contact_full_name
+//   valid iff hasEmail || (hasCompany && hasContact)
+const MINIMUM_REASON =
+  'requires professional_email, or personal_email, or ' +
+  '(current_domain or company_linkedin_url) + (linkedin_url or contact_full_name)';
+
+function meetsMinimum(input: ToolInput): boolean {
+  const hasEmail = Boolean(input.professional_email || input.personal_email);
+  const hasCompany = Boolean(input.company_domain || input.company_linkedin);
+  const hasContact = Boolean(input.contact_linkedin || input.contact_full_name);
+  return hasEmail || (hasCompany && hasContact);
+}
+
+function validation(row: Row) {
+  const customFieldsErr = customFieldsError(row);
+  if (customFieldsErr) {
+    return { status: 'invalid', reason: customFieldsErr };
+  }
+
+  // Hard validation: a provided LinkedIn/domain/company-LinkedIn primary or
+  // alias is allowed to be dropped (resolution already picked the first valid
+  // candidate). We only fail the row outright when NO candidate for a provided
+  // identifier is valid AND that leaves the row below the provider minimum.
+  const input = toolInput(row);
+
+  if (meetsMinimum(input)) {
+    return { status: 'ready', reason: null };
+  }
+
+  // Below minimum. Distinguish "an invalid provided value dropped me below the
+  // minimum" (→ invalid, naming the offending field) from "the row was simply
+  // too sparse to ever qualify" (→ missing_input). normalize() already nulled
+  // out invalid resolved values. A dropped invalid alias is fatal only when that
+  // logical field has no surviving valid primary/alias value; a valid primary
+  // should not be poisoned by a bad alias, and a valid alias should not be
+  // poisoned by a bad primary.
+  const warnings = text(row.validation_warnings)?.split('; ') ?? [];
+  const dropped = (column: string) =>
+    warnings.includes(`invalid ${column} dropped`);
+
+  if (
+    (dropped('professional_email') || dropped('work_email')) &&
+    !email(row.professional_email)
+  ) {
+    return { status: 'invalid', reason: 'invalid professional_email' };
+  }
+  if (
+    (dropped('linkedin_url') || dropped('contact_linkedin')) &&
+    !profile(row.linkedin_url)
+  ) {
+    return { status: 'invalid', reason: 'invalid linkedin_url' };
+  }
+  if (
+    (dropped('current_domain') || dropped('company_domain')) &&
+    !domain(row.current_domain)
+  ) {
+    return { status: 'invalid', reason: 'invalid current_domain' };
+  }
+  if (
+    (dropped('company_linkedin_url') || dropped('company_linkedin')) &&
+    !companyLinkedin(row.company_linkedin_url)
+  ) {
+    return { status: 'invalid', reason: 'invalid company_linkedin' };
+  }
+
+  return { status: 'missing_input', reason: MINIMUM_REASON };
+}
+
+function scalarInputError(reason: string | null): string {
+  if (reason === 'invalid current_domain') {
+    return "input.current_domain must be the candidate's current company domain";
+  }
+  if (reason === 'invalid linkedin_url') {
+    return 'input.linkedin_url must be a LinkedIn profile URL';
+  }
+  if (reason === 'invalid company_linkedin') {
+    return 'input.company_linkedin_url must be a LinkedIn company URL';
+  }
+  if (reason === 'invalid professional_email') {
+    return 'input.professional_email must be a valid email address';
+  }
+  if (reason === 'invalid custom_fields (expected object)') {
+    return 'input.custom_fields must be an object of scalar values';
+  }
+  if (reason === MINIMUM_REASON) {
+    return `input ${MINIMUM_REASON}`;
+  }
+  return reason ?? 'invalid input';
+}
+
+// Build the provider payload from the normalized row. Each field is re-validated
+// here (defense-in-depth) so invalid values are dropped from the payload — an
+// invalid optional field (e.g. professional_email) is surfaced via
+// validation_warnings, never silently retained.
+function toolInput(row: Row): ToolInput {
+  const input: ToolInput = {};
+  const customFields = pickCustomFields(row);
+  const companyDomain = domain(row.current_domain);
+  const companyLinkedinUrl = companyLinkedin(row.company_linkedin_url);
+  const professionalEmail = email(row.professional_email);
+  const personalEmail = email(row.personal_email);
+  const contactLinkedin = profile(row.linkedin_url);
+  const contactFullName = text(row.contact_full_name);
+
+  if (companyDomain) input.company_domain = companyDomain;
+  if (companyLinkedinUrl) input.company_linkedin = companyLinkedinUrl;
+  if (professionalEmail) input.professional_email = professionalEmail;
+  if (personalEmail) input.personal_email = personalEmail;
+  if (contactLinkedin) input.contact_linkedin = contactLinkedin;
+  if (contactFullName) input.contact_full_name = contactFullName;
+  if (Object.keys(customFields).length) input.custom_fields = customFields;
+
+  return input;
+}
+
+function inputFields(row: Row): string {
+  const input = toolInput(row);
+  return Object.keys(input).join(',');
+}
+
+function rawPayload(result: ToolExecuteResult | null): unknown {
+  return result?.toolResponse?.raw ?? null;
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function personPayload(payload: unknown): Record<string, unknown> | null {
+  const root = record(payload);
+  const output = record(root?.output) ?? record(record(root?.data)?.output);
+  return record(output?.person);
+}
+
+function personFields(payload: unknown) {
+  const person = personPayload(payload);
+  const experiences = person?.experiences;
+  return {
+    id: text(person?.id),
+    first_name: text(person?.first_name),
+    last_name: text(person?.last_name),
+    linkedin_id: text(person?.linkedin_id),
+    linkedin_url: text(person?.linkedin_url),
+    about: text(person?.about),
+    location: text(person?.location),
+    country: text(person?.country),
+    company_linkedin_id: text(person?.company_linkedin_id),
+    company_name: text(person?.company_name),
+    company_domain: text(person?.company_domain),
+    title: text(person?.title),
+    seniority: text(person?.seniority),
+    department: text(person?.department),
+    experiences: Array.isArray(experiences)
+      ? experiences.filter(
+          (experience): experience is Record<string, unknown> =>
+            experience != null &&
+            typeof experience === 'object' &&
+            !Array.isArray(experience),
+        )
+      : [],
+  };
+}
+
+function extract(result: ToolExecuteResult | null): JobChange | null {
+  const jobChange = result?.extractedValues.job_change?.get();
+  const payload = rawPayload(result);
+  if (!jobChange) return null;
+  const person = personFields(payload);
+  if (jobChange.status === 'profile_unavailable') {
+    return {
+      status: 'stale_contact',
+      date: null,
+      new_company: null,
+      new_title: null,
+      ...person,
+      payload,
+    };
+  }
+  return {
+    status: jobChange.status ?? 'unknown',
+    date: jobChange.date ?? null,
+    new_company: jobChange.new_company ?? null,
+    new_title: jobChange.new_title ?? null,
+    ...person,
+    payload,
+  };
+}
+
+export default definePlay(
+  'job-change-check',
+  async (
+    ctx,
+    input: (Row & { csv?: never }) | { csv: CsvInput<Row> },
+  ): Promise<Record<string, unknown>> => {
+    // @mermaid-node source type:"decision" out:"hasCsv"
+    const hasCsv = 'csv' in input && input.csv !== undefined;
+
+    let rows: PlayDatasetInput<Row>;
+    if (hasCsv) {
+      const csv = await ctx.csv<Row>(input.csv, {
+        description: 'Load contacts for job-change detection.',
+      });
+      rows = csv.map((row) => normalize(row));
+    } else {
+      const row = normalize(input);
+      const result = validation(row);
+      if (result.status === 'invalid') {
+        throw new Error(scalarInputError(result.reason));
+      }
+      rows = [row];
+    }
+
+    // @mermaid-node checked type:"dataset" out:"checked"
+    const checked = await ctx
+      .dataset('job_change_contacts', rows)
+      // @mermaid-node anchors out:"validation"
+      .withColumn('validation', validation)
+      .withColumn('validation_status', (row) => row.validation.status)
+      .withColumn('miss_reason', (row) => row.validation.reason)
+      .withColumn('job_change_input_fields', inputFields)
+      // @mermaid-node moved out:"job_change_raw"
+      .withColumn('job_change_raw', {
+        runIf: (row) => row.validation_status === 'ready',
+        run: async ({ row, ctx: rowCtx, previousCell }) => {
+          const previous = previousCell?.value as
+            | ToolExecuteResult
+            | null
+            | undefined;
+          if (
+            previous?.extractedValues.job_change?.get()?.status ===
+            'profile_unavailable'
+          ) {
+            return previous;
+          }
+
+          return rowCtx.tools.execute({
+            id: 'deepline_native_job_change',
+            tool: 'deepline_native_job_change',
+            description:
+              'Check job change; billed only on confirmed moved status.',
+            input: toolInput(row),
+            staleAfterSeconds: MONTH_SECONDS,
+          }) as Promise<ToolExecuteResult>;
+        },
+      })
+      .withColumn('job_change', (row) =>
+        extract(row.job_change_raw as ToolExecuteResult | null),
+      )
+      .run({
+        description:
+          'Validate contact anchors and check job-change status for each row.',
+        key: (row, index) => {
+          const identity = [
+            row.linkedin_url,
+            row.current_domain,
+            row.company_linkedin_url,
+            row.contact_full_name,
+          ]
+            .filter(Boolean)
+            .join('|');
+          // Canonical identities intentionally dedupe duplicate source rows.
+          // Rows without one need their own occurrence-safe identity.
+          return identity || `row:${index}`;
+        },
+      });
+
+    return { rows: checked };
+  },
+  {
+    description:
+      'Detect job changes and return the new company, title, date, and validation evidence.',
+  },
+);

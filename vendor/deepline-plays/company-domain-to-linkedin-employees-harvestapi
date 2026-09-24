@@ -1,0 +1,311 @@
+/** @mermaid
+ * flowchart TD
+ * companyCandidates["Find LinkedIn company candidates with Serper"]
+ * companyCandidates --> candidateValidation["Validate candidates with HarvestAPI"]
+ * candidateValidation --> pageFound{"Exact company resolved?"}
+ * pageFound -->|found| employees["Fetch native employee-search pages"]
+ * pageFound -->|not found| noPage(["No exact company, so no employees"])
+ * employees --> rows[("Employee rows")]
+ * rows --> out["Return the company page and rows"]
+ * class noPage sketch
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { definePlay } from 'deepline';
+
+type EmployeeRow = {
+  full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  title: string | null;
+  linkedin_url: string | null;
+  company_name: string | null;
+  company_linkedin_url: string | null;
+  location: string | null;
+};
+
+type HarvestPagination = {
+  totalPages?: number;
+  totalElements?: number;
+  pageNumber?: number;
+  previousElements?: number;
+  pageSize?: number;
+};
+
+function normalizeDomain(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split(/[/?#]/, 1)[0]
+    .toLowerCase();
+}
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function harvestData(output: any): any {
+  const root =
+    output?.toolResponse?.rawV2 ?? output?.toolResponse?.raw ?? output;
+  return root?.data?.data ?? root?.data ?? root;
+}
+
+function companyFromLookup(output: any): any | null {
+  const data = harvestData(output);
+  const company = data?.element ?? null;
+  return company && typeof company === 'object' ? company : null;
+}
+
+function pageFromSearch(output: any): {
+  elements: any[];
+  pagination: HarvestPagination;
+} {
+  const data = harvestData(output);
+  return {
+    elements: Array.isArray(data?.elements) ? data.elements : [],
+    pagination:
+      data?.pagination && typeof data.pagination === 'object'
+        ? data.pagination
+        : {},
+  };
+}
+
+function normalizeLinkedinCompanyUrl(value: unknown): string | null {
+  const raw = text(value);
+  if (!raw) return null;
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  const match = withProtocol.match(/^https?:\/\/[^/]+\/company\/([^/?#]+)/i);
+  return match?.[1] ? `https://www.linkedin.com/company/${match[1]}/` : null;
+}
+
+function serperLinkedinCompanyCandidates(output: any): string[] {
+  const data = harvestData(output);
+  const declaredLinkedin = output?.extractedValues?.linkedin?.get?.();
+  const rawCandidates = [
+    declaredLinkedin,
+    ...(Array.isArray(data?.organic)
+      ? data.organic.map((result: any) => result?.link ?? result?.url)
+      : []),
+  ];
+  return [
+    ...new Set(
+      rawCandidates
+        .map((candidate) => normalizeLinkedinCompanyUrl(candidate))
+        .filter((candidate): candidate is string => Boolean(candidate)),
+    ),
+  ];
+}
+
+function companyMatchesDomain(company: any, domain: string): boolean {
+  return normalizeDomain(company?.website) === domain;
+}
+
+function matchingCurrentPosition(lead: any, companyId: string): any | null {
+  const positions = Array.isArray(lead?.currentPositions)
+    ? lead.currentPositions
+    : [];
+  return (
+    positions.find(
+      (position: any) => text(position?.companyId) === companyId,
+    ) ?? null
+  );
+}
+
+function normalizeLocation(value: any): string | null {
+  return (
+    text(value) ??
+    text(value?.linkedinText) ??
+    text(value?.text) ??
+    text(value?.name)
+  );
+}
+
+function normalizeEmployee(
+  lead: any,
+  company: any,
+  linkedinCompanyUrl: string,
+): EmployeeRow | null {
+  const companyId = text(company?.id);
+  if (!companyId) return null;
+  const position = matchingCurrentPosition(lead, companyId);
+  if (!position) return null;
+
+  const firstName = text(lead?.firstName);
+  const lastName = text(lead?.lastName);
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+  const linkedinUrl = text(lead?.linkedinUrl);
+  if (!fullName && !linkedinUrl && !text(position?.title)) return null;
+
+  return {
+    full_name: fullName,
+    first_name: firstName,
+    last_name: lastName,
+    title: text(position?.title),
+    linkedin_url: linkedinUrl,
+    company_name: text(position?.companyName) ?? text(company?.name),
+    company_linkedin_url:
+      text(position?.companyLinkedinUrl) ??
+      text(position?.company_linkedin_url) ??
+      text(position?.companyUrl) ??
+      text(position?.company_url) ??
+      linkedinCompanyUrl,
+    location: normalizeLocation(lead?.location),
+  };
+}
+
+function hasAnotherLeadPage(
+  pagination: HarvestPagination,
+  requestedPage: number,
+  elementCount: number,
+): boolean {
+  if (elementCount === 0 || requestedPage >= 100) return false;
+  const totalPages = Number(pagination.totalPages ?? 0);
+  if (totalPages > 0) return requestedPage < totalPages;
+
+  const totalElements = Number(pagination.totalElements ?? 0);
+  const previousElements = Number(pagination.previousElements ?? 0);
+  if (totalElements > 0 && previousElements + elementCount >= totalElements) {
+    return false;
+  }
+
+  const pageSize = Number(pagination.pageSize ?? 0);
+  return pageSize <= 0 || elementCount >= pageSize;
+}
+
+export default definePlay(
+  'company-domain-to-linkedin-employees-harvestapi',
+  async (
+    ctx,
+    input: {
+      domain: string;
+      max_items?: number;
+      /**
+       * Accepted for drop-in compatibility with the original Apify-backed
+       * play. Native HarvestAPI returns the normalized public row contract
+       * directly, so it does not expose an equivalent scraper-depth mode.
+       */
+      profile_depth?: 'short' | 'full' | 'full_with_email';
+    },
+  ): Promise<{
+    domain: string;
+    linkedin_company_url: string | null;
+    rows: unknown;
+  }> => {
+    const domain = normalizeDomain(input.domain);
+    if (!domain) throw new Error('domain is required.');
+    const maxItems = Math.max(
+      1,
+      Math.min(Math.floor(Number(input.max_items ?? 25)), 1000),
+    );
+
+    const validateCompanyCandidates = async (
+      candidateUrls: string[],
+    ): Promise<any | null> => {
+      for (const candidateUrl of candidateUrls) {
+        // @mermaid-node candidateValidation out:"candidateLookup"
+        const candidateLookup = await ctx.tools.execute({
+          id: 'harvestapi_company_candidate',
+          tool: 'harvestapi_get_company',
+          input: { url: candidateUrl },
+          description:
+            'Validate a candidate LinkedIn page against the company domain.',
+        });
+        const candidateCompany = companyFromLookup(candidateLookup);
+        if (
+          candidateCompany &&
+          companyMatchesDomain(candidateCompany, domain)
+        ) {
+          return candidateCompany;
+        }
+      }
+      return null;
+    };
+
+    const fetchEmployees = async (
+      targetCompany: any,
+      linkedinCompanyUrl: string,
+    ): Promise<EmployeeRow[]> => {
+      const companyId = text(targetCompany?.id);
+      if (!companyId) {
+        throw new Error('HarvestAPI returned a company without an id.');
+      }
+
+      const employees: EmployeeRow[] = [];
+      const seen = new Set<string>();
+      const sessionId = `${ctx.run.id}:company-employees`;
+      let page = 1;
+
+      while (employees.length < maxItems) {
+        const response = await ctx.tools.execute({
+          id: 'harvestapi_employee_page',
+          tool: 'harvestapi_search_leads',
+          input: {
+            currentCompanies: linkedinCompanyUrl,
+            sessionId,
+            page,
+          },
+          description:
+            'Fetch one page of employees for the exact LinkedIn company.',
+        });
+        const { elements, pagination } = pageFromSearch(response);
+        for (const lead of elements) {
+          const employee = normalizeEmployee(
+            lead,
+            targetCompany,
+            linkedinCompanyUrl,
+          );
+          if (!employee) continue;
+          const identity =
+            employee.linkedin_url?.toLowerCase() ??
+            `${employee.full_name ?? 'employee'}:${employee.title ?? ''}`.toLowerCase();
+          if (seen.has(identity)) continue;
+          seen.add(identity);
+          employees.push(employee);
+          if (employees.length >= maxItems) break;
+        }
+        if (!hasAnotherLeadPage(pagination, page, elements.length)) break;
+        page += 1;
+      }
+      return employees;
+    };
+
+    // @mermaid-node companyCandidates out:"companyCandidates"
+    const companyCandidates = await ctx.tools.execute({
+      id: 'serper_linkedin_company_from_domain',
+      tool: 'serper_google_search',
+      input: {
+        query: `site:linkedin.com/company "${domain}"`,
+        num: 5,
+      },
+      description:
+        'Find candidate LinkedIn company pages for a company domain.',
+    });
+    const candidateUrls = serperLinkedinCompanyCandidates(companyCandidates);
+    const company = await validateCompanyCandidates(candidateUrls);
+
+    // @mermaid-node pageFound type:"decision" out:"linkedinCompanyUrl"
+    const linkedinCompanyUrl = company
+      ? normalizeLinkedinCompanyUrl(company.linkedinUrl)
+      : null;
+
+    // @mermaid-node employees out:"employees"
+    const employees =
+      company && linkedinCompanyUrl
+        ? await fetchEmployees(company, linkedinCompanyUrl)
+        : [];
+
+    // @mermaid-node rows type:"dataset" out:"rows"
+    const rows = await ctx.dataset('people', employees).run({
+      key: (row, index) =>
+        `${row.linkedin_url ?? row.full_name ?? 'employee'}:${index}`,
+      description: 'Persist native HarvestAPI employee rows.',
+    });
+
+    // @mermaid-node out out:"$output"
+    return { domain, linkedin_company_url: linkedinCompanyUrl, rows };
+  },
+  {
+    description:
+      'Resolve a domain and return an exact-company, multi-page LinkedIn employee dataset through native HarvestAPI.',
+  },
+);

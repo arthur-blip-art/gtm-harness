@@ -1,0 +1,208 @@
+# Prompt index (181 templates from Deepline / Clay)
+
+Use `gtm prompts show "<key>"` to print one with placeholders converted to `{{label}}`; `--raw` for the original Clay-style text. Adapt, do not paste blindly: most were written for US enterprise research.
+
+## company research (112)
+- 10-K Analysis of Top Annual Initiatives
+- AI Outbound - Followup with Event Attendees
+- Accelerator participation
+- Annual Electricity Spend
+- Check if Company Offers a Free Trial
+- Check if company gives demos
+- Check if domain uses Google for MX Record
+- Classify as B2B or B2C based on company description
+- Company Competitors
+- Company Core Values
+- Company Customers
+- Company GTM Strategy Analysis
+- Company Mission Statement
+- Company Snapshot
+- Customer type (from LinkedIn and website)
+- Determine A Recent News Article is a Funding Announcement
+- Determine Company Revenue Models
+- Determine a company’s most frequent negative feedback
+- Determine a company’s target industries
+- Determine if a company has ever experienced a data leak
+- Determine if a company is SaaS
+- Determine if a company is a retail company
+- Determine if a company sells a normal or inferior good
+- Determine if a person has ever worked for a certain company
+- Determine industry of company
+- Determine industry trends
+- Determine trend of a company's YoY valuation change
+- Discover B2B Domain's Client Showcase Page
+- Domain Registration Date
+- Domain Validation
+- Enrich to get Company Profile
+- Find # locations for company
+- Find Company Domain
+- Find Company Domain from Company Name
+- Find Company Social Profiles
+- Find Company's Cloud Provider
+- Find ICP from website
+- Find ICP job title from company description
+- Find Number of Locations
+- Find X Profile Given Company Name and Validated Domain
+- Find a Company's LinkedIn Profile URL
+- Find a VC firm's portfolio companies
+- Find a company's 10-K
+- Find a company’s child companies
+- Find a company’s competitors in a specified region
+- Find a company’s market cap
+- Find a company’s parent company
+- Find a person's linkedin profile (if you have person's name + company domain]
+- Find a person’s company’s domain
+- Find all continents a company is in
+- Find careers page of company
+- Find child companies (subsidiaries)
+- Find company Instagram account
+- Find company Twitter/X account
+- Find company YouTube account
+- Find company blog
+- Find company name using domain
+- Find event person has attended
+- Find events person has been a keynote at
+- Find how much a company raised in its last round
+- Find how much funding a company has raised in total
+- Find if a company is headquartered in a specified location
+- Find keywords on a website
+- Find list of published ESG/Sustainability Published reports
+- Find most expensive pricing plan’s cost
+- Find most expensive pricing plan’s features
+- Find names of a company's founders
+- Find negative news article about a company
+- Find number of pricing plan options
+- Find number of restaurant or store locations
+- Find out when a company came out of Stealth
+- Find parent companies
+- Find recent shocks that would impact a company’s demand
+- Find upcoming event for company
+- Find websites for companies in a certain industry
+- Founding Year
+- Get ALL Fundraising Details for Company
+- Get Estimated Fleet Size Info
+- Get NAICS codes
+- Get date for next company event
+- Get domain from company name
+- Give company’s pricing plan cost range
+- ICP from website
+- Identify Company Training Programs/Methodologies
+- Identify company’s CRM from tech stack
+- List company’s products & services
+- Look for past company events
+- Normalize company name
+- P.S location
+- PPA/VPPA Confirmation
+- Positive Company News
+- Private Equity-Owned Company Research
+- Public company revenue in USD
+- Rate Website Design
+- Recent Company News
+- SaaS Company?
+- Scrape blogs to find an industry trend
+- Search 10k for mentions of AI Productivity Tools
+- See if a company has ever been sold
+- See if a company offers enterprise/custom plans
+- See if a person has worked in a particular industry
+- Summarize event landing page
+- Summarize pricing plans
+- Total Energy Consumption
+- Total Energy Consumption (2)
+- Updated Validate Domain Status Prompt
+- Use company mission to write email first line
+- Use location to write email first line
+- Use recent news headline to write email first line
+- Validate Domain (updated) 7/2/25
+- Validate Domains (and provide redirect urls)
+- Website Builder
+
+## person (33)
+- 5 interesting facts about a candidate
+- Check if a person has attended grad school
+- Check if a person has the experience needed for a job opening
+- Clean job titles
+- Determine Someone's Likely Manager
+- Determine a person's skill set
+- Determine if a person recently graduated
+- Determine number of employees according to LinkedIn
+- Estimated Age
+- Find & Normalize First Name from Instagram
+- Find CEO Contact
+- Find Linkedin for CEO, Owner, or Head of Marketing
+- Find Person's GitHub
+- Find Person's Twitter Handle
+- Find a Person's LinkedIn Profile URL
+- Find job opening pay range
+- Find podcast appearance
+- Find where a person is located
+- Generate an email first line complement based on someone’s LinkedIn
+- Generate interview questions
+- Get key requirements for job
+- Job Function
+- Leverage Case Studies for Outbound
+- LinkedIn Profile Highlights
+- More generic personalization
+- Opening message
+- Summarize LinkedIn profile
+- Summarize job opening
+- Use LinkedIn post to write email first line
+- Use job openings to write email first line
+- Use job title to write email first line
+- Write a connect message for LinkedIn
+- Write a professional bio
+
+## classification (5)
+- Classify as B2B or B2C
+- Email classification
+- Logistics SaaS ID
+- Site Keyword Extraction
+- Venture-Backed?
+
+## other (19)
+- Competitive intelligence
+- Corporate Hierarchy - Initial Structure
+- Corporate Hierarchy JSON
+- Find all countries a business is located in
+- Find all major cities a business is located in
+- Find all states a business is located in
+- Find an organization's structure type
+- Find business phone number
+- Find case study
+- Find notable restaurant in city
+- GMV
+- ICP & Value Prop
+- Infra Fit Analysis
+- Internal AI Tool Analysis
+- LLM Estimation Search 3-28-2025
+- Research
+- Research Thoughts
+- Social Profile Summary
+- Thought Leadership Research
+
+## cleaning (3)
+- Create JSON lists from a comma separated string
+- Entity Normalization
+- Extract city from address
+
+## outreach copy (5)
+- Creative Prospecting Ideas
+- Find business email address
+- Use education to write email first line
+- Use time in role to write email first line
+- Write a brief subject line
+
+## calls (4)
+- Extract use case and objections from transcript
+- GS - Analyst Call Transcript
+- Gong Call Summary
+- Restructure Gong Calls into JSON
+
+## Most useful for B2B SaaS prospecting (Chift)
+- Find ICP from website
+- Company GTM Strategy Analysis
+- SaaS Company?
+- Use job openings to write email first line
+- Job Function
+- Leverage Case Studies for Outbound
+- Check if Company Offers a Free Trial
+- Determine a company's target industries

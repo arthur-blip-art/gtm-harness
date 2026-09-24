@@ -1,0 +1,874 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { definePlay, isProviderUnavailable } from 'deepline';
+import type { ToolExecuteResult } from 'deepline';
+
+type EstimationMethod =
+  | 'cost_optimized'
+  | 'crust_only'
+  | 'pdl_only'
+  | 'validate';
+
+type CountRelation = 'eq' | 'gte' | null;
+
+type ProviderAttempt = {
+  provider: string;
+  status: 'accepted' | 'miss' | 'skipped';
+  records_returned: number;
+  matched_count: number | null;
+  count_relation: CountRelation;
+  error: string | null;
+};
+
+type Input = {
+  domain: string;
+  company_headcount?: number;
+  method?: EstimationMethod;
+};
+
+type CountEvidence = {
+  count: number;
+  relation: Exclude<CountRelation, null>;
+  source: string;
+};
+
+const MAX_QUERY_TITLES = 100;
+
+const FALLBACK_TITLE_PHRASES = [
+  'software engineer',
+  'software developer',
+  'backend engineer',
+  'frontend engineer',
+  'full stack engineer',
+  'platform engineer',
+  'site reliability engineer',
+  'devops engineer',
+  'infrastructure engineer',
+  'data engineer',
+  'machine learning engineer',
+  'security engineer',
+  'qa engineer',
+  'test automation engineer',
+  'data scientist',
+  'ai engineer',
+  'engineering manager',
+  'head of engineering',
+  'vp of engineering',
+  'director of engineering',
+];
+
+const NON_SOFTWARE_ENGINEERING =
+  /\b(sales|solutions?|support|customer|recruit|talent|marketing|account|implementation|field service|field cto|community|product manager|user researcher|civil|structural|mechanical|electrical|manufactur|landscape|construction|security compliance|security guard)\b/i;
+const SOFTWARE_ENGINEERING =
+  /\b(software|developer|platform engineer|infrastructure|infra engineer|devops|site reliability|sre|data engineer|data scientist|machine learning|ml engineer|ai engineer|artificial intelligence|security engineer|qa|quality assurance|test automation|engineering manager|director of engineering|head of engineering|vp of engineering|vice president of engineering|chief technology officer|cto|member of technical staff|founding engineer|product engineer|forward deployed engineer|deployment engineer|telephony engineer|analytics engineer|design engineer|research engineer|research scientist)\b/i;
+const SOFTWARE_RESEARCH_TITLE =
+  /^(?:ai )?research(?:er| lead)?$|^ml(?:$|[\s,].*)|^rl\b|^data science$|^engineer(?:$|[\s,].*)/i;
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function nested(value: unknown, ...path: string[]): unknown {
+  let current: unknown = value;
+  for (const part of path) current = record(current)?.[part];
+  return current;
+}
+
+function rawResult(value: unknown): unknown {
+  return (
+    (record(value)?.toolResponse && record(record(value)?.toolResponse)?.raw) ||
+    record(value)?.result ||
+    record(value)?.data ||
+    value
+  );
+}
+
+function normalizeDomain(value: unknown): string {
+  const domain = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .replace(/^www\./, '')
+    .split(/[/?#]/)[0]
+    .replace(/\.$/, '');
+  return domain.includes('.') && /^[a-z0-9.-]+$/.test(domain) ? domain : '';
+}
+
+function normalizeMethod(value: unknown): EstimationMethod {
+  return value === 'crust_only' || value === 'pdl_only' || value === 'validate'
+    ? value
+    : 'cost_optimized';
+}
+
+function total(raw: unknown): number | null {
+  const value =
+    record(raw)?.total_count ??
+    record(raw)?.total ??
+    nested(raw, 'data', 'total_count') ??
+    nested(raw, 'data', 'total');
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function arrayAt(raw: unknown, paths: string[][]): unknown[] {
+  for (const path of paths) {
+    const value = nested(raw, ...path);
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function titleRoster(raw: unknown): string[] {
+  return [
+    ...arrayAt(raw, [
+      ['output', 'titles'],
+      ['data', 'output', 'titles'],
+      ['titles'],
+      ['data', 'titles'],
+    ]),
+  ]
+    .filter((title): title is string => typeof title === 'string')
+    .map((title) => title.trim())
+    .filter(Boolean);
+}
+
+export function isEngineeringTitle(title: string): boolean {
+  const normalized = title.trim();
+  if (!normalized || NON_SOFTWARE_ENGINEERING.test(normalized)) return false;
+  if (/\b(?:cto|engineer)\b.*\bof\b(?!\s+engineering\b)/i.test(normalized)) {
+    return false;
+  }
+  if (/^(engineer|engineering)$/i.test(normalized)) return true;
+  return (
+    SOFTWARE_ENGINEERING.test(normalized) ||
+    SOFTWARE_RESEARCH_TITLE.test(normalized)
+  );
+}
+
+export function selectEngineeringTitles(titles: string[]): string[] {
+  return [...new Set(titles.filter(isEngineeringTitle))];
+}
+
+function engineeringRange(count: number) {
+  if (count <= 0) return '0';
+  if (count <= 5) return '1-5';
+  if (count <= 15) return '6-15';
+  if (count <= 30) return '16-30';
+  if (count <= 75) return '31-75';
+  if (count <= 150) return '76-150';
+  if (count <= 300) return '151-300';
+  return '300+';
+}
+
+function attempt(
+  provider: string,
+  matchedCount: number | null,
+  recordsReturned: number,
+  relation: CountRelation,
+): ProviderAttempt {
+  return {
+    provider,
+    status: matchedCount !== null && matchedCount > 0 ? 'accepted' : 'miss',
+    records_returned: recordsReturned,
+    matched_count: matchedCount,
+    count_relation: relation,
+    error: null,
+  };
+}
+
+function errored(provider: string, message: string): ProviderAttempt {
+  return {
+    provider,
+    status: 'miss',
+    records_returned: 0,
+    matched_count: null,
+    count_relation: null,
+    error: message,
+  };
+}
+
+function skipped(provider: string): ProviderAttempt {
+  return {
+    provider,
+    status: 'skipped',
+    records_returned: 0,
+    matched_count: null,
+    count_relation: null,
+    error: null,
+  };
+}
+
+function crustTitleCondition(matchedTitles: string[]) {
+  if (matchedTitles.length > 0) {
+    return {
+      field: 'experience.employment_details.current.title',
+      type: 'in',
+      value: matchedTitles,
+    };
+  }
+  return {
+    op: 'or',
+    conditions: FALLBACK_TITLE_PHRASES.map((title) => ({
+      field: 'experience.employment_details.current.title',
+      type: '[.]',
+      value: title,
+    })),
+  };
+}
+
+async function loadTitles(ctx: any, domain: string) {
+  const response = (await ctx.tools.execute({
+    id: 'engineering_company_title_roster',
+    tool: 'company_titles',
+    input: { domain },
+    description:
+      'Load the free company-specific current-title roster before paid engineering-count searches.',
+  })) as ToolExecuteResult<unknown>;
+  return titleRoster(rawResult(response));
+}
+
+async function countWithCrust(
+  ctx: any,
+  domain: string,
+  matchedTitles: string[],
+) {
+  const response = (await ctx.tools.execute({
+    id: 'crust_engineering_exact_title_count',
+    tool: 'crustdata_v3_person_search',
+    input: {
+      filters: {
+        op: 'all_of',
+        conditions: [
+          {
+            op: 'and',
+            conditions: [
+              {
+                field:
+                  'experience.employment_details.current.company_website_domain',
+                type: '=',
+                value: domain,
+              },
+              crustTitleCondition(matchedTitles),
+            ],
+          },
+        ],
+      },
+      limit: 1,
+    },
+    description:
+      'Return one CrustData profile and use total_count; billing is based on the returned profile, never total_count.',
+  })) as ToolExecuteResult<unknown>;
+  const raw = rawResult(response);
+  return {
+    count: total(raw),
+    recordsReturned: arrayAt(raw, [['profiles'], ['data', 'profiles']]).length,
+  };
+}
+
+/**
+ * Tier 1: CrustData company enrichment.
+ *
+ * CrustData exposes the engineering headcount as a single field --
+ * `headcount.linkedin_headcount_by_role_absolute.Engineering` -- so this reads
+ * the number directly instead of paying per profile to count it.
+ *
+ * Cost per company (measured):
+ *   crustdata_company_enrichment    $0.05 flat  (1 CrustData credit x $0.05)
+ *   peopledatalabs_enrich_company   $0.10 flat, $0 on a 404 miss
+ *   crustdata_v3_person_search      $0.03 per RETURNED RESULT (fallback)
+ *
+ * CrustData does NOT return an engineering growth rate -- verified empty for
+ * stripe.com, figma.com, notion.so and linear.app even when requested
+ * explicitly -- so PDL remains the only tier that supplies growth.
+ *
+ * Prefers the resolved LinkedIn URL over the raw domain: on a 40-company sample
+ * 10% matched a different entity by domain, and `notion.so` by domain matches
+ * "Notion Korea" (11 employees, no Engineering key at all).
+ */
+// CrustData's `fields` parameter for company enrichment only accepts
+// top-level field group names (e.g. `headcount`), never dot-path
+// sub-selections into a group -- confirmed against CrustData's own docs
+// (`fields=headcount,funding_and_investment`) and a live 422
+// ("Unsupported company enrichment fields: headcount.linkedin_headcount_by_role_absolute,
+// headcount.linkedin_headcount") that reached production 2026-08-22 because
+// nothing statically validates a literal `fields` string against the tool's
+// own allowed-values list at author time. Requesting the group is enough:
+// `linkedin_headcount_by_role_absolute`/`linkedin_headcount` are nested keys
+// already present inside the returned `headcount` object (read in
+// readCrustCompanyHeadcount below), not separate fields to request.
+const CRUST_COMPANY_HEADCOUNT_FIELDS = 'headcount';
+
+const CRUST_COMPANY_LOOKUP_DESCRIPTION =
+  'Read the Engineering role headcount directly from CrustData company enrichment.';
+
+/**
+ * Reads the Engineering headcount out of a CrustData company-enrichment
+ * response. Kept separate from the call itself because `ctx.tools.execute`
+ * needs a literal `id` at each call site: the static checker resolves step ids
+ * from the source, so an id threaded through a parameter cannot be attached to
+ * logs, metadata, or receipts.
+ */
+function readCrustCompanyHeadcount(response: ToolExecuteResult<unknown>) {
+  // The payload is an array of company objects; tolerate a `result`/`data`
+  // wrapper since the tool's declared output schema is { status, result }.
+  const raw = rawResult(response);
+  const rows = Array.isArray(raw)
+    ? raw
+    : arrayAt(raw, [['result'], ['data'], ['data', 'result']]);
+  const first = record(rows[0]);
+  if (!first) return { count: null, headcount: null };
+
+  const headcountBlock = record(first.headcount);
+  const byRole = record(headcountBlock?.linkedin_headcount_by_role_absolute);
+  const engineering = byRole?.Engineering;
+  const totalHeadcount = headcountBlock?.linkedin_headcount;
+
+  // If CrustData has no Engineering key we return nothing rather than deriving
+  // a value. A wrong-entity match (Notion Korea) has role buckets but no
+  // Engineering one, and summing the others would ship a confident wrong number.
+  return {
+    count:
+      typeof engineering === 'number' && Number.isFinite(engineering)
+        ? engineering
+        : null,
+    headcount:
+      typeof totalHeadcount === 'number' && Number.isFinite(totalHeadcount)
+        ? totalHeadcount
+        : null,
+  };
+}
+
+/**
+ * Look the company up by its resolved LinkedIn URL, then retry on the raw
+ * domain if that returns nothing.
+ *
+ * CrustData matches LinkedIn slugs exactly, and the two providers do not always
+ * agree on the canonical slug for the same company -- verified cases include
+ * `sunnybenefits.com`, which PDL resolves to `.../sunnyrewards` while CrustData
+ * indexes it under `.../sunnybenefits`, and `elevatecannabis.com`
+ * (`.../elevatemissouri` vs `.../elevatecannabis`). Both are the same company
+ * under a rebrand or DBA, so a single-key lookup silently loses them.
+ *
+ * Trying the LinkedIn URL first keeps the wrong-entity protection that identity
+ * resolution buys (notion.so by domain matches "Notion Korea"), while the domain
+ * retry recovers the slug-mismatch cases. Both calls hit the same flat-rate
+ * tier, and the retry only runs when the first attempt found nothing.
+ */
+type Guarded<T> = { value: T | null; error: string | null };
+
+// A tier's provider call is a live, evolving third-party API surface: a
+// provider can 422 on a field or filter Deepline's own static checker cannot
+// see is invalid (as happened here -- see CRUST_COMPANY_HEADCOUNT_FIELDS),
+// throttle, or have an outage. None of that is a reason to abort the whole
+// ladder: the point of having tiers 2 and 3 is to survive exactly this. A
+// provider call failing uncaught doesn't just lose one tier's answer, it
+// throws out of engineeringTeamSizeHandler entirely -- and when this play
+// runs as an inline ctx.runPlay child (the common case), that uncaught throw
+// stalled the parent run for ~18 minutes instead of falling through, because
+// the failure surfaced through the same durable-receipt path as a real
+// provider outage.
+//
+// This is deliberately an ALLOWLIST of what's safe to swallow, not a
+// blocklist of what isn't: `isProviderUnavailable` (rate_limit/network/
+// upstream, account-capacity 402s, missing integration credentials) plus
+// CrustData/PDL's `validation` category, since a bad request to THIS tier's
+// tool -- the exact 422 that caused the incident -- says nothing about
+// whether a DIFFERENT provider on the next tier can still answer. Every
+// other category (authentication, authorization, internal, conflict,
+// unknown, billing) re-throws: those can mean a broken credential, a real
+// Deepline defect, or an org-wide misconfiguration that would fail
+// identically on every remaining tier while silently billing for each
+// attempt, and swallowing them would hide exactly the kind of bug this
+// incident was.
+//
+// Checked structurally rather than via `instanceof ToolExecutionError` for
+// the category read: this handler runs `inline: true`, and the prebuilt
+// registry's inline-handler check only allows a fixed set of runtime imports
+// from `deepline` (definePlay, isProviderUnavailable, steps,
+// ProviderTransientError) since the handler source is copied into arbitrary
+// consuming bundles. `isProviderUnavailable` itself is on that allowlist and
+// is imported directly.
+const SAFE_TO_FALL_THROUGH_CATEGORIES = new Set(['validation']);
+
+function isSafeToFallThrough(error: unknown): boolean {
+  if (isProviderUnavailable(error)) return true;
+  if (error === null || typeof error !== 'object') return false;
+  const category =
+    'category' in error
+      ? String((error as { category: unknown }).category ?? '')
+      : '';
+  return SAFE_TO_FALL_THROUGH_CATEGORIES.has(category);
+}
+
+async function guardedCall<T>(
+  call: () => Promise<T>,
+): Promise<Guarded<Awaited<T>>> {
+  try {
+    return { value: await call(), error: null };
+  } catch (error) {
+    if (!isSafeToFallThrough(error)) {
+      throw error;
+    }
+    return {
+      value: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+type TierResult = {
+  count: number | null;
+  headcount: number | null;
+  error: string | null;
+};
+
+async function guardedTierCall(
+  call: () => Promise<{ count: number | null; headcount: number | null }>,
+): Promise<TierResult> {
+  const guarded = await guardedCall(call);
+  return {
+    count: guarded.value?.count ?? null,
+    headcount: guarded.value?.headcount ?? null,
+    error: guarded.error,
+  };
+}
+
+async function countWithCrustCompany(
+  ctx: any,
+  domain: string,
+  linkedinUrl: string | null,
+): Promise<TierResult> {
+  if (linkedinUrl) {
+    const viaLinkedin = await guardedTierCall(async () =>
+      readCrustCompanyHeadcount(
+        (await ctx.tools.execute({
+          id: 'crust_company_engineering_headcount',
+          tool: 'crustdata_company_enrichment',
+          input: {
+            companyLinkedinUrl: linkedinUrl,
+            fields: CRUST_COMPANY_HEADCOUNT_FIELDS,
+          },
+          description: CRUST_COMPANY_LOOKUP_DESCRIPTION,
+        })) as ToolExecuteResult<unknown>,
+      ),
+    );
+    // A count wins outright. A LinkedIn-keyed error also short-circuits here
+    // rather than retrying by domain: the same invalid `fields`/malformed
+    // request would fail identically on the retry, so the caller sees the
+    // one clear reason instead of two duplicate ones.
+    if (viaLinkedin.count !== null || viaLinkedin.error !== null) {
+      return viaLinkedin;
+    }
+  }
+  return guardedTierCall(async () =>
+    readCrustCompanyHeadcount(
+      (await ctx.tools.execute({
+        id: 'crust_company_engineering_headcount_by_domain',
+        tool: 'crustdata_company_enrichment',
+        input: {
+          companyDomain: domain,
+          fields: CRUST_COMPANY_HEADCOUNT_FIELDS,
+        },
+        description: CRUST_COMPANY_LOOKUP_DESCRIPTION,
+      })) as ToolExecuteResult<unknown>,
+    ),
+  );
+}
+
+/**
+ * PDL fallback via Company Enrich rather than Person Search.
+ *
+ * Measured against the live PDL API (2026-08-18):
+ *   person/search  -> 3.92 credits per call (0.28 USD per returned profile)
+ *   company/enrich -> 1.00 credit per call, and 0 on a miss (404)
+ *
+ * Company Enrich also answers the question directly: `employee_count_by_class`
+ * carries the R&D aggregate and `employee_growth_rate_12_month_by_class` the
+ * matching growth rate, so one call replaces both Person Search fallbacks.
+ * The class aggregate is used deliberately in preference to summing individual
+ * `employee_count_by_role` rows (engineering + research + sales_engineering),
+ * which double-counts and drifts with PDL's role taxonomy.
+ *
+ * Deliberately NO `data_include`: projection is a bandwidth control, not a spend
+ * control — verified live that the full ~31KB record and a 0.5KB projection both
+ * cost exactly 1 credit. Trimming would mean paying full price for a fraction of
+ * the record and re-buying the rest later, so the whole payload is fetched and
+ * returned on `company_record` for downstream reuse (firmographics, funding,
+ * tech stack, affiliated entities) without a second billable call.
+ */
+async function countWithPdlCompanyEnrich(ctx: any, domain: string) {
+  const response = (await ctx.tools.execute({
+    id: 'pdl_engineering_company_enrich',
+    tool: 'peopledatalabs_enrich_company',
+    input: { domain },
+    description:
+      'PDL fallback via Company Enrich: one 1-credit call returning the full company record, from which the R&D headcount class and its 12-month growth rate are read.',
+  })) as ToolExecuteResult<unknown>;
+
+  const raw = rawResult(response) as Record<string, unknown> | null;
+  const record = (
+    raw && typeof raw === 'object' && 'data' in raw
+      ? (raw as { data?: unknown }).data
+      : raw
+  ) as Record<string, unknown> | null;
+  if (!record || typeof record !== 'object') {
+    return {
+      count: null as number | null,
+      headcount: null as number | null,
+      growth: null as number | null,
+      record: null as Record<string, unknown> | null,
+    };
+  }
+
+  const byClass = record.employee_count_by_class as
+    | Record<string, unknown>
+    | undefined;
+  const growthByClass = record.employee_growth_rate_12_month_by_class as
+    | Record<string, unknown>
+    | undefined;
+
+  const rnd = byClass?.research_and_development;
+  const growth = growthByClass?.research_and_development;
+  const headcount = record.employee_count;
+
+  return {
+    count: typeof rnd === 'number' && Number.isFinite(rnd) ? rnd : null,
+    headcount:
+      typeof headcount === 'number' && Number.isFinite(headcount)
+        ? headcount
+        : null,
+    growth:
+      typeof growth === 'number' && Number.isFinite(growth) ? growth : null,
+    // Full record, kept so downstream consumers never re-buy this company.
+    record,
+  };
+}
+
+/**
+ * Provider selection notes (measured on a 300-company sample of a real TAM list,
+ * 2026-08-18, via PDL bulk company enrich):
+ *
+ *   matched                      98% of domains
+ *   R&D headcount present        99% of matches (100% at every headcount band)
+ *   R&D 12-month growth present  61% of matches -- 24% at 1-10 employees,
+ *                                60% at 11-50, 70% at 51-200, 100% at 500+
+ *   R&D reported as exactly 0    34% of matches (mostly sub-50 headcount)
+ *
+ * Practical guidance: if the caller needs an engineering/R&D *growth rate*, PDL
+ * is the better source -- no other provider in this ladder returns one. If they
+ * only need a headcount, the two cheaper CrustData tiers answer first and PDL
+ * is never reached. Treat a reported R&D count of 0 as "unclassified",
+ * not as a real zero; it is flagged via `zero_engineering_count_reported`.
+ */
+/**
+ * Tier 0: resolve the company identity before spending anything.
+ *
+ * PDL's Cleaner API is free (no `x-call-credits-spent`, no provider credits) and
+ * returns the canonical LinkedIn company URL for a website. That URL is a far
+ * stronger join key than the raw domain: on a 40-company sample of a real TAM
+ * list, PDL clean resolved a LinkedIn URL for 40/40 domains and 4 of those (10%)
+ * matched a DIFFERENT company entity by LinkedIn than by domain.
+ *
+ * The failure this prevents is silent and expensive. `notion.so` looked up by
+ * domain matched "Notion Korea" (11 employees, no Engineering role at all);
+ * looked up by its resolved LinkedIn URL it matched Notion (1,603 engineers of
+ * 7,508). Every downstream tier would otherwise have counted the wrong company
+ * and billed for the privilege.
+ *
+ * Resolution never invents an identifier -- when clean returns nothing usable the
+ * caller's domain is used unchanged.
+ */
+async function resolveCompanyIdentity(ctx: any, domain: string) {
+  try {
+    const response = (await ctx.tools.execute({
+      id: 'company_clean_identity_resolution',
+      tool: 'peopledatalabs_company_clean',
+      input: { website: domain },
+      description:
+        'Resolve the canonical company identity (LinkedIn URL) before any billable lookup. The Cleaner API is free.',
+    })) as ToolExecuteResult<unknown>;
+    const raw = rawResult(response);
+    const resolved = record(raw)?.data
+      ? record(record(raw)?.data)
+      : record(raw);
+    const linkedinUrl = resolved?.linkedin_url;
+    const name = resolved?.name;
+    return {
+      linkedinUrl:
+        typeof linkedinUrl === 'string' && linkedinUrl.trim()
+          ? linkedinUrl.trim()
+          : null,
+      name: typeof name === 'string' && name.trim() ? name.trim() : null,
+    };
+  } catch {
+    // Identity resolution is an optimisation, never a gate. If the free call
+    // fails the ladder still runs on the caller's domain.
+    return { linkedinUrl: null as string | null, name: null as string | null };
+  }
+}
+
+export async function engineeringTeamSizeHandler(ctx: any, input: Input) {
+  const domain = normalizeDomain(input.domain);
+  if (!domain) throw new Error('domain must be a valid company domain.');
+  const method = normalizeMethod(input.method);
+  const identity = await resolveCompanyIdentity(ctx, domain);
+  const attempts: ProviderAttempt[] = [];
+
+  // Cost ladder, measured per company:
+  //   1. crustdata_company_enrichment    $0.05 flat
+  //   2. peopledatalabs_enrich_company   $0.10 flat, $0 on a miss (404)
+  //   3. crustdata_v3_person_search      $0.03 PER RETURNED RESULT  <- fallback
+  //
+  // The two company-lookup tiers are flat per company and read the engineering
+  // headcount as a single field, so they run first. The title-roster search is
+  // last precisely because its cost scales with results rather than companies.
+  //
+  // deepline_native_search_contact ("Waterfall") was dropped from the ladder
+  // entirely: it bills $0.04 PER CONTACT RETURNED against a page size defaulting
+  // to 20, so one company could bill $0.80 and 3,000 companies $240-$2,400,
+  // versus PDL's flat and predictable $300.
+
+  // --- Tier 1: CrustData company enrichment -------------------------------
+  const runCrustCompany = method !== 'pdl_only';
+  let crustCompanyCount: number | null = null;
+  let crustCompanyHeadcount: number | null = null;
+  if (runCrustCompany) {
+    const result = await countWithCrustCompany(
+      ctx,
+      domain,
+      identity.linkedinUrl,
+    );
+    crustCompanyCount = result.count;
+    crustCompanyHeadcount = result.headcount;
+    attempts.push(
+      result.error !== null
+        ? errored('CrustData company R&D headcount', result.error)
+        : attempt(
+            'CrustData company R&D headcount',
+            crustCompanyCount,
+            crustCompanyCount && crustCompanyCount > 0 ? 1 : 0,
+            crustCompanyCount === null ? null : 'eq',
+          ),
+    );
+  } else {
+    attempts.push(skipped('CrustData company R&D headcount'));
+  }
+  const crustCompanyHasCount =
+    crustCompanyCount !== null && crustCompanyCount > 0;
+
+  // --- Tier 2: PDL company enrich ----------------------------------------
+  // Costs twice tier 1 but is the only tier that returns a growth rate, so
+  // `validate` and `pdl_only` reach it deliberately.
+  const runPdl =
+    method === 'pdl_only' ||
+    method === 'validate' ||
+    (method !== 'crust_only' && !crustCompanyHasCount);
+  let pdlExpandedCount: number | null = null;
+  let pdlCompanyGrowth: number | null = null;
+  let pdlCompanyRecord: Record<string, unknown> | null = null;
+  if (runPdl) {
+    const guarded = await guardedCall(() =>
+      countWithPdlCompanyEnrich(ctx, domain),
+    );
+    pdlExpandedCount = guarded.value?.count ?? null;
+    pdlCompanyGrowth = guarded.value?.growth ?? null;
+    pdlCompanyRecord = guarded.value?.record ?? null;
+    attempts.push(
+      guarded.error !== null
+        ? errored('PDL company R&D headcount', guarded.error)
+        : attempt(
+            'PDL company R&D headcount',
+            pdlExpandedCount,
+            pdlExpandedCount && pdlExpandedCount > 0 ? 1 : 0,
+            pdlExpandedCount === null ? null : 'eq',
+          ),
+    );
+  } else {
+    attempts.push(skipped('PDL company R&D headcount'));
+  }
+  const pdlHasCount = pdlExpandedCount !== null && pdlExpandedCount > 0;
+
+  // --- Tier 3 (fallback): title roster + CrustData exact-title search ------
+  // Reached when BOTH company lookups fail to produce a usable count. Note that
+  // `hasCount` is `> 0`, not `!= null`: a reported headcount of 0 is treated as
+  // "no answer" and falls through here, because 0 overwhelmingly means the
+  // provider could not classify the company rather than that it employs no
+  // engineers (34% of PDL company matches report R&D = 0). This tier bills
+  // per returned result, so it is deliberately last. The title roster it needs
+  // is free but still a round trip, so it is loaded lazily here rather than up
+  // front -- companies answered by tier 1 or 2 never pay for either call.
+  let crustCount: number | null = null;
+  let titleQueryTruncated = false;
+  let matchedTitles: string[] = [];
+  // Declared out here because the return object reports the roster size even on
+  // runs where tier 3 never executes.
+  let titles: string[] = [];
+  const runCrustTitles =
+    method === 'crust_only' ||
+    method === 'validate' ||
+    (method !== 'pdl_only' && !crustCompanyHasCount && !pdlHasCount);
+  if (runCrustTitles) {
+    const guardedTitles = await guardedCall(() => loadTitles(ctx, domain));
+    titles = guardedTitles.value ?? [];
+    attempts.push(
+      guardedTitles.error !== null
+        ? errored('Company title roster', guardedTitles.error)
+        : attempt('Company title roster', titles.length, titles.length, 'eq'),
+    );
+    matchedTitles = selectEngineeringTitles(titles);
+    const queryTitles = matchedTitles.slice(0, MAX_QUERY_TITLES);
+    titleQueryTruncated = queryTitles.length < matchedTitles.length;
+    // A failed roster load (guardedTitles.error !== null) still reaches this
+    // call with an empty queryTitles list, same as a clean roster miss
+    // already does -- FALLBACK_TITLE_PHRASES in crustTitleCondition covers
+    // that case. Running it anyway (instead of nesting a second conditional
+    // here) keeps this tool call a direct sibling of loadTitles's, which the
+    // static pipeline extractor needs to keep it visible in
+    // prebuilt-share-pages.json; a second-level if/else buried the
+    // crustdata_v3_person_search step behind an opaque "Conditional code"
+    // node even though it still ran and billed.
+    const guardedCrust = await guardedCall(() =>
+      countWithCrust(ctx, domain, queryTitles),
+    );
+    crustCount = guardedCrust.value?.count ?? null;
+    attempts.push(
+      guardedCrust.error !== null
+        ? errored('CrustData exact current titles', guardedCrust.error)
+        : attempt(
+            'CrustData exact current titles',
+            crustCount,
+            guardedCrust.value?.recordsReturned ?? 0,
+            crustCount === null ? null : titleQueryTruncated ? 'gte' : 'eq',
+          ),
+    );
+  } else {
+    attempts.push(skipped('Company title roster'));
+    attempts.push(skipped('CrustData exact current titles'));
+  }
+
+  // Selection follows the ladder: first tier that produced a count wins.
+  let selected: CountEvidence | null = null;
+  if (crustCompanyCount !== null && crustCompanyCount > 0) {
+    selected = {
+      count: crustCompanyCount,
+      relation: 'eq',
+      source: 'crust_company_rnd_headcount',
+    };
+  } else if (pdlExpandedCount !== null && pdlExpandedCount > 0) {
+    selected = {
+      count: pdlExpandedCount,
+      relation: 'eq',
+      source: 'pdl_company_rnd_headcount',
+    };
+  } else if (crustCount !== null && crustCount > 0) {
+    selected = {
+      count: crustCount,
+      relation: titleQueryTruncated ? 'gte' : 'eq',
+      source: 'crustdata_exact_titles',
+    };
+  }
+
+  const comparisonCounts = [
+    crustCount,
+    crustCompanyCount,
+    pdlExpandedCount,
+  ].filter((value): value is number => value !== null && value > 0);
+  const disagreement =
+    comparisonCounts.length > 1
+      ? (Math.max(...comparisonCounts) - Math.min(...comparisonCounts)) /
+        Math.max(1, Math.max(...comparisonCounts))
+      : null;
+  const headcount = Number(input.company_headcount);
+  const hasHeadcount = Number.isFinite(headcount) && headcount > 0;
+  const ratio = selected && hasHeadcount ? selected.count / headcount : null;
+  const reviewReasons = [
+    ...(matchedTitles.length === 0 ? ['no_company_specific_titles'] : []),
+    ...(titleQueryTruncated ? ['engineering_title_query_truncated'] : []),
+    ...(selected?.relation === 'gte' ? ['estimate_is_lower_bound'] : []),
+    ...(disagreement !== null && disagreement > 0.5
+      ? ['provider_title_counts_disagree']
+      : []),
+    ...(ratio !== null && ratio > 0.6
+      ? ['engineering_count_exceeds_60_percent_of_company_headcount']
+      : []),
+    ...(selected && hasHeadcount && selected.count > headcount
+      ? ['engineering_count_exceeds_company_headcount']
+      : []),
+    // Outlier guards derived from a 300-company sample of the TAM list
+    // (2026-08-18). Densities above 100% are arithmetically impossible and were
+    // reaching the output unflagged — one row shipped at 12,524%.
+    ...(ratio !== null && ratio > 1
+      ? ['engineering_density_exceeds_100_percent']
+      : []),
+    // 34% of PDL company matches report R&D = 0. That is "PDL cannot classify
+    // this company", not "this company employs no engineers", and it must not be
+    // ranked as a genuine zero.
+    ...(selected?.count === 0 ? ['zero_engineering_count_reported'] : []),
+    // Sub-50-headcount companies are where PDL class data thins out most
+    // (R&D growth present for only 24% of 1-10 person companies).
+    ...(hasHeadcount && headcount < 50 && selected?.source?.startsWith('pdl')
+      ? ['small_company_pdl_estimate_low_confidence']
+      : []),
+  ];
+  const confidence =
+    selected === null
+      ? 'none'
+      : reviewReasons.length > 0
+        ? 'low'
+        : disagreement !== null && disagreement <= 0.25
+          ? 'strong'
+          : 'medium';
+
+  return {
+    domain,
+    // Canonical identity from the free PDL Cleaner call. `resolved_linkedin_url`
+    // is the join key downstream providers should prefer over the raw domain --
+    // 10% of a 40-company TAM sample matched a different entity by domain.
+    resolved_linkedin_url: identity.linkedinUrl,
+    resolved_company_name: identity.name,
+    status:
+      selected === null
+        ? 'no_estimate'
+        : reviewReasons.length > 0
+          ? 'needs_review'
+          : 'estimated',
+    estimated_engineering_count: selected?.count ?? null,
+    estimated_count_relation: selected?.relation ?? null,
+    estimated_range: selected ? engineeringRange(selected.count) : null,
+    confidence,
+    selected_method: selected?.source ?? null,
+    company_title_count: titles.length,
+    matched_engineering_title_count: matchedTitles.length,
+    matched_engineering_titles: matchedTitles,
+    crustdata_title_phrase_count: crustCount,
+    crust_company_engineering_count: crustCompanyCount,
+    crust_company_headcount: crustCompanyHeadcount,
+    pdl_expanded_title_count: pdlExpandedCount,
+    // R&D headcount growth (12mo) from PDL Company Enrich. Coverage measured on a
+    // 300-company sample: 99% of matches carry the R&D count, but growth is only
+    // present for 61% overall and 24% of 1-10 person companies -- so a null here
+    // means "PDL has no growth series", not "no growth".
+    pdl_rnd_growth_12mo: pdlCompanyGrowth,
+    // Full PDL company record when the PDL tier ran. Projection does not lower
+    // credits, so the whole payload is kept for downstream reuse rather than
+    // re-bought on a later call.
+    company_record: pdlCompanyRecord,
+    query_disagreement_ratio: disagreement,
+    company_headcount: hasHeadcount ? headcount : null,
+    engineering_to_company_ratio: ratio,
+    review_reasons: reviewReasons,
+    evidence:
+      selected === null
+        ? null
+        : `${selected.source} matched ${selected.relation === 'gte' ? 'at least ' : ''}${selected.count} current engineering profiles at ${domain}; every tier returns a count directly rather than paginating profiles.`,
+    provider_attempts: attempts,
+  };
+}
+
+export default definePlay('engineering-team-size', engineeringTeamSizeHandler, {
+  description:
+    'Estimate engineering-team size via a free identity resolution and title roster, then a cost-ordered ladder: a limit=1 CrustData title count, CrustData company enrichment, and a final PDL company-enrich fallback.',
+  inline: true,
+  billing: { maxCreditsPerRun: 20 },
+});
