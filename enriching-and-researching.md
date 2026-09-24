@@ -8,16 +8,23 @@ Use this doc when rows exist and columns must be filled. Discovery (finding comp
 
 **Pre-step.** Rows with a company but no domain get one Exa search (`<company> official website`, first non-social result → apex). Recorded as `resolve_domain` in the receipt.
 
-**Legs, in order** (order IS the economics; each leg runs over every row still without an accepted email):
+**Legs, in order** (order IS the economics; each leg runs over every row still without an accepted email). Deepline's own order is patterns → hunter → leadmagic → datagma → findymail → icypeas → prospeo → pdl; ours keeps the same logic with the providers we hold:
 
 | # | leg id | provider/tool | bills | why here |
 |---|---|---|---|---|
 | 1 | `pattern` | millionverifier/verify_patterns | ~0.01 cr per pattern tried | free-ish; catches `first.last@` at most companies; stops at first `ok`; stops early on catch-all domains |
-| 2 | `apollo` | apollo/people_match | 1 cr per revealed email | biggest database, verified statuses |
-| 3 | `fullenrich` | fullenrich/bulk_enrich | 1 cr per email found | 20+ sources waterfall, async, batches of 50 |
-| 4 | `crustdata` | crustdata/person_enrich | 1 cr per result | needs `linkedin_url`; skipped otherwise |
-| 5 | `pdl` | peopledatalabs/person_enrich | ~3 cr per 200 | expensive, unverified emails → HOLD unless verified |
-| 6 | `verify` | millionverifier/verify | ~0.01 cr | validate once per final address: HOLD candidates get one check; `ok` promotes to HIGH |
+| 2 | `hunter` | hunter/email_finder | ~1 cr per hit | cheap, precise on > 50-employee companies |
+| 3 | `leadmagic` | leadmagic/email_finder | credits_consumed | cheap finder with catch-all awareness |
+| 4 | `findymail` | findymail/find_from_name | 1 cr per hit | independent finder |
+| 5 | `prospeo` | prospeo/enrich_person | 1 cr per hit | independent finder, verified statuses |
+| 6 | `apollo` | apollo/people_match | 1 cr per revealed email | biggest database |
+| 7 | `fullenrich` | fullenrich/bulk_enrich | 1 cr per email found | 20+ sources waterfall, async, batches of 50 |
+| 8 | `crustdata` | crustdata/person_enrich | 1 cr per result | needs `linkedin_url`; skipped otherwise |
+| 9 | `pdl` | peopledatalabs/person_enrich | ~3 cr per 200 | expensive, unverified emails → HOLD unless verified |
+| 10 | `verify` | millionverifier/verify | ~0.01 cr | validate once per final address: HOLD candidates get one check; `ok` promotes to HIGH |
+| 11 | `zerobounce` | zerobounce/validate | ~1 cr | second independent validator: a `catch-all` verdict on the same address corroborates a finder's catch-all → MEDIUM |
+
+**Other row plays** share the same mechanics with their own policy: `person-linkedin-to-email` (prospeo → findymail → kaspr → lusha → apollo → pdl, domain gate only when a domain is given), `person-to-linkedin` (serper with company → serper name only → exa; every search result is a candidate, the **name gate** (`src/core/name-gate.ts`, 52 fixtures) decides, company token in the title → HIGH else MEDIUM), `person-to-phone` (lusha → kaspr → fullenrich phones; no validator, so a single hit is MEDIUM, two agreeing sources HIGH).
 
 A leg whose key is missing is `skipped:leg_disabled` on every row; the play still runs. Restrict legs with `--legs apollo,fullenrich`.
 

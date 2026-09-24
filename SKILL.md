@@ -1,6 +1,6 @@
 ---
 name: gtm
-description: "Self-hosted GTM engine: waterfall email enrichment (and later discovery, signals, scoring, HubSpot sync) with our own provider keys (Apollo, FullEnrich, MillionVerifier, PDL, Crustdata, Exa, Parallel) on a Supabase database. Use for: find emails for a CSV, enrich contacts, pilot a provider route, read a cost receipt. Method copied from Deepline; plumbing is ours."
+description: "Self-hosted GTM engine: Deepline's method (waterfalls, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (18 adapters: apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
 ---
 
 # GTM Engine (meta skill)
@@ -10,40 +10,63 @@ SKILL.md routes and sets policy. The matching doc supplies the execution contrac
 ## CLI
 
 ```bash
-gtm providers                       # which keys are configured, price basis per tool
-gtm plays                           # available plays
-gtm csv show --csv in.csv           # shape + detected columns + 2-row sample (never Read a CSV into context)
-gtm run name-domain-to-email --csv in.csv --out out.csv --limit 3      # pilot
-gtm run name-domain-to-email --csv in.csv --out out.csv                # full run
-gtm receipt <run-id>                # frozen cost receipt
-gtm cache stats                     # receipt cache totals
-gtm audit --csv out.csv             # email/domain consistency (Deepline validator)
-gtm db ping                         # proves DATABASE_URL + migrations
+gtm providers                                   # which keys are configured, price basis per tool
+gtm plays                                       # every play with its input fields (* = required)
+gtm csv show --csv in.csv                       # shape + detected columns + 2-row sample (never Read a CSV into context)
+gtm run <play> --input '{...}'                  # scalar play (one person / company / ICP)
+gtm run <play> --csv in.csv --out out.csv --limit 3   # batch variant, pilot first
+gtm run <play> --csv in.csv --out out.csv             # full run
+gtm receipt <run-id>                            # frozen cost receipt
+gtm signals pull --domains domains.txt          # company-signals over a domain list
+gtm prompts list | gtm prompts show "<key>"     # 181 prompt templates
+gtm audit --csv out.csv                         # email/domain consistency (Deepline validator)
+gtm cache stats · gtm db ping
 ```
 
-`gtm` resolves `.env` from `GTM_HOME` (this repo), CSV paths from the current directory. If `gtm` is not on PATH: `node ~/Documents/Corpo/gtm-engine/bin/gtm.mjs …`. Add `--dry-run` to exercise the whole flow with mock providers and no database.
+`gtm` resolves `.env` from `GTM_HOME` (this repo), CSV paths from the current directory. Not on PATH: `node ~/Documents/Corpo/gtm-engine/bin/gtm.mjs …`. `--dry-run` exercises any play with mock providers and no database.
+
+## Plays
+
+| play | input | fills | doc |
+|---|---|---|---|
+| `name-domain-to-email` (+`:batch`) | first_name, last_name, domain or company | email | enriching-and-researching.md |
+| `person-linkedin-to-email` (+`:batch`) | linkedin_url, domain? | email | enriching-and-researching.md |
+| `person-to-linkedin` (+`:batch`) | first_name, last_name, company or domain | linkedin_url (name gate) | enriching-and-researching.md |
+| `person-to-phone` (+`:batch`) | linkedin_url or name+domain | phone (MEDIUM max, no validator) | enriching-and-researching.md |
+| `company-enrich` (+`:batch`) | domain | company profile → `companies` | finding-companies-and-contacts.md |
+| `icp-to-companies` | ICP filters, limit, size_only | company list (sized with limit:1 first) | finding-companies-and-contacts.md |
+| `company-to-people` | domain, titles[], limit | people rows for the email play | finding-companies-and-contacts.md |
+| `company-signals` (+`:batch`) | domain | `signals` (funding, jobs, headcount) | scoring.md |
+| `score-accounts` | domains?, model | `scores` account_fit / account_engagement | scoring.md |
+| `sync-hubspot` | domains?, dry_run | HubSpot companies + contacts, `crm_sync` | references/schema.md |
+| `icp-to-pipeline` | ICP filters + titles[] + sync? | companies → people → emails → HubSpot, one receipt | finding-companies-and-contacts.md |
 
 ## Routing: read the matching doc first
 
-| When the task involves… | Read | It gives you |
-|---|---|---|
-| Finding emails, enriching a CSV, waterfall routes, email statuses, HOLD rows, reruns | [enriching-and-researching.md](enriching-and-researching.md) | play contract, leg order, export columns, cache and rerun semantics, post-run validation |
-| Step-by-step email enrichment of a CSV | [recipes/name-domain-to-email.md](recipes/name-domain-to-email.md) | inputs/outputs/checkpoints/fallbacks per step, anti-patterns, gotchas |
-| Finding companies or people (not yet built) | [finding-companies-and-contacts.md](finding-companies-and-contacts.md) | phase 2 stub: what exists elsewhere in the meantime |
-| Outreach copy, scoring rubrics (not yet built) | [writing-outreach.md](writing-outreach.md) | phase 2 stub |
-| Provider-specific pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` | one file per provider |
-| What each table/column means, RGPD notes | [references/schema.md](references/schema.md) | data dictionary |
-| Which email statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) | canonical statuses, confidence tiers |
-| Reading or explaining a receipt | [references/cost-receipt.md](references/cost-receipt.md) | labels, marginal cost rule |
-| Golden record rules, accuracy audit | [references/contact-accuracy.md](references/contact-accuracy.md) | precedence, freshness, audit actions |
+| When the task involves… | Read |
+|---|---|
+| Finding emails, phones, LinkedIn URLs; enriching a CSV; leg orders; HOLD rows; reruns | [enriching-and-researching.md](enriching-and-researching.md) |
+| Step-by-step email enrichment of a CSV | [recipes/name-domain-to-email.md](recipes/name-domain-to-email.md) |
+| Building a company list from an ICP, finding people at companies, the full pipeline | [finding-companies-and-contacts.md](finding-companies-and-contacts.md) |
+| Signals, account scoring, won/lost analysis | [scoring.md](scoring.md) then `references/scoring/` |
+| Source discovery before spending, public datasets, buyer language | [research.md](research.md) then `references/research/` |
+| Qualification, sequences, personalization, prompt templates | [writing-outreach.md](writing-outreach.md), [references/prompts-index.md](references/prompts-index.md) |
+| Human review of a run, golden sets | [references/review-loop.md](references/review-loop.md) |
+| Paid-ads audiences (knowledge only) | [references/ads-audiences.md](references/ads-audiences.md) |
+| Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (18 files) |
+| Tables, columns, RGPD | [references/schema.md](references/schema.md) |
+| Which statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) |
+| Reading a receipt | [references/cost-receipt.md](references/cost-receipt.md) |
+| Golden records, accuracy audit | [references/contact-accuracy.md](references/contact-accuracy.md) |
+| What we copied from Deepline's runtime and what we did not | [references/deepline-authoring-notes.md](references/deepline-authoring-notes.md); originals under `vendor/` (private, see vendor/NOTICE.md) |
 
-Before executing a multi-step request, the `agents/execution-plan-creator.md` subagent can produce the plan (goal, governing docs, pilot vs full-run steps, approval gate, risks) without running anything.
+`agents/execution-plan-creator.md` produces a plan (goal, governing docs, pilot vs full-run steps, approval gate, risks) without running anything.
 
 ## Policy
 
-**Pilot → price → fix → full run.** Every paid run starts with `--limit 3` (or the whole file when it has ≤ 25 rows and the user stated the scope). Read the receipt: per-leg hits, misses, credits. Fix the route (drop or reorder a leg with `--legs`) before scaling. Do not buy the same failure at full scale. **The pilot is never the deliverable**: the task ends when the FULL input has run and the export sits at the exact `--out` path the user asked for.
+**Pilot → price → fix → full run.** Every paid run starts with `--limit 3` (or the whole file when it has ≤ 25 rows and the user stated the scope). Read the receipt: per-leg hits, misses, credits. Fix the route (`--legs`) before scaling. Do not buy the same failure at full scale. **The pilot is never the deliverable**: the task ends when the FULL input has run and the export sits at the exact `--out` path the user asked for.
 
-**Approval gate.** A user-stated bounded scope (“these 30 contacts”, “everyone in this CSV”) is the approval: pilot, then complete the scope, report cost with the result. Stop and ask only when the scope is open-ended, the pilot reveals a problem (low coverage, wrong-person matches, high cost per usable row), or projected spend exceeds a stated budget. The approval message then uses exactly these four headers and ends with `Approve full run?`:
+**Approval gate.** A user-stated bounded scope (“these 30 contacts”, “everyone in this CSV”) is the approval: pilot, complete, report cost with the result. Stop and ask only when the scope is open-ended (`icp-to-companies` without a limit, "build me a big list"), the pilot reveals a problem, or projected spend exceeds a stated budget. Then use exactly these four headers and end with `Approve full run?`:
 
 ```
 ## Assumptions
@@ -52,16 +75,16 @@ Before executing a multi-step request, the `agents/execution-plan-creator.md` su
 ## Approval Question
 ```
 
-Stay in AWAIT_APPROVAL until the user confirms. `--max-credits` is a soft cap: the run aborts once spend passes it, rows already processed are kept.
+Stay in AWAIT_APPROVAL until the user confirms. `--max-credits` is a soft cap: the run aborts once spend passes it; rows already processed are kept and the rerun resumes from cache.
 
-**Over-provision, then filter.** For N wanted rows start with ~1.4×N. Coverage is a property of the company, not of effort: drop incomplete rows, never retry misses by hand.
+**Size before buying.** `icp-to-companies --input '{..., "size_only": true}'` returns the totals for one row per source. Over-provision ~1.4×N and drop incomplete rows; never chase misses by hand. Companies first, then people.
 
-**Prefer price-on-hit.** Legs that bill on success (Apollo, FullEnrich, PDL) can fan out after a pilot; per-call legs (verifier, search) are cheap by design. Never treat an unknown price as zero: the price tables carry a `verifiedOn` date, treat them as estimates until checked against the provider dashboard.
+**Prefer price-on-hit.** Finders that bill on success (apollo, fullenrich, hunter, leadmagic, findymail, prospeo, pdl, lusha, kaspr) fan out after a pilot; per-call legs (verifiers, serper, exa) are cheap by design. Price tables carry a `verifiedOn` date: estimates until checked on the provider dashboard. Phones have no validator: MEDIUM at best.
 
-**Cache is the default.** Identical (provider, tool, normalized input) is never bought twice. `--refresh` re-buys deliberately. Reruns of a dataset skip rows that already have a HIGH email.
+**Cache is the default.** Identical (provider, tool, normalized input) is never bought twice; children of a pipeline share the parent's cache and receipt. `--refresh` re-buys deliberately. HubSpot writes are never cached; unchanged records are skipped by hash.
 
-**Working directory.** Inputs and exports live next to the user's project (e.g. `./gtm-data/<slug>/`), never in /tmp. Never read a large CSV with the Read tool: `gtm csv show`.
+**Working directory.** Inputs and exports live next to the user's project (e.g. `./gtm-data/<slug>/`), never in /tmp. Never read a large CSV with the Read tool.
 
-**Decision-ready output.** After a run show the real rows (a Markdown table of name, domain, email, status, confidence), then the receipt line (rows in / accepted / credits / marginal credits per accepted), then one concrete recommendation. Keep receipt ids and mechanics out of the summary unless they change scope, cost or risk.
+**Decision-ready output.** After a run show the real rows (Markdown table: name, domain, email, status, confidence), then the receipt line (rows in / accepted / credits / marginal credits per accepted), then one concrete recommendation.
 
-**Personal data.** Work emails only. Never request personal emails or phones in this MVP. `people.do_not_contact` is honoured downstream. See references/schema.md for the RGPD notes.
+**Personal data.** Work emails and business phones only; never personal emails. `people.do_not_contact` is honoured by `sync-hubspot`. See references/schema.md.
