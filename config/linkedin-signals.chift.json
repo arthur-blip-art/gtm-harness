@@ -1,0 +1,24 @@
+{
+  "keywords": [
+    "intégration comptable",
+    "accounting integration fintech",
+    "Pennylane API",
+    "connecteur Sage",
+    "Odoo integration invoicing"
+  ],
+  "competitors": [
+    "https://www.linkedin.com/company/codat",
+    "https://www.linkedin.com/company/merge-api",
+    "https://www.linkedin.com/company/apideck",
+    "https://www.linkedin.com/company/rutter"
+  ],
+  "profiles": [
+    "https://www.linkedin.com/in/sylvainrousseau",
+    "https://www.linkedin.com/in/cdiaconasu",
+    "https://www.linkedin.com/in/hayyaan",
+    "https://www.linkedin.com/in/ivanovds"
+  ],
+  "posted_limit": "week",
+  "max_posts_per_source": 20,
+  "notify": true
+}

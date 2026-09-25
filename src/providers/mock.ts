@@ -153,6 +153,29 @@ tool('hubspot.create', 'free', 0, async (i) => ({ status: 'hit', output: { id: h
 tool('hubspot.update', 'free', 0, async (i) => ({ status: 'hit', output: { id: i.id, properties: i.properties } }), { normalize: (i) => ({ ...i }), noCache: true });
 tool('hubspot.associate', 'free', 0, async () => ({ status: 'hit', output: { ok: true } }), { normalize: (i) => ({ ...i }), noCache: true });
 
+// ---- harvestapi (LinkedIn) — deterministic posts/engagers
+const post = (url: string, author: string, title: string, company: string, text: string) => ({ post_url: url, text, posted_at: '2026-09-24T08:00:00Z', author_name: author, author_title: title, author_linkedin: `https://www.linkedin.com/in/${nameToken(author.split(' ')[0])}-${nameToken(author.split(' ')[1] ?? 'x')}`, author_company: company, reactions: 12, comments: 3 });
+tool('harvestapi.search_posts', 'per_result', 0.02, async (i) => {
+  const kw = String(i.search);
+  return { status: 'hit', output: { posts: [
+    post(`https://www.linkedin.com/posts/lea-martin_${nameToken(kw)}-1`, 'Léa Martin', 'CTO @ Fintou', 'Fintou', `On a passé 3 mois sur notre ${kw} avec Sage et Pennylane, et ce n'est pas fini…`),
+    post(`https://www.linkedin.com/posts/marc-dubois_${nameToken(kw)}-2`, 'Marc Dubois', 'Account Executive @ Someco', 'Someco', `Webinar demain sur ${kw}`),
+  ], count: 2 }, costOverride: 0.04 };
+}, { normalize: (i) => ({ search: String(i.search ?? ''), postedLimit: String(i.postedLimit ?? 'week') }) });
+tool('harvestapi.company_posts', 'per_result', 0.02, async (i) => ({ status: 'hit', output: { posts: [post(`https://www.linkedin.com/posts/${String(i.company).split('/company/')[1] ?? 'comp'}_launch-1`, String(i.company).split('/company/')[1] ?? 'Comp', 'Company', String(i.company), 'We just launched our new accounting API for fintechs')], count: 1 }, costOverride: 0.02 }), { normalize: (i) => ({ company: String(i.company ?? ''), postedLimit: String(i.postedLimit ?? 'week') }) });
+tool('harvestapi.profile_posts', 'per_result', 0.02, async (i) => {
+  const slug = String(i.profile).split('/in/')[1] ?? 'x';
+  return slug.startsWith('a') || slug.startsWith('s') ? { status: 'hit', output: { posts: [post(`https://www.linkedin.com/posts/${slug}_erp-1`, slug.replace('-', ' '), 'CTO', 'TrackedCo', 'Rebuilding our ERP connectors this quarter. Lessons learned…')], count: 1 }, costOverride: 0.02 } : { status: 'miss', missReason: 'no_posts', output: { posts: [], count: 0 }, costOverride: 0 };
+}, { normalize: (i) => ({ profile: String(i.profile ?? ''), postedLimit: String(i.postedLimit ?? 'week') }) });
+tool('harvestapi.post_reactions', 'per_result', 0.02, async (i) => ({ status: 'hit', output: { people: [
+  { name: 'Sara Cohen', title: 'CTO at Payflow', linkedin_url: 'https://www.linkedin.com/in/sara-cohen', reaction: 'LIKE' },
+  { name: 'Tom Leroy', title: 'Sales Manager at Retailco', linkedin_url: 'https://www.linkedin.com/in/tom-leroy', reaction: 'LIKE' },
+], count: 2 }, costOverride: 0.04 }), { normalize: (i) => ({ post: String(i.post ?? '') }) });
+tool('harvestapi.post_comments', 'per_result', 0.02, async (i) => ({ status: 'hit', output: { people: [
+  { name: 'Nina Rossi', title: 'Head of Partnerships at Billwise', linkedin_url: 'https://www.linkedin.com/in/nina-rossi', reaction: 'comment', text: 'Does it cover Exact and Odoo?' },
+], count: 1 }, costOverride: 0.02 }), { normalize: (i) => ({ post: String(i.post ?? '') }) });
+tool('harvestapi.get_profile', 'per_hit', 0.04, async (i) => ({ status: 'hit', output: { linkedin_url: i.url, headline: 'CTO', title: 'CTO', company: 'TrackedCo' } }), { normalize: (i) => ({ url: String(i.url ?? '') }) });
+
 // ---- shared fallbacks by bare tool name (used by unit tests)
 tools.people_match = tools['apollo.people_match']; table.people_match = table['apollo.people_match'];
 tools.bulk_enrich = tools['fullenrich.bulk_enrich']; table.bulk_enrich = table['fullenrich.bulk_enrich'];

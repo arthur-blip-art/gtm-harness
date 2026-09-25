@@ -1,0 +1,25 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Dry-run smoke (email waterfall + pipeline + signals)
+        run: |
+          node bin/gtm.mjs run name-domain-to-email --csv tests/fixtures/3rows.csv --out /tmp/smoke.csv --dry-run
+          node bin/gtm.mjs run icp-to-pipeline --input '{"countries":["FR"],"limit":2,"titles":["CTO"]}' --dry-run
+          node bin/gtm.mjs run linkedin-signals --input @config/linkedin-signals.chift.json --dry-run

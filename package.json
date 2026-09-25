@@ -1,5 +1,5 @@
 {
-  "name": "gtm-engine",
+  "name": "gtm-harness",
   "version": "0.1.0",
   "description": "Self-hosted GTM engine: Deepline-style waterfall enrichment with your own provider keys, on Supabase.",
   "type": "module",

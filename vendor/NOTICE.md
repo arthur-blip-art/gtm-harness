@@ -10,7 +10,7 @@ prebuilt play catalog fetched with `deepline plays get prebuilt/<name> --source 
 
 Deepline publishes these files without a LICENSE. Copyright stays with Deepline. They are kept here
 as a private reference for one person's own use, to study patterns and port ideas into `src/`.
-Do not publish, redistribute, or push this repository to a public remote.
+This repository is hosted as a **private** GitHub repository (`gtm-harness`) for that reason. Never make it public, never redistribute this folder.
 
 `scripts/query_design.py`, `scripts/evaluate_public_private_corpus.py`, `references/research/query-design.md`
 and `evals/last30days-public-private-corpus.json` include logic adapted from `mvanhorn/last30days-skill`

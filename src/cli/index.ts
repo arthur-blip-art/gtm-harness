@@ -39,7 +39,7 @@ program
   .command('run')
   .description('Run a play. Scalar: --input JSON. Batch: --csv + --out (pilot with --limit 3 first).')
   .argument('<play>', 'play name (see `gtm plays`)')
-  .option('--input <json>', 'scalar input as JSON')
+  .option('--input <json>', 'scalar input as JSON, or @path/to/file.json')
   .option('--csv <path>', 'input CSV (selects the :batch variant)')
   .option('--out <path>', 'output CSV (exact path requested by the user)')
   .option('--limit <n>', 'only the first n rows (pilot)', (v) => Number(v))
@@ -77,7 +77,7 @@ program
         if (res.status === 'failed') process.exitCode = 1;
       } else {
         const play = resolvePlay(playName);
-        const input = o.input ? JSON.parse(o.input) : {};
+        const input = o.input ? JSON.parse(String(o.input).startsWith('@') ? fs.readFileSync(String(o.input).slice(1), 'utf8') : o.input) : {};
         const res = await executePlay({ ...common, play, input, inputSummary: { input } });
         console.log(JSON.stringify(res.output ?? null, null, 2));
         console.log('\n' + renderReceipt(res.receipt));

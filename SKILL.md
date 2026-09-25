@@ -1,6 +1,6 @@
 ---
 name: gtm
-description: "Self-hosted GTM engine: Deepline's method (waterfalls, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (18 adapters: apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
+description: "Self-hosted GTM engine: Deepline's method (waterfalls, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
 ---
 
 # GTM Engine (meta skill)
@@ -13,7 +13,7 @@ SKILL.md routes and sets policy. The matching doc supplies the execution contrac
 gtm providers                                   # which keys are configured, price basis per tool
 gtm plays                                       # every play with its input fields (* = required)
 gtm csv show --csv in.csv                       # shape + detected columns + 2-row sample (never Read a CSV into context)
-gtm run <play> --input '{...}'                  # scalar play (one person / company / ICP)
+gtm run <play> --input '{...}' | --input @file.json   # scalar play (one person / company / ICP / watchlist)
 gtm run <play> --csv in.csv --out out.csv --limit 3   # batch variant, pilot first
 gtm run <play> --csv in.csv --out out.csv             # full run
 gtm receipt <run-id>                            # frozen cost receipt
@@ -40,6 +40,7 @@ gtm cache stats · gtm db ping
 | `score-accounts` | domains?, model | `scores` account_fit / account_engagement | scoring.md |
 | `sync-hubspot` | domains?, dry_run | HubSpot companies + contacts, `crm_sync` | references/schema.md |
 | `icp-to-pipeline` | ICP filters + titles[] + sync? | companies → people → emails → HubSpot, one receipt | finding-companies-and-contacts.md |
+| `linkedin-signals` | keywords[], competitors[], profiles[] (config file) | `signals` from LinkedIn via HarvestAPI + Slack alert; scheduled by GitHub Actions | recipes/linkedin-signals.md |
 
 ## Routing: read the matching doc first
 
@@ -52,6 +53,8 @@ gtm cache stats · gtm db ping
 | Source discovery before spending, public datasets, buyer language | [research.md](research.md) then `references/research/` |
 | Qualification, sequences, personalization, prompt templates | [writing-outreach.md](writing-outreach.md), [references/prompts-index.md](references/prompts-index.md) |
 | Human review of a run, golden sets | [references/review-loop.md](references/review-loop.md) |
+| LinkedIn buying signals, competitor engagement, tracked people | [recipes/linkedin-signals.md](recipes/linkedin-signals.md), `provider-playbooks/harvestapi.md` |
+| Scheduling, cron, alerts, "how do we get pinged" | [references/scheduling.md](references/scheduling.md) |
 | Paid-ads audiences (knowledge only) | [references/ads-audiences.md](references/ads-audiences.md) |
 | Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (18 files) |
 | Tables, columns, RGPD | [references/schema.md](references/schema.md) |
