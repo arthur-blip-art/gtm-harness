@@ -1,0 +1,56 @@
+# Wakes the linkedin-signals play every weekday morning. Nothing pushes to us: this cron pulls
+# from HarvestAPI, diffs against Supabase, and the play posts new ICP signals to Slack.
+# Without secrets (DATABASE_URL / HARVESTAPI_API_KEY) the job runs in --dry-run so it stays green.
+name: linkedin-signals
+
+on:
+  schedule:
+    - cron: '0 6 * * 1-5'   # 06:00 UTC, Monday–Friday
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Force --dry-run (mock providers, no database)'
+        type: boolean
+        default: false
+      config:
+        description: 'Config file'
+        default: 'config/linkedin-signals.chift.json'
+
+concurrency:
+  group: linkedin-signals
+  cancel-in-progress: false
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      HARVESTAPI_API_KEY: ${{ secrets.HARVESTAPI_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GTM_MAX_CREDITS_PER_RUN: '20'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Decide mode
+        id: mode
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ -z "$DATABASE_URL" ] || [ -z "$HARVESTAPI_API_KEY" ]; then
+            echo "flag=--dry-run" >> "$GITHUB_OUTPUT"; echo "::notice::secrets missing or dry_run requested → --dry-run"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Pull LinkedIn signals
+        run: node bin/gtm.mjs run linkedin-signals --input "@${{ inputs.config || 'config/linkedin-signals.chift.json' }}" ${{ steps.mode.outputs.flag }} | tee signals-run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signals-run-${{ github.run_id }}
+          path: signals-run.log
+          retention-days: 30

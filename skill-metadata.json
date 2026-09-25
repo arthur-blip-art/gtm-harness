@@ -1,6 +1,6 @@
 {
-  "title": "GTM Engine",
-  "version": "0.2.0",
+  "title": "GTM Harness",
+  "version": "0.3.0",
   "documents": {
     "SKILL.md": {
       "kind": "entrypoint",
@@ -612,6 +612,61 @@
         "license"
       ],
       "providers": []
+    },
+    "recipes/linkedin-signals.md": {
+      "kind": "specialized-workflow",
+      "title": "LinkedIn signals: keywords, competitor engagement, tracked people",
+      "tags": [
+        "recipe",
+        "signals",
+        "linkedin",
+        "schedule"
+      ],
+      "providers": [
+        "harvestapi"
+      ]
+    },
+    "references/scheduling.md": {
+      "kind": "reference",
+      "title": "Scheduling and alerts",
+      "tags": [
+        "cron",
+        "github-actions",
+        "slack"
+      ],
+      "providers": []
+    },
+    "provider-playbooks/harvestapi.md": {
+      "kind": "provider-playbook",
+      "title": "harvestapi playbook",
+      "tags": [
+        "provider",
+        "linkedin"
+      ],
+      "providers": [
+        "harvestapi"
+      ]
+    },
+    "config/linkedin-signals.chift.json": {
+      "kind": "other",
+      "title": "Chift LinkedIn watchlist",
+      "tags": [
+        "config"
+      ],
+      "providers": [
+        "harvestapi"
+      ]
+    },
+    ".github/workflows/linkedin-signals.yml": {
+      "kind": "other",
+      "title": "Scheduled linkedin-signals workflow",
+      "tags": [
+        "cron",
+        "github-actions"
+      ],
+      "providers": [
+        "harvestapi"
+      ]
     }
   },
   "prefixes": {

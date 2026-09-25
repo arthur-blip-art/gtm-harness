@@ -10,6 +10,7 @@ import * as companySignals from './company-signals.ts';
 import * as scoreAccounts from './score-accounts.ts';
 import * as syncHubspot from './sync-hubspot.ts';
 import * as icpToPipeline from './icp-to-pipeline.ts';
+import * as linkedinSignals from './linkedin-signals.ts';
 
 const all: Play[] = [
   nameDomainToEmail.scalar, nameDomainToEmail.batch,
@@ -20,6 +21,7 @@ const all: Play[] = [
   icpToCompanies.play, companyToPeople.play,
   companySignals.play, companySignals.batch,
   scoreAccounts.play, syncHubspot.play, icpToPipeline.play,
+  linkedinSignals.play,
 ];
 
 export const plays: Record<string, Play> = Object.fromEntries(all.map((p) => [p.name, p]));

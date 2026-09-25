@@ -19,10 +19,11 @@ import { predictleads } from './predictleads.ts';
 import { lusha } from './lusha.ts';
 import { kaspr } from './kaspr.ts';
 import { hubspot } from './hubspot.ts';
+import { harvestapi } from './harvestapi.ts';
 
 export const registry: Record<string, Adapter> = {
   mock, apollo, fullenrich, millionverifier, peopledatalabs, crustdata, exa, parallel,
-  hunter, zerobounce, leadmagic, prospeo, findymail, serper, theirstack, predictleads, lusha, kaspr, hubspot,
+  hunter, zerobounce, leadmagic, prospeo, findymail, serper, theirstack, predictleads, lusha, kaspr, hubspot, harvestapi,
 };
 
 export function isConfigured(a: Adapter): boolean {
