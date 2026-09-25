@@ -14,3 +14,15 @@ Rules:
 - Without secrets the job runs in `--dry-run` and stays green: the first real run is a conscious act (add the secrets).
 - Alerts carry only ICP matches and at most 10 lines; the full list is in `signals`.
 - Every run's receipt is uploaded as an artifact (30 days) so cost drift is visible.
+
+## Cadence and monthly burn
+
+Before scheduling anything paid, state **per-run cost × cadence = monthly burn** in the approval message. Suggested cadences (borrowed from Cargo's published defaults, MIT):
+
+| Signal | Cadence | Why |
+|---|---|---|
+| LinkedIn keyword / competitor engagement | weekdays | posts age fast; the cache dedupes within a week window |
+| Hiring intent (job posts) | daily | short-lived, cheap per company |
+| Funding rounds | weekly | rounds are rare; daily scans of 500 accounts would cost 30× for nothing |
+| Job changes | every two weeks, on a curated segment | the most expensive signal; monthly on 300 beats weekly on 1,000 |
+| Account re-scoring | weekly, only rows never scored or older than 3 months | staleness gate, not a full recompute |

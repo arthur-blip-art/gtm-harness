@@ -34,7 +34,7 @@ export interface RowPlaySpec<I extends Record<string, unknown>, O> {
 }
 
 /**
- * Deepline's pattern, minimal: one file, one steps factory, `scalar` and `batch` exports.
+ * The agent-first CLI pattern, minimal: one file, one steps factory, `scalar` and `batch` exports.
  * Batch rows that already carry a HIGH value for the field are seeded as accepted and skipped by the waterfall.
  */
 export function defineRowPlay<I extends Record<string, unknown>, O>(spec: RowPlaySpec<I, O>): { scalar: Play<I, O>; batch: Play<BatchInput, BatchOutput> } {

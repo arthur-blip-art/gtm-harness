@@ -1,5 +1,5 @@
 /**
- * Pure replay scorer, ported from Deepline's deepline-scoring/scripts/scoring_contract.ts.
+ * Pure replay scorer (point-in-time scoring contract).
  * No providers, no default weights, no claim of validation. A score is null whenever any
  * weighted feature lacks exactly one eligible, fresh, correctly-sourced observation.
  */

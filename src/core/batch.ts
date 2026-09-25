@@ -14,7 +14,7 @@ type ColumnResolver = (row: RowState, ctx: PlayCtx) => Promise<unknown> | unknow
 type Step = { kind: 'column'; name: string; fn: ColumnResolver; concurrency: number } | { kind: 'step'; fn: (rows: RowState[], ctx: PlayCtx) => Promise<void> | void };
 
 /**
- * The Deepline `ctx.dataset(...).withColumn(...).run()` equivalent, minimal:
+ * Dataset builder, minimal:
  * rows are upserted into dataset_rows (existing cells kept), each step runs over all rows,
  * cells are saved after every step. A column is skipped for rows that already have it (unless --refresh).
  */

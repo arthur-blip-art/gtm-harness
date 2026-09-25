@@ -6,8 +6,8 @@ import { validateName, normalizeName, firstNamesMatch } from '../src/core/name-g
 const fixtures: { source_first: string; source_last: string; profile_name: string; expected_match: boolean }[] =
   JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'fixtures', 'name_validation.json'), 'utf8'));
 
-describe('LinkedIn name gate (port of validate-linkedin-names.py)', () => {
-  it('matches every one of the 52 Deepline fixtures', () => {
+describe('LinkedIn name gate ', () => {
+  it('matches every one of the 52 fixtures', () => {
     const failures = fixtures.filter((f) => validateName(f.source_first, f.source_last, f.profile_name).ok !== f.expected_match)
       .map((f) => `${f.source_first} ${f.source_last} -> ${f.profile_name} (expected ${f.expected_match})`);
     expect(failures).toEqual([]);

@@ -18,6 +18,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Routing evals (SKILL.md)
+        run: node --import tsx scripts/routing-eval.ts --verbose
       - name: Dry-run smoke (email waterfall + pipeline + signals)
         run: |
           node bin/gtm.mjs run name-domain-to-email --csv tests/fixtures/3rows.csv --out /tmp/smoke.csv --dry-run

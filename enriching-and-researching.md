@@ -8,7 +8,7 @@ Use this doc when rows exist and columns must be filled. Discovery (finding comp
 
 **Pre-step.** Rows with a company but no domain get one Exa search (`<company> official website`, first non-social result → apex). Recorded as `resolve_domain` in the receipt.
 
-**Legs, in order** (order IS the economics; each leg runs over every row still without an accepted email). Deepline's own order is patterns → hunter → leadmagic → datagma → findymail → icypeas → prospeo → pdl; ours keeps the same logic with the providers we hold:
+**Legs, in order** (order IS the economics; each leg runs over every row still without an accepted email). Cheapest and most precise first, with the providers we hold:
 
 | # | leg id | provider/tool | bills | why here |
 |---|---|---|---|---|

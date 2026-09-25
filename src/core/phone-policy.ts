@@ -28,7 +28,7 @@ export function canonicalPhoneStatus(provider: string, raw: unknown): PhoneStatu
 }
 
 /**
- * No phone validator yet (Deepline uses Trestle): a single provider hit is MEDIUM,
+ * No phone validator yet (Trestle would be the natural one): a single provider hit is MEDIUM,
  * the same number from two independent sources is HIGH, unknown is HOLD.
  */
 export function decidePhone(candidates: Candidate<PhoneStatus>[], legsTried: number): FieldCell<PhoneStatus> {

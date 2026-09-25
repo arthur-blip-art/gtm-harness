@@ -134,7 +134,9 @@ supabase/       4 migrations
 scripts/        validateurs et analyseurs Python autonomes
 config/         listes de surveillance
 vendor/         matériel de référence tiers (privé)
-tests/          40 tests vitest, hors ligne
+tests/          46 tests vitest, hors ligne + évals de routage
+.claude/        hook d'approbation gtm-gate (Claude Code)
+evals/          évals de routage du skill
 ```
 
 ## État

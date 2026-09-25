@@ -128,7 +128,7 @@
       ],
       "providers": []
     },
-    "references/deepline-authoring-notes.md": {
+    "references/design-notes.md": {
       "kind": "reference",
       "title": "Deepline authoring notes",
       "tags": [
@@ -599,7 +599,7 @@
     },
     "THIRD_PARTY_NOTICES.md": {
       "kind": "notice",
-      "title": "MIT notice for last30days-skill logic",
+      "title": "MIT notices (last30days-skill, Cargo skills)",
       "tags": [
         "license"
       ],
@@ -607,7 +607,7 @@
     },
     "vendor/NOTICE.md": {
       "kind": "notice",
-      "title": "Provenance and private-use rule for vendored Deepline material",
+      "title": "Provenance and private-use rule for vendored reference material",
       "tags": [
         "license"
       ],

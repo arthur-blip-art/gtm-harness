@@ -1,5 +1,5 @@
 /**
- * LinkedIn name gate. Straight port of Deepline's scripts/validate-linkedin-names.py
+ * LinkedIn name gate. Port of the validate-linkedin-names.py name gate (52 fixtures)
  * (52 fixtures in tests/fixtures/name_validation.json must pass identically).
  * Without this gate ~26% of search-engine LinkedIn lookups return the wrong person.
  */

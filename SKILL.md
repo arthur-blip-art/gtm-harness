@@ -19,7 +19,7 @@ gtm run <play> --csv in.csv --out out.csv             # full run
 gtm receipt <run-id>                            # frozen cost receipt
 gtm signals pull --domains domains.txt          # company-signals over a domain list
 gtm prompts list | gtm prompts show "<key>"     # 181 prompt templates
-gtm audit --csv out.csv                         # email/domain consistency (Deepline validator)
+gtm audit --csv out.csv                         # email/domain consistency check
 gtm cache stats · gtm db ping
 ```
 
@@ -61,7 +61,7 @@ gtm cache stats · gtm db ping
 | Which statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) |
 | Reading a receipt | [references/cost-receipt.md](references/cost-receipt.md) |
 | Golden records, accuracy audit | [references/contact-accuracy.md](references/contact-accuracy.md) |
-| Design notes on the play runtime, what was borrowed from prior art and what was not | [references/deepline-authoring-notes.md](references/deepline-authoring-notes.md); reference material under `vendor/` (private, see vendor/NOTICE.md) |
+| Design notes on the runtime and prior art (Deepline, Cargo) | [references/design-notes.md](references/design-notes.md); reference material under `vendor/` (private, see vendor/NOTICE.md) |
 
 `agents/execution-plan-creator.md` produces a plan (goal, governing docs, pilot vs full-run steps, approval gate, risks) without running anything.
 
@@ -78,7 +78,7 @@ gtm cache stats · gtm db ping
 ## Approval Question
 ```
 
-Stay in AWAIT_APPROVAL until the user confirms. `--max-credits` is a soft cap: the run aborts once spend passes it; rows already processed are kept and the rerun resumes from cache.
+Stay in AWAIT_APPROVAL until the user confirms. Approval of the pilot is not approval of the full run. The rule is also enforced by `.claude/hooks/gtm-gate.sh` (Claude Code PreToolUse): read-only and `--dry-run` commands pass silently, pilots up to 3 rows pass, any paid full run, `--refresh`, HubSpot write or schema push asks first. `--max-credits` is a soft cap: the run aborts once spend passes it; rows already processed are kept and the rerun resumes from cache.
 
 **Size before buying.** `icp-to-companies --input '{..., "size_only": true}'` returns the totals for one row per source. Over-provision ~1.4×N and drop incomplete rows; never chase misses by hand. Companies first, then people.
 

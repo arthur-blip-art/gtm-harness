@@ -1,0 +1,20 @@
+{"prompt": "Trouve les emails de ce CSV de 40 contacts", "expect": "enriching-and-researching.md", "tier": "core"}
+{"prompt": "Find verified work emails for these people, first name last name and domain", "expect": "enriching-and-researching.md", "tier": "core"}
+{"prompt": "J'ai des URL LinkedIn, je veux leurs emails", "expect": "enriching-and-researching.md", "tier": "core"}
+{"prompt": "Récupère le téléphone mobile de ces 10 CTO", "expect": "enriching-and-researching.md", "tier": "core"}
+{"prompt": "Construis-moi une liste de SaaS français de 20 à 500 personnes et trouve les CTO", "expect": "finding-companies-and-contacts.md", "tier": "core"}
+{"prompt": "Build a TAM list of European fintechs and find the VP Product at each", "expect": "finding-companies-and-contacts.md", "tier": "core"}
+{"prompt": "Lance le pipeline complet ICP → personnes → emails", "expect": "finding-companies-and-contacts.md", "tier": "core"}
+{"prompt": "Qui a liké les posts de Codat et Merge cette semaine ?", "expect": "recipes/linkedin-signals.md", "tier": "core"}
+{"prompt": "Surveille les signaux d'achat LinkedIn sur ma watchlist de concurrents", "expect": "recipes/linkedin-signals.md", "tier": "core"}
+{"prompt": "Score mes comptes avec les signaux de levée et d'embauche", "expect": "scoring.md", "tier": "core"}
+{"prompt": "Analyse won/lost : quels signaux distinguent mes clients gagnés ?", "expect": "scoring.md", "tier": "core"}
+{"prompt": "Où trouver des datasets publics sur les éditeurs de logiciels comptables en Europe ?", "expect": "research.md", "tier": "core"}
+{"prompt": "Écris une séquence de 4 cold emails personnalisés pour ces CTO", "expect": "writing-outreach.md", "tier": "core"}
+{"prompt": "Comment on se fait pinger quand un signal arrive ? Mets ça en cron", "expect": "references/scheduling.md", "tier": "core"}
+{"prompt": "Quelle table stocke les reçus et c'est quoi la colonne cells ?", "expect": "references/schema.md", "tier": "core"}
+{"prompt": "Combien a coûté le dernier run et pourquoi PDL est CUT CANDIDATE ?", "expect": "references/cost-receipt.md", "tier": "core"}
+{"prompt": "Pousse les contacts qualifiés dans HubSpot", "expect": "sync-hubspot", "tier": "core"}
+{"prompt": "Enrichis ces personnes avec leur email pro puis synchronise le CRM", "expect": "enriching-and-researching.md", "tier": "hard"}
+{"prompt": "Je veux savoir chaque matin quels CTO de ma liste ont publié", "expect": "recipes/linkedin-signals.md", "tier": "hard"}
+{"prompt": "C'est quoi le RGPD ici, on stocke quoi sur les gens ?", "expect": "references/schema.md", "tier": "hard"}

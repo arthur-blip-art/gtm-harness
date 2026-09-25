@@ -1,6 +1,6 @@
 # Research: source discovery before spending
 
-Adapted from Deepline's `deepline-research` (original in `vendor/deepline-shared/research-SKILL.md`). Use it before building a list or an enrichment route when the market, the signal or the dataset is unfamiliar: first find where the information already lives, then pick providers.
+Use it before building a list or an enrichment route when the market, the signal or the dataset is unfamiliar: first find where the information already lives, then pick providers.
 
 ## Non-negotiables
 
@@ -21,8 +21,8 @@ Adapted from Deepline's `deepline-research` (original in `vendor/deepline-shared
 6. **Describe before pricing**: `gtm providers` and the provider playbooks give the basis; probe with the smallest call.
 7. **Report** with `references/research/fanout-consolidation.md`'s template: Key Findings, What I learned, GTM Data Sources Found, Materializable Datasets, Market Language, Proprietary Data To Join Later, Route (native/generic/gap), Recommended Workflow, Cost Estimate (pilot / full / unknowns).
 
-## What differs from Deepline
+## Scope notes
 
-- No hosted "pre-research plan" API: the plan is `query_design.py` plus this doc.
+- The plan is `query_design.py` plus this doc; no hosted planning service.
 - Providers: serper, exa, parallel are native; Reddit/X/YouTube/TikTok need a scraper (Apify is not wired) → `generic route` or `gap`.
 - Evaluation corpus: `evals/last30days-public-private-corpus.json` + `scripts/evaluate_public_private_corpus.py` check the planner offline.
