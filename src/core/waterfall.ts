@@ -49,7 +49,7 @@ export class BudgetExceeded extends Error {
 
 /**
  * Leg-major waterfall: leg 1 over every pending row, then leg 2 over rows still without an
- * accepted value, and so on. Per-row semantics equal Deepline's row-sequential waterfall
+ * accepted value, and so on. Per-row semantics equal a row-sequential waterfall
  * (a row never reaches leg N+1 once leg N was accepted); leg-major lets batch providers batch.
  */
 export async function runWaterfall(rows: RowState[], legs: Leg[], runner: ToolRunner, opts: WaterfallOpts): Promise<LegMeta[]> {

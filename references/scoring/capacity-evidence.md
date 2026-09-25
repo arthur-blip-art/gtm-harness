@@ -8,7 +8,7 @@ Places returns at most five reviews sorted by relevance. They are not a complete
 
 Popular times use relative physical-visit activity, not absolute traffic. They are especially weak for businesses that perform work at customer sites. No multiplication of popular-times bars or review counts into employees, callers or tickets.
 
-With owner-authorized Google Business Profile access, CALL_CLICKS measures clicks on the profile call button, not answered calls, unique callers, completed calls or all inbound calls. The Business Profile Performance API uses OAuth business.manage authorization. This is private authorized data, not available for arbitrary prospects. Availability in Google's API does not establish a Deepline connector exists; inspect the live catalog before promising one.
+With owner-authorized Google Business Profile access, CALL_CLICKS measures clicks on the profile call button, not answered calls, unique callers, completed calls or all inbound calls. The Business Profile Performance API uses OAuth business.manage authorization. This is private authorized data, not available for arbitrary prospects. Availability in Google's API does not establish a the harness connector exists; inspect the live catalog before promising one.
 
 ## Preferred evidence hierarchy
 

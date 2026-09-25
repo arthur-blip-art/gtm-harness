@@ -47,7 +47,7 @@ For inbound, define qualification labels and route/review/drop costs. Measure qu
 
 Choose corroborating sources appropriate to the proposed feature. Resolve identity and entity scope before joining records. Check coverage and freshness; missing corroboration stays unknown. Discover the provider contract and test the required capability before scaling.
 
-For semantic feature categorization, reuse saved pages and batch related questions through a supported evaluation tool. Emit observed/absent/unknown, evidence quotes and attribution; retain uncertain cases for review. Keep this separate from the deterministic scorer. Compare against blinded human annotations, including sparse/ambiguous cases. Agreement with old regex is not ground truth. Pin the model/prompt/schema, cache by source and definition hashes, and measure end-to-end latency and Deepline credits including scraping, retries and runtime. Cheap labeling alone does not prove cheap collection or better ranking.
+For semantic feature categorization, reuse saved pages and batch related questions through a supported evaluation tool. Emit observed/absent/unknown, evidence quotes and attribution; retain uncertain cases for review. Keep this separate from the deterministic scorer. Compare against blinded human annotations, including sparse/ambiguous cases. Agreement with old regex is not ground truth. Pin the model/prompt/schema, cache by source and definition hashes, and measure end-to-end latency and credits including scraping, retries and runtime. Cheap labeling alone does not prove cheap collection or better ranking.
 
 ## Deliver one operational answer
 

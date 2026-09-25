@@ -26,13 +26,13 @@ Explain every displayed score using the same versioned scoring definition used b
 
 ## 4. How do we run this?
 
-Include the checked Play link or source artifact, input requirements, example invocation, output fields and actual run status. Explain which evidence it collects through Deepline and which approved rules or frozen model it applies. Identify model/reference versions and link run receipts. State clearly if only cached replay was tested or live enrichment remains unimplemented.
+Include the checked Play link or source artifact, input requirements, example invocation, output fields and actual run status. Explain which evidence it collects through the harness and which approved rules or frozen model it applies. Identify model/reference versions and link run receipts. State clearly if only cached replay was tested or live enrichment remains unimplemented.
 
 When prospecting is requested, include usable company searches, buyer titles and evidence-based messaging angles. Record scope, authorization and budget for follow-on collection. Report generation does not authorize external sends or CRM writes.
 
 ## 5. Does it work?
 
-Summarize each evaluation in a table: input/cohort, independent expected result, observed output, metric and acceptance threshold, verdict, and remaining limitation. Cover extraction accuracy, exact score reproduction, and held-out ranking against existing rules and a simple baseline separately. Include precision/lift at the intended outreach capacity, uncertainty, coverage controls and the most important mistakes. Report measured runtime and Deepline credits, including failures; identify unavailable costs rather than assuming zero. Link complete CLI receipts and evaluator outputs.
+Summarize each evaluation in a table: input/cohort, independent expected result, observed output, metric and acceptance threshold, verdict, and remaining limitation. Cover extraction accuracy, exact score reproduction, and held-out ranking against existing rules and a simple baseline separately. Include precision/lift at the intended outreach capacity, uncertainty, coverage controls and the most important mistakes. Report measured runtime and credits, including failures; identify unavailable costs rather than assuming zero. Link complete CLI receipts and evaluator outputs.
 
 Explain the adversarial findings: coverage confounding, post-cutoff evidence, parent overlap, label selection, phrase tuning, multiple tests, rare estimates and source mismatch. Current enrichment cannot validate past predictions. If validation is not independent or point-in-time, say exploratory. Report failed comparisons and unmet gates, then state whether to use, pilot or revise and the next useful test. A useful result can be better ROI sizing or a rejected hypothesis rather than a new win predictor.
 

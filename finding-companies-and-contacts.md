@@ -9,7 +9,7 @@ Discovery before enrichment. **Companies first, then people**: never start with 
 - `company-to-people` — domain + titles[] (+ seniorities) → up to `limit` people (apollo search, prospeo fallback), deduped by LinkedIn URL. Output rows are ready for `name-domain-to-email:batch`.
 - `icp-to-pipeline` — the composition: companies → people per company → email waterfall → optional `sync-hubspot`. One run id, one receipt with every child leg (`apollo_size`, `apollo`, `pattern`, …, `hubspot_upsert`).
 
-## Rules (from Deepline)
+## Rules
 
 - Free or near-free sizing first (`size_only`, `hunter.email_count` for a domain's email volume).
 - Escalate providers only when the current one lacks a filter you need. TheirStack for tech stacks and hiring, Crustdata for funding/investor filters, Apollo for the broadest firmographics.

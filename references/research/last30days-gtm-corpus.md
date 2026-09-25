@@ -6,7 +6,7 @@ This summarizes the relevant saved `last30days` runs under `~/Documents/Last30Da
 
 Filename classification found:
 
-| Family | Approx. relevant runs | What it means for Deepline |
+| Family | Approx. relevant runs | What it means for the harness |
 | --- | ---: | --- |
 | Provider strategy / enrichment / waterfall | 144 | Provider comparison, cost, coverage, waterfall design, and data-quality runs are the most common GTM use case. |
 | Contact enrichment / identity / LinkedIn / email / phone | 137 | Name/company to LinkedIn/email/phone, same-name disambiguation, small-company misses, and verification are core. |
@@ -33,7 +33,7 @@ Reusable source pattern:
 
 - Start with community evidence from Reddit/X for pain, coverage complaints, and current vendor sentiment.
 - Use web/docs only to verify vendor claims and pricing.
-- Translate into Deepline provider routing: direct provider, waterfall, or gap.
+- Translate into the harness provider routing: direct provider, waterfall, or gap.
 - Always distinguish "lead source" from "contact enrichment" from "verification"; many bad workflows blur these.
 
 Implication for `/deepline-research`: provider strategy output must include coverage basis, cost basis, expected miss patterns, and fallback order.
@@ -164,7 +164,7 @@ This should become the canonical `/deepline-research` mental model:
 
 The social post is not the deliverable. The operational dataset and workflow are the deliverable.
 
-## Source Families To Prioritize In Deepline
+## Source Families To Prioritize In the harness
 
 High-priority because repeated GTM logs used them:
 

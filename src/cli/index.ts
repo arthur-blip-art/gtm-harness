@@ -117,7 +117,7 @@ db.command('ping').description('List public tables (proves DATABASE_URL and migr
   await store.close();
 });
 
-// ---- prompts: Deepline's 181 Clay-style templates, placeholders normalised to {{label}}
+// ---- prompts: 181 Clay-style templates, placeholders normalised to {{label}}
 type PromptFile = Record<string, string[] | string>;
 function loadPrompts(): PromptFile {
   const p = path.join(GTM_HOME, 'prompts.json');
@@ -145,7 +145,7 @@ const THEMES: Array<[string, RegExp]> = [
   ['cleaning', /clean|normaliz|extract city|json list|validate domain|domain validation|entity/i],
   ['calls', /gong|transcript|call/i],
 ];
-const prompts = program.command('prompts').description('Prompt templates (Deepline/Clay collection, 181 keys).');
+const prompts = program.command('prompts').description('Prompt templates (181 Clay-style keys).');
 prompts.command('list').option('--theme <t>').action((o) => {
   const all = loadPrompts();
   const byTheme = new Map<string, string[]>();
@@ -171,7 +171,7 @@ prompts.command('show').argument('<key>').option('--raw', 'original Clay-style t
 
 program
   .command('audit')
-  .description('Run the Deepline validators (email/domain match) on an exported CSV.')
+  .description('Run the validators (email/domain match) on an exported CSV.')
   .requiredOption('--csv <path>')
   .option('--email-col <c>', 'email column', 'email')
   .option('--domain-col <c>', 'domain column', 'domain')

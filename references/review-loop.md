@@ -1,6 +1,6 @@
 # Review loop (human feedback on a run)
 
-Method from Deepline's `deepline-plays-review` (original in `vendor/deepline-shared/plays-review-SKILL.md`), without Google Sheets: the review surface is the exported CSV.
+Human review of a run without a spreadsheet SaaS in the loop: the review surface is the exported CSV.
 
 Loop: revision → run → assess → decide → next revision. One candidate per turn; an autonomous loop needs a budget and a stopping rule.
 

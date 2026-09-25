@@ -1,12 +1,12 @@
 # Source Map
 
-Use this reference to choose source families for `/deepline-research`. Tool ids drift; always confirm with `deepline tools search` and `deepline tools describe`.
+Use this reference to choose source families for `/deepline-research`. Tool ids drift; always confirm with `gtm providers` and `gtm providers`.
 
 ## Required Dataset Inventory
 
-To replicate `last30days`-style functionality inside Deepline, every pre-research plan must account for these dataset families. Some are already first-class Deepline providers, some can be reached through generic routes, and some are explicit integration gaps to add.
+To replicate `last30days`-style functionality inside the harness, every pre-research plan must account for these dataset families. Some are already first-class the harness providers, some can be reached through generic routes, and some are explicit integration gaps to add.
 
-| Dataset family | Required evidence fields | Deepline route today | Parity status |
+| Dataset family | Required evidence fields | the harness route today | Parity status |
 | --- | --- | --- | --- |
 | Reddit threads | post URL, subreddit, title/body, author when available, score/upvotes, comments count, created date | public-source discovery first; translate to catalog route after synthesis | generic route or gap |
 | Reddit comments | comment text, comment URL/permalink, author when available, upvotes, parent post, created date | ScrapeCreators-style provider or vetted `apify` actor | gap unless catalog finds native support |
@@ -29,7 +29,7 @@ To replicate `last30days`-style functionality inside Deepline, every pre-researc
 | Warehouse/semantic metrics | metric name, dimensions, filters, result rows, rendered SQL/audit trail | `snowflake_get_semantic_layer`, `snowflake_run_semantic_query` | private connector |
 | Product/workflow usage | org/user/account ids, event/run ids, timestamps, status, outputs, credits/run metadata | `plays`, workflow/session/usage tools, warehouse/customer DB | private connector |
 | Support/call/docs data | transcript/note URL/id, speaker/contact, timestamp, summary/snippet, related account | CRM, Attio, Slack/docs connectors, call transcript tools where configured | private connector |
-| Sheets/CSVs/customer-owned lists | row ids, domains/emails, source file/sheet id, provenance columns | user CSV, Google Sheets, Deepline Playground | private/customer source |
+| Sheets/CSVs/customer-owned lists | row ids, domains/emails, source file/sheet id, provenance columns | user CSV, Google Sheets, the harness Playground | private/customer source |
 | Custom language corpus | exact quote/snippet, speaker/source, audience/persona, context, timestamp, engagement or CRM outcome when available | Reddit/X/LinkedIn/YouTube/TikTok/Instagram, sales calls, support tickets, CRM notes, win/loss notes, Gong/Fireflies-like transcripts, docs/sheets | native/generic/private mix |
 
 Minimum useful parity for a last-30-days community research run is: web/news, Reddit threads, Reddit comments, X posts, YouTube transcripts, TikTok or Instagram when relevant, HN, Polymarket when relevant, and at least one private/customer context source when the job is GTM/customer-facing.
@@ -49,10 +49,10 @@ The useful pattern is not the local script itself. Preserve:
 - two-phase fanout: broad parallel source search, then supplemental searches from discovered handles, subreddits, domains, datasets, and entities
 - common evidence rows before scoring, dedupe, clustering, and synthesis
 
-Deepline adaptation:
+the harness adaptation:
 
-- route through Deepline tools, plays, workflows, CRM connectors, and warehouse connectors
-- quote Deepline credits only
+- route through the harness tools, plays, workflows, CRM connectors, and warehouse connectors
+- quote credits only
 - save outputs in CSVs/runs/playgrounds where agents and users can inspect them
 - convert the source plan into a repeatable workflow when the user wants automation
 - add private/source-of-truth joins, provider-cost checks, approval gates, and workflow activation paths that `last30days` does not own
@@ -62,9 +62,9 @@ Deepline adaptation:
 | Need | Start With | Notes |
 | --- | --- | --- |
 | General web/news/source discovery | `serper`, `exa`, `parallel`, `deeplineagent`, `firecrawl` | Use search to discover URLs; use extraction for known pages or JS-rendered sources. |
-| Public registries / niche datasets | `serper`, `exa`, `parallel`, `firecrawl`, `generic_http`, `deeplineagent` | Treat public registries as materializable sources even without native Deepline tools. Example: NPI registry/provider taxonomy data can be found and pulled through generic web/API search/extraction, then joined by NPI, organization name, address, phone, and taxonomy. |
-| Reddit threads/comments | Discover public/community evidence first; search Deepline catalog after synthesis to pick the execution route | If full Reddit comments are core, recommend a native ScrapeCreators-style provider or a vetted Apify actor. |
-| X/Twitter posts | Discover public/social evidence first; search catalog after synthesis for X/Twitter/social execution | Browser cookies are not an acceptable backend Deepline integration pattern. Prefer official/BYOK or managed provider integration. |
+| Public registries / niche datasets | `serper`, `exa`, `parallel`, `firecrawl`, `generic_http`, `deeplineagent` | Treat public registries as materializable sources even without native the harness tools. Example: NPI registry/provider taxonomy data can be found and pulled through generic web/API search/extraction, then joined by NPI, organization name, address, phone, and taxonomy. |
+| Reddit threads/comments | Discover public/community evidence first; search the harness catalog after synthesis to pick the execution route | If full Reddit comments are core, recommend a native ScrapeCreators-style provider or a vetted Apify actor. |
+| X/Twitter posts | Discover public/social evidence first; search catalog after synthesis for X/Twitter/social execution | Browser cookies are not an acceptable backend the harness integration pattern. Prefer official/BYOK or managed provider integration. |
 | YouTube search/transcripts | Discover video/transcript evidence first; search catalog after synthesis for transcript execution | Preserve channel, URL, views, publish date, and transcript excerpts. |
 | TikTok/Instagram | Discover short-form/social evidence first; search catalog after synthesis for execution route | Use captions/transcripts plus engagement. For local-business contact workflows, also consider Instagram profile bio links/contact fields as candidate contact-data signals. Search ScrapeCreators unfiltered because profile tools may be categorized as `admin`, not `research`. Avoid unauthenticated brittle scraping at scale. |
 | Facebook pages/profiles | Discover public page/profile contact details when local businesses, restaurants, storefronts, or social-first companies may publish email/phone/website there | Candidate route through ScrapeCreators profile tools or generic web extraction. Search ScrapeCreators unfiltered because Facebook profile tools may be categorized as `admin`, not `research`. Preserve profile URL and identity evidence. |
@@ -80,7 +80,7 @@ Deepline adaptation:
 
 Private data often beats public data. Do not build a public-only plan when the user has relevant internal data.
 
-| Dataset | Deepline Route | Good Join Keys | Guardrails |
+| Dataset | the harness Route | Good Join Keys | Guardrails |
 | --- | --- | --- | --- |
 | Salesforce | `salesforce` tools after catalog search/describe | account id, domain, contact email, opportunity id | Do not scan broad objects blindly. Inspect schema/list fields first. |
 | HubSpot | `hubspot` tools after catalog search/describe | company id, domain, contact email, deal id | Preserve CRM object ids and lifecycle timestamps. |
@@ -90,7 +90,7 @@ Private data often beats public data. Do not build a public-only plan when the u
 | Workflow/run data | `plays`, workflow/run/session tools if present | play id, run id, org id, output dataset id | Billing belongs in metadata, not row output. |
 | Product analytics | analytics/browser or warehouse-backed tools if exposed | user id, org id, account id, event date | Aggregate when possible; do not leak PII unnecessarily. |
 | Support/calls/meetings | CRM, Attio, call transcript, Slack, docs connectors where configured | contact email, company domain, meeting id | Quote only relevant snippets and cite source location. |
-| Sheets/CSVs | user-provided CSV, Google Sheets connector, Deepline Playground | stable ids, domain, email | Never enrich source files in place; write derived outputs. |
+| Sheets/CSVs | user-provided CSV, Google Sheets connector, the harness Playground | stable ids, domain, email | Never enrich source files in place; write derived outputs. |
 
 ## Custom Language Workflow
 
@@ -133,7 +133,7 @@ Guardrails:
 
 ## Provider Gaps Worth Considering
 
-These are likely additions if Deepline wants true `last30days` parity:
+These are likely additions if the harness wants true `last30days` parity:
 
 - `scrapecreators`: Reddit full comments, TikTok, Instagram, YouTube backup. Useful because one API covers several high-signal community sources.
 - Native X/Twitter search: official/BYOK or managed provider route. Do not build around local browser cookies for cloud workflows.
@@ -145,17 +145,17 @@ These are likely additions if Deepline wants true `last30days` parity:
 For each proposed provider, require:
 
 - test endpoint or tool action for agent validation
-- pricing in Deepline credits
+- pricing in credits
 - sample payload and sample output fixture
 - evidence fields: URL, author/channel, timestamp, engagement, text excerpt
 - failure modes and rate-limit behavior
 
 ## Cost Method
 
-Use current tool metadata, not provider websites, for Deepline-facing estimates:
+Use current tool metadata, not provider websites, for the harness-facing estimates:
 
 ```bash
-deepline tools describe <tool-id> --json
+gtm providers <tool-id> --json
 deepline billing balance
 ```
 
@@ -175,7 +175,7 @@ A good pre-research answer is opinionated and operational:
 
 - A good O&P report should surface the actual research learning: official taxonomy over-includes wig shops and generic DME suppliers, Google reviews are a patient-volume proxy but not an absolute estimate, and the useful public source is the registry plus storefront validation, not generic company databases.
 - "Use Serper to find source URLs, Firecrawl to extract them, Crustdata for hiring signals, Salesforce for customer context, and Apify/ScrapeCreators gap for Reddit comments."
-- "Pilot should cost about X Deepline credits under these assumptions; full run is unknown until we know result count."
+- "Pilot should cost about X credits under these assumptions; full run is unknown until we know result count."
 - "This source is weak because it lacks comments/transcripts/author timestamps."
 - "After the public research pass, this private dataset should be joined because it tells us which accounts actually converted."
 

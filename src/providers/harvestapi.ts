@@ -4,7 +4,7 @@ import { normalizeLinkedin, norm } from '../core/normalize.ts';
 
 /**
  * HarvestAPI: LinkedIn data without cookies (profiles, company and profile posts, keyword post search,
- * reactions and comments). This is the provider behind Deepline's LinkedIn plays. Pull only: nothing
+ * reactions and comments). Used for LinkedIn buying signals. Pull only: nothing
  * calls us back; the linkedin-signals play polls on a schedule and diffs against the signals table.
  * Public Apify pricing 2026-09: ~$2 per 1k posts/reactions/comments, ~$4 per 1k full profiles.
  * Direct API (api.harvestapi.io) is a subscription with a concurrency cap; both need `verify against docs`.

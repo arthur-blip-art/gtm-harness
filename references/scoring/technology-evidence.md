@@ -20,11 +20,11 @@ Start with the homepage and discovered booking, contact, customer-portal and car
 
 ## Source routes and live contract findings
 
-Public documentation checked before catalog inspection; Deepline tools were searched and described on the review date. No paid retrieval pilot was run. Re-describe before execution; credentials shown as connected are not a guarantee of successful collection.
+Public documentation checked before catalog inspection; the harness tools were searched and described on the review date. No paid retrieval pilot was run. Re-describe before execution; credentials shown as connected are not a guarantee of successful collection.
 
 | Route | Best use | Contract / cost boundary |
 | --- | --- | --- |
-| Native Firecrawl: `firecrawl_scrape` | First pass for page source, links and text | Request `rawHtml`, not only markdown or cleaned `html`; `onlyMainContent:false`. Live base price: 0.02 Deepline credits/page; options add cost. Declared Deepline output schema exposes html/markdown/metadata but omits rawHtml: inspect actual rawV2 in an approved pilot. Missing rawHtml is a connector gap, not an empty site. |
+| Native Firecrawl: `firecrawl_scrape` | First pass for page source, links and text | Request `rawHtml`, not only markdown or cleaned `html`; `onlyMainContent:false`. Live base price: 0.02 credits/page; options add cost. Declared the harness output schema exposes html/markdown/metadata but omits rawHtml: inspect actual rawV2 in an approved pilot. Missing rawHtml is a connector gap, not an empty site. |
 | Native Browserbase: `browserbase_create_session` + custom Playwright collector | Runtime requests, injected widgets, frames | Session alone does not collect evidence. Connect an authorized CDP client; attach listeners before navigation, use bounded waits and close in finally. Runtime/bandwidth pricing is usage-based, not a quoted fixed price. Never persist connectUrl/signingKey. |
 | Native BuiltWith: `builtwith_domain_lookup` | Independent indexed technographics and detection history | Inspect Results -> Result.Paths -> Technologies, entity and LastDetected. Usage-based price unresolved until estimate/pilot. Free lookup provides category summaries, not vendor-level proof. Indexed current status is not a live browser test. |
 | Generic public HTTP / local Playwright | Static HTML baseline or self-managed runtime | Only where credentials, permitted access and runtime are available. No new service necessary just for parsing. Respect TLS, rate limits and access restrictions. |

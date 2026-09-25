@@ -10,7 +10,7 @@ Use `scripts/query_design.py` to generate the query plan:
 python3 .skills/deepline-research/scripts/query_design.py "best GTM data sources for SMB consumer services companies" --depth deep
 ```
 
-In Deepline runtime, use the native API route only after the public-source fanout has produced a first synthesis and source map. The API translates findings into Deepline routes and costs; it must not replace the research pass:
+In the harness runtime, use the native API route only after the public-source fanout has produced a first synthesis and source map. The API translates findings into the harness routes and costs; it must not replace the research pass:
 
 ```bash
 curl -s "$DEEPLINE_API_BASE_URL/api/v2/pre-research/plan" \
@@ -42,18 +42,18 @@ Preserve these behaviors:
 - Treat private/workflow/custom-language queries as first-class query types, not post-processing.
 - Extract phase-one handles, hashtags, subreddits, domains, datasets, CRM ids, workflow ids, personas, pain phrases, objections, competitors, and category terms for supplemental fanout.
 
-## Deepline Additions
+## the harness Additions
 
-The Deepline query planner extends `last30days` in four ways:
+The the harness query planner extends `last30days` in four ways:
 
 - `gtm_dataset` query type for provider strategy, public records, account data, contact data, intent data, and enrichment waterfalls.
 - `private_workflow` query type for CRM, warehouse, product usage, workflow runs, and RevOps evidence.
 - `custom_language` query type for buyer language, objections, competitor/category phrasing, and campaign hooks.
-- Provider-catalog and cost-awareness hooks so synthesized research findings can become Deepline source plans with approval gates after the public pass.
+- Provider-catalog and cost-awareness hooks so synthesized research findings can become the harness source plans with approval gates after the public pass.
 
 ## Implementation Contract
 
-Any Deepline runtime implementation should follow this order:
+Any the harness runtime implementation should follow this order:
 
 1. Build query plan with `query_design.py` logic or equivalent TypeScript port.
 2. Execute public broad variants across the selected source families.
@@ -62,6 +62,6 @@ Any Deepline runtime implementation should follow this order:
 5. Normalize every result to the evidence schema in `fanout-consolidation.md`.
 6. Score, dedupe, cluster, and emit coverage nudges.
 7. Synthesize the `last30days`-style GTM research report.
-8. Search/describe Deepline tools for the useful source families, private joins, costs, probes, and provider gaps.
+8. Search/describe the harness tools for the useful source families, private joins, costs, probes, and provider gaps.
 
 Do not collapse this into one generic web search. The source-specific query variants are the quality lever.

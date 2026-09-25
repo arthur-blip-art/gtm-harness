@@ -1,6 +1,6 @@
 # Paid-ads audiences (knowledge only)
 
-From Deepline's `deepline-ads-audiences` (original in `vendor/deepline-shared/ads-audiences-SKILL.md` and `audience-basics.md`, `contactout-hash-pool.md`, `upload-failure-modes.md`). No ad-platform connector exists in this engine; `vendor/deepline-shared/audience-hash.ts` is a pure helper (SHA-256, email normalisation, upload rows) reusable as is.
+No ad-platform connector exists in this engine (reference notes under `vendor/deepline-shared/`); `vendor/deepline-shared/audience-hash.ts` is a pure helper (SHA-256, email normalisation, upload rows) reusable as is.
 
 - Upload file shape: `email,phone,fn,ln,country`; email and phone hashed once with SHA-256, lowercase, 64 hex chars. Never double-hash a provider hash.
 - The identifier ladder is a waterfall: first-party data → personal-email hash providers (Aviato, LimaData) → ContactOut hashed identifiers (batches of 5–100, billed on `matches_found`) → expanded raw personal-email waterfall only with approval.

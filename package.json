@@ -1,13 +1,14 @@
 {
   "name": "gtm-harness",
   "version": "0.1.0",
-  "description": "Self-hosted GTM engine: Deepline-style waterfall enrichment with your own provider keys, on Supabase.",
+  "description": "GTM Harness: CLI-first GTM engine driven by a coding agent; source, enrich, detect signals, score and sync to HubSpot with your own provider keys, on Supabase.",
   "type": "module",
   "private": true,
   "bin": { "gtm": "./bin/gtm.mjs" },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "eval:routing": "node --import tsx scripts/routing-eval.ts --verbose",
     "gtm": "node bin/gtm.mjs"
   },
   "engines": { "node": ">=22" },

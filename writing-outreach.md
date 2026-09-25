@@ -1,6 +1,6 @@
 # Writing outreach and qualification
 
-Adapted from Deepline's `writing-outreach.md` (original in `vendor/deepline-shared/writing-outreach.md`). Inputs: an enriched export (email, confidence, company fields, signals) and a context folder next to the project: `context/icp.md`, `qualification_questions.md`, `product_context.md`, `copy_rules.md`.
+Inputs: an enriched export (email, confidence, company fields, signals) and a context folder next to the project: `context/icp.md`, `qualification_questions.md`, `product_context.md`, `copy_rules.md`.
 
 ## Contracts
 
@@ -12,7 +12,7 @@ Adapted from Deepline's `writing-outreach.md` (original in `vendor/deepline-shar
 
 Avoid mail-merge output: every email cites something specific (mission, product, recent news, job opening, tech stack, funding). Three paths: a deterministic template from columns; an AI column (Claude writes from the row + context); research column then generation column. Prompt templates: `gtm prompts list --theme "outreach copy"` (e.g. "Use job openings to write email first line", "Leverage Case Studies for Outbound", "Write a brief subject line").
 
-## Templates (from Deepline, run by Claude)
+## Templates (run by Claude)
 
 1. Fit scoring rubric (weights + evidence only).
 2. Qualification questions (Yes/No/Unknown + confidence + rationale).

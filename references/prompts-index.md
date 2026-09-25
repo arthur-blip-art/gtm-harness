@@ -1,4 +1,4 @@
-# Prompt index (181 templates from Deepline / Clay)
+# Prompt index (181 Clay-style templates)
 
 Use `gtm prompts show "<key>"` to print one with placeholders converted to `{{label}}`; `--raw` for the original Clay-style text. Adapt, do not paste blindly: most were written for US enterprise research.
 
