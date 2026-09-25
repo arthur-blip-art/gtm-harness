@@ -1,6 +1,6 @@
 ---
 name: gtm
-description: "Self-hosted GTM engine: Deepline's method (waterfalls, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
+description: "GTM Harness: CLI-first GTM engine driven by a coding agent (waterfalls ordered by cost, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
 ---
 
 # GTM Engine (meta skill)
@@ -61,7 +61,7 @@ gtm cache stats · gtm db ping
 | Which statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) |
 | Reading a receipt | [references/cost-receipt.md](references/cost-receipt.md) |
 | Golden records, accuracy audit | [references/contact-accuracy.md](references/contact-accuracy.md) |
-| What we copied from Deepline's runtime and what we did not | [references/deepline-authoring-notes.md](references/deepline-authoring-notes.md); originals under `vendor/` (private, see vendor/NOTICE.md) |
+| Design notes on the play runtime, what was borrowed from prior art and what was not | [references/deepline-authoring-notes.md](references/deepline-authoring-notes.md); reference material under `vendor/` (private, see vendor/NOTICE.md) |
 
 `agents/execution-plan-creator.md` produces a plan (goal, governing docs, pilot vs full-run steps, approval gate, risks) without running anything.
 

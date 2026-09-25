@@ -1,12 +1,14 @@
 # GTM Harness
 
-Moteur de prospection B2B auto-hébergé, construit pour Chift. Il reprend la **méthode** de Deepline (cascades de fournisseurs, pilote avant échelle, cache d'appels, reçu de coûts, porte d'approbation) et la fait tourner avec **nos propres clés** de fournisseurs de données, sur une base Supabase, avec HubSpot en sortie. Le dépôt est aussi un **skill Claude Code** : Claude lit `SKILL.md` et pilote le moteur en conversation.
+Moteur de prospection B2B en ligne de commande, construit pour Chift, piloté par un agent de code. Il source et enrichit des entreprises et des personnes chez les fournisseurs de données de notre choix, avec nos propres clés, garde tout dans une base Supabase, détecte des signaux d'achat, score les comptes et pousse les contacts qualifiés dans HubSpot. Le dépôt est aussi un **skill Claude Code** : Claude lit `SKILL.md` et pilote le moteur en conversation.
 
-> Dépôt privé. `vendor/` contient des copies de matériel Deepline sans licence, à usage de référence personnelle. Voir `vendor/NOTICE.md`.
+> Dépôt privé. `vendor/` contient du matériel de référence tiers sans licence. Voir `vendor/NOTICE.md`.
 
 ## Pourquoi
 
-Deepline vend deux choses : des tuyaux vers ~100 fournisseurs, payés en crédits à l'appel, et une méthode encodée en skills. La méthode est ce qui a de la valeur ; les tuyaux, on peut les tenir nous-mêmes, moins cher, et garder la donnée chez nous. Le harness reproduit la méthode et branche les fournisseurs que nous choisissons.
+Le constat de départ : Clay est un harnais. Une interface qui revend de la donnée à l'unité, enchaîne des workflows et branche des fournisseurs et des services entre eux. La valeur est dans l'orchestration, pas dans l'interface, et la donnée est facturée deux fois, par le fournisseur puis par la plateforme.
+
+Un agent de code n'a pas besoin de l'interface. Il lui faut une ligne de commande fiable, une méthode qui l'empêche de gaspiller des crédits, et une base où la donnée reste. C'est ce que fait ce dépôt. Deepline, qui a le premier pensé la prospection depuis un agent, a servi d'inspiration pour la méthode : pilote avant échelle, cascades ordonnées par le coût, cache d'appels, reçu de coûts, porte d'approbation. Cargo pousse la même idée avec un workspace déclaré en code. Le harness reprend ces principes et les fait tourner sur nos fournisseurs, avec notre schéma, sans intermédiaire.
 
 ## Ce que ça fait
 
@@ -62,7 +64,7 @@ CSV / ICP / watchlist
   export CSV · HubSpot · Slack
 ```
 
-Principes empruntés à Deepline et tenus par le code :
+Principes tenus par le code :
 
 - **Pilote → prix → correction → run complet.** Tout run payant commence par 3 lignes. Le pilote n'est jamais le livrable.
 - **L'ordre est l'économie.** Fournisseurs du moins cher au plus cher ; une ligne acceptée ne descend jamais plus bas.
@@ -116,7 +118,7 @@ Secrets attendus : `DATABASE_URL`, `HARVESTAPI_API_KEY`, `SLACK_WEBHOOK_URL`.
 
 - `enriching-and-researching.md` — cascades e-mail, téléphone, LinkedIn
 - `finding-companies-and-contacts.md` — découverte, ICP, pipeline
-- `scoring.md`, `research.md`, `writing-outreach.md` — méthodes portées de Deepline
+- `scoring.md`, `research.md`, `writing-outreach.md` — méthodes de scoring, de recherche de sources et de rédaction
 - `recipes/` — pas à pas avec checkpoints et fallbacks
 - `references/` — statuts, reçus, schéma et RGPD, planification, 181 prompts indexés
 - `agents/execution-plan-creator.md` — sous-agent qui planifie sans exécuter
@@ -129,9 +131,9 @@ src/providers   19 adaptateurs + mock déterministe
 src/plays       12 plays
 src/store       Postgres (Supabase) et mémoire
 supabase/       4 migrations
-scripts/        validateurs et analyseurs Python (Deepline, autonomes)
+scripts/        validateurs et analyseurs Python autonomes
 config/         listes de surveillance
-vendor/         matériel Deepline en référence (privé)
+vendor/         matériel de référence tiers (privé)
 tests/          40 tests vitest, hors ligne
 ```
 
@@ -143,4 +145,4 @@ tests/          40 tests vitest, hors ligne
 
 ## Licences
 
-Code du harness : privé, © Arthur Grebert. `scripts/query_design.py` et le corpus d'évaluation adaptent du code MIT de `mvanhorn/last30days-skill` (`THIRD_PARTY_NOTICES.md`). `vendor/` : Deepline, sans licence, référence privée uniquement.
+Code du harness : privé, © Arthur Grebert. `scripts/query_design.py` et le corpus d'évaluation adaptent du code MIT de `mvanhorn/last30days-skill` (`THIRD_PARTY_NOTICES.md`). `vendor/` : matériel tiers sans licence, référence privée uniquement.
