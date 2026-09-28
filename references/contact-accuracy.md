@@ -5,4 +5,4 @@
 - **Confidence tiers.** HIGH = `valid` from a leg or verifier; MEDIUM = corroborated catch-all; HOLD = single unverified candidate; LOW = nothing.
 - **Freshness.** Treat an email verification older than 30 days as stale before a send; `people.email_verified_at` records it.
 - **Wrong-person gates.** Domain mismatch rejects; a `catch_all` whose domain differs from the company is a strong wrong-person signal.
-- **Audit before sending.** `gtm audit --csv` runs `scripts/validate-emails.py`. `scripts/contact-accuracy-audit.py` (SEND / REMOVE / RE-TARGET / VERIFY / REVIEW) and `scripts/validate-linkedin-names.py` are available for LinkedIn-enriched files; run them with `python3 scripts/<name> --help`.
+- **Audit before sending.** `gtm audit --csv out.csv` flags every row whose email apex differs from the company apex (wrong person or previous employer) and exits non-zero above 20% mismatch. Fix the route before any send.

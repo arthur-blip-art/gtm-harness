@@ -10,7 +10,7 @@ Inputs: an enriched export (email, confidence, company fields, signals) and a co
 
 ## Personalization
 
-Avoid mail-merge output: every email cites something specific (mission, product, recent news, job opening, tech stack, funding). Three paths: a deterministic template from columns; an AI column (Claude writes from the row + context); research column then generation column. Prompt templates: `gtm prompts list --theme "outreach copy"` (e.g. "Use job openings to write email first line", "Leverage Case Studies for Outbound", "Write a brief subject line").
+Avoid mail-merge output: every email cites something specific (mission, product, recent news, job opening, tech stack, funding). Three paths: a deterministic template from columns; an AI column (Claude writes from the row + context); research column then generation column. Whatever the path, the first line must name the evidence (a job opening, a funding round, a post, a case study) and the row that carries it, so a reviewer can check it against the export.
 
 ## Templates (run by Claude)
 

@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
 import { z } from 'zod';
 import { GTM_HOME, defaults } from '../config.ts';
@@ -8,6 +7,7 @@ import { openStore } from '../store/index.ts';
 import { providerTable } from '../providers/index.ts';
 import { exportCsv, loadCsv, summarizeCsv } from '../core/dataset.ts';
 import { renderReceipt } from '../core/receipt.ts';
+import { AuditColumnError, auditCsv, renderAudit } from '../core/audit.ts';
 import { executePlay } from '../core/run.ts';
 import { plays, resolvePlay } from '../plays/index.ts';
 import type { BatchOutput } from '../core/row-play.ts';
@@ -117,67 +117,22 @@ db.command('ping').description('List public tables (proves DATABASE_URL and migr
   await store.close();
 });
 
-// ---- prompts: 181 Clay-style templates, placeholders normalised to {{label}}
-type PromptFile = Record<string, string[] | string>;
-function loadPrompts(): PromptFile {
-  const p = path.join(GTM_HOME, 'prompts.json');
-  return fs.existsSync(p) ? (JSON.parse(fs.readFileSync(p, 'utf8')) as PromptFile) : {};
-}
-export function renderPrompt(raw: string | string[]): { text: string; vars: string[] } {
-  let text = Array.isArray(raw) ? raw.join('') : raw;
-  const vars = new Set<string>();
-  // `" + {{input 1: Company Domain}} + "` → {{company_domain}} ; `{{Title}}` → {{title}}
-  text = text.replace(/"?\s*\+\s*\{\{\s*(?:input\s*\d+\s*:)?\s*([^}]+?)\s*\}\}\s*\+\s*"?/g, (_m, label: string) => `{{${slug(label, vars)}}}`);
-  text = text.replace(/\{\{\s*(?:input\s*\d+\s*:)?\s*([^}]+?)\s*\}\}/g, (_m, label: string) => `{{${slug(label, vars)}}}`);
-  text = text.replace(/^"|"$/g, '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
-  return { text, vars: [...vars] };
-}
-function slug(label: string, vars: Set<string>) {
-  const s = label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'input';
-  vars.add(s);
-  return s;
-}
-const THEMES: Array<[string, RegExp]> = [
-  ['company research', /company|10-k|10k|funding|raised|domain|competitor|pricing|location|event|industry|parent|subsidiar|valuation|market cap|revenue|website|blog|careers|news|esg|naics|mission|values|customers|stealth|accelerator|portfolio|founding|fleet|energy|electricity|ppa/i],
-  ['person', /person|linkedin|ceo|candidate|manager|graduat|school|skill|age|twitter handle|github|podcast|keynote|job|interview|title|bio|instagram/i],
-  ['classification', /classify|determine|check if|is the company|saas|b2b|venture|retail|revenue model|rate website|keyword|email classification|data leak|free trial|demos/i],
-  ['outreach copy', /email|first line|subject|connect message|outbound|personalization|p\.s|opening message|prospecting/i],
-  ['cleaning', /clean|normaliz|extract city|json list|validate domain|domain validation|entity/i],
-  ['calls', /gong|transcript|call/i],
-];
-const prompts = program.command('prompts').description('Prompt templates (181 Clay-style keys).');
-prompts.command('list').option('--theme <t>').action((o) => {
-  const all = loadPrompts();
-  const byTheme = new Map<string, string[]>();
-  for (const key of Object.keys(all).sort()) {
-    const theme = THEMES.find(([, re]) => re.test(key))?.[0] ?? 'other';
-    (byTheme.get(theme) ?? byTheme.set(theme, []).get(theme)!).push(key);
-  }
-  for (const [theme, keys] of byTheme) {
-    if (o.theme && theme !== o.theme) continue;
-    console.log(`\n## ${theme} (${keys.length})`);
-    for (const k of keys) console.log(`- ${k}`);
-  }
-  console.log(`\n${Object.keys(all).length} prompts. Show one: gtm prompts show "<key>"`);
-});
-prompts.command('show').argument('<key>').option('--raw', 'original Clay-style text', false).action((key: string, o) => {
-  const all = loadPrompts();
-  const hit = all[key] ?? all[Object.keys(all).find((k) => k.toLowerCase() === key.toLowerCase()) ?? ''];
-  if (!hit) { console.error(`No prompt "${key}". Try: gtm prompts list`); process.exit(2); }
-  if (o.raw) return console.log(Array.isArray(hit) ? hit.join('') : hit);
-  const { text, vars } = renderPrompt(hit);
-  console.log(`# ${key}\nvariables: ${vars.map((v) => `{{${v}}}`).join(', ') || '(none)'}\n\n${text}`);
-});
-
 program
   .command('audit')
-  .description('Run the validators (email/domain match) on an exported CSV.')
+  .description('Email/domain consistency check on an exported CSV (wrong-person and previous-employer candidates).')
   .requiredOption('--csv <path>')
   .option('--email-col <c>', 'email column', 'email')
   .option('--domain-col <c>', 'domain column', 'domain')
+  .option('--name-col <c>', 'name column for display', 'full_name')
   .action((o) => {
-    const r = spawnSync('python3', [path.join(GTM_HOME, 'scripts', 'validate-emails.py'), o.csv, '--email-col', o.emailCol, '--domain-col', o.domainCol], { stdio: 'inherit' });
-    process.exit(r.status ?? 1);
+    try {
+      const a = auditCsv(o.csv, { emailCol: o.emailCol, domainCol: o.domainCol, nameCol: o.nameCol });
+      console.log(renderAudit(a));
+      process.exit(a.warning ? 1 : 0);
+    } catch (e) {
+      if (e instanceof AuditColumnError) { console.error(`Error: ${e.message}`); process.exit(2); }
+      throw e;
+    }
   });
 
 const signals = program.command('signals').description('Company signals (funding, jobs, headcount).');

@@ -1,7 +1,6 @@
 /**
  * Lexical routing eval for SKILL.md: does each prompt land on the expected doc/play?
- * Pattern adapted from Cargo's cargo-skills evals (MIT). Offline, deterministic, gates CI on the
- * `core` tier; `hard` cases are reported only. Usage: node --import tsx scripts/routing-eval.ts [--verbose]
+ * Offline, deterministic, gates CI on the `core` tier; `hard` cases are reported only. Usage: node --import tsx scripts/routing-eval.ts [--verbose]
  */
 import fs from 'node:fs';
 import path from 'node:path';

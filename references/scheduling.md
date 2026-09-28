@@ -17,7 +17,7 @@ Rules:
 
 ## Cadence and monthly burn
 
-Before scheduling anything paid, state **per-run cost × cadence = monthly burn** in the approval message. Suggested cadences (borrowed from Cargo's published defaults, MIT):
+Before scheduling anything paid, state **per-run cost × cadence = monthly burn** in the approval message. Suggested cadences:
 
 | Signal | Cadence | Why |
 |---|---|---|

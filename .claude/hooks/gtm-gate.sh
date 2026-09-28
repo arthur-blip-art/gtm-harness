@@ -6,15 +6,18 @@
 #            --refresh (re-buys cached calls), sync-hubspot without dry_run,
 #            `supabase db push`, `gtm signals pull` without --dry-run
 #   (silent) → anything else falls through to Claude Code's normal prompt
-# Shell hardening adapted from Cargo's approve-cli.sh (MIT, © 2026 Cargo): reject chaining,
-# redirection, substitution, backslashes and multi-line commands; fail open to the prompt.
+# Only plain single-line `gtm …` invocations are classified. Anything chained, redirected,
+# substituted, escaped or multi-line falls through to Claude Code's normal prompt (fail open).
 set -fu
 command -v jq >/dev/null 2>&1 || exit 0
 input="$(cat)"
 cmd="$(printf '%s' "$input" | jq -r 'if .tool_name == "Bash" then .tool_input.command // empty else empty end' 2>/dev/null)"
 [ -n "$cmd" ] || exit 0
+# Tolerate the harmless `2>/dev/null` / `>/dev/null` / `2>&1` suffixes, then require a plain command:
 cmd="$(printf '%s' "$cmd" | sed -E 's#([0-9]*|&)>>?[[:space:]]*/dev/null([[:space:]]|$)#\2#g; s/[0-9]*>&[0-9]+//g')"
-case "$cmd" in *';'*|*'&'*|*'<'*|*'>'*|*'`'*|*'$'*|*'\'*|*'|'*) exit 0 ;; esac
+# no shell metacharacters (chaining, pipes, redirection, substitution, escapes) …
+[ -z "$(printf '%s' "$cmd" | tr -d -c ';&<>`$\\|')" ] || exit 0
+# … a single line, of reasonable length
 [ "$(printf '%s' "$cmd" | wc -l | tr -d ' ')" = "0" ] || exit 0
 [ "${#cmd}" -le 4000 ] || exit 0
 
@@ -30,7 +33,7 @@ case "$norm" in gtm\ *) ;; *) exit 0 ;; esac
 sub="$(printf '%s' "$norm" | awk '{print $2}')"
 
 case "$sub" in
-  providers|plays|csv|receipt|cache|prompts|audit) emit allow "gtm-gate: read-only gtm command" ;;
+  providers|plays|csv|receipt|cache|audit) emit allow "gtm-gate: read-only gtm command" ;;
   db) if printf '%s' "$norm" | grep -Eq 'gtm[[:space:]]+db[[:space:]]+ping'; then emit allow "gtm-gate: db ping"; fi; exit 0 ;;
   run|signals)
     if has '(^|[[:space:]])--dry-run([[:space:]]|$)'; then emit allow "gtm-gate: dry-run, mock providers, no spend"; fi

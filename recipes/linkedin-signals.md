@@ -56,7 +56,7 @@ Add the secrets `DATABASE_URL`, `HARVESTAPI_API_KEY`, `SLACK_WEBHOOK_URL` to the
 
 ### Step 5: act — [enrich, deliver]
 
-For each ICP match: `gtm run person-linkedin-to-email --input '{"linkedin_url":"…"}'`, then write with the post as the opening line (`gtm prompts show "Use company mission to write email first line"` adapted). `sync-hubspot` pushes the contact.
+For each ICP match: `gtm run person-linkedin-to-email --input '{"linkedin_url":"…"}'`, then write with the post as the opening line (`writing-outreach.md`). `sync-hubspot` pushes the contact.
 
 ## Gotchas
 

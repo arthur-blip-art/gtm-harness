@@ -1,6 +1,6 @@
 ---
 name: gtm
-description: "GTM Harness: CLI-first GTM engine driven by a coding agent (waterfalls ordered by cost, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts, 181 prompt templates."
+description: "GTM Harness: CLI-first GTM engine driven by a coding agent (waterfalls ordered by cost, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts."
 ---
 
 # GTM Engine (meta skill)
@@ -18,12 +18,11 @@ gtm run <play> --csv in.csv --out out.csv --limit 3   # batch variant, pilot fir
 gtm run <play> --csv in.csv --out out.csv             # full run
 gtm receipt <run-id>                            # frozen cost receipt
 gtm signals pull --domains domains.txt          # company-signals over a domain list
-gtm prompts list | gtm prompts show "<key>"     # 181 prompt templates
-gtm audit --csv out.csv                         # email/domain consistency check
+gtm audit --csv out.csv                         # email/domain consistency check (exit 1 above 20% mismatch)
 gtm cache stats · gtm db ping
 ```
 
-`gtm` resolves `.env` from `GTM_HOME` (this repo), CSV paths from the current directory. Not on PATH: `node ~/Documents/Corpo/gtm-engine/bin/gtm.mjs …`. `--dry-run` exercises any play with mock providers and no database.
+`gtm` resolves `.env` from `GTM_HOME` (this repo), CSV paths from the current directory. Not on PATH: `node bin/gtm.mjs …` from the repo root. `--dry-run` exercises any play with mock providers and no database.
 
 ## Plays
 
@@ -49,19 +48,16 @@ gtm cache stats · gtm db ping
 | Finding emails, phones, LinkedIn URLs; enriching a CSV; leg orders; HOLD rows; reruns | [enriching-and-researching.md](enriching-and-researching.md) |
 | Step-by-step email enrichment of a CSV | [recipes/name-domain-to-email.md](recipes/name-domain-to-email.md) |
 | Building a company list from an ICP, finding people at companies, the full pipeline | [finding-companies-and-contacts.md](finding-companies-and-contacts.md) |
-| Signals, account scoring, won/lost analysis | [scoring.md](scoring.md) then `references/scoring/` |
-| Source discovery before spending, public datasets, buyer language | [research.md](research.md) then `references/research/` |
-| Qualification, sequences, personalization, prompt templates | [writing-outreach.md](writing-outreach.md), [references/prompts-index.md](references/prompts-index.md) |
-| Human review of a run, golden sets | [references/review-loop.md](references/review-loop.md) |
+| Signals, account scoring, won/lost analysis | [scoring.md](scoring.md) |
+| Source discovery before spending, public datasets, buyer language | [research.md](research.md) |
+| Qualification, sequences, personalization | [writing-outreach.md](writing-outreach.md) |
 | LinkedIn buying signals, competitor engagement, tracked people | [recipes/linkedin-signals.md](recipes/linkedin-signals.md), `provider-playbooks/harvestapi.md` |
 | Scheduling, cron, alerts, "how do we get pinged" | [references/scheduling.md](references/scheduling.md) |
-| Paid-ads audiences (knowledge only) | [references/ads-audiences.md](references/ads-audiences.md) |
 | Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (18 files) |
 | Tables, columns, RGPD | [references/schema.md](references/schema.md) |
 | Which statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) |
 | Reading a receipt | [references/cost-receipt.md](references/cost-receipt.md) |
 | Golden records, accuracy audit | [references/contact-accuracy.md](references/contact-accuracy.md) |
-| Design notes on the runtime and prior art (Deepline, Cargo) | [references/design-notes.md](references/design-notes.md); reference material under `vendor/` (private, see vendor/NOTICE.md) |
 
 `agents/execution-plan-creator.md` produces a plan (goal, governing docs, pilot vs full-run steps, approval gate, risks) without running anything.
 

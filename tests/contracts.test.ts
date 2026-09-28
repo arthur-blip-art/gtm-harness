@@ -12,7 +12,7 @@ const root = path.join(import.meta.dirname, '..');
 const ctx = { dryRun: true, legs: undefined };
 const price = (provider: string, tool: string) => registry[provider].pricing.table[tool].credits;
 
-/** Executable contracts (pattern borrowed from Cargo's cookbook evals/contract.mjs, MIT): what every play must keep true. */
+/** Executable contracts: the invariants every play must keep true, checked on every CI run. */
 describe('play contracts', () => {
   it('email legs run cheapest-first and never include phone tools', () => {
     for (const p of [email, liEmail]) {

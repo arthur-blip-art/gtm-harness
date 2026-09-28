@@ -13,16 +13,15 @@ Use it before building a list or an enrichment route when the market, the signal
 
 ## Standard flow
 
-1. **Parse the job**: OBJECTIVE, ENTITY_SCOPE, TIME_WINDOW (default 30 days), PRIVATE_SOURCES, PUBLIC_SOURCES, DATASET_LEADS, CUSTOM_LANGUAGE_OUTPUTS, OUTPUT. State the scope to the user before any call.
-2. **Plan the queries** offline: `python3 scripts/query_design.py "<objective>" --depth quick|default|deep` → query type, tiered sources, per-source variants, extraction keys.
-3. **Public fanout**: communities (Reddit, HN, X, LinkedIn posts), web (Serper/Exa), registries and open data (`site:data.gouv.fr`, `site:data.gov`, "<dataset> parser github"), market language (reviews, G2/Capterra, job posts).
-4. **Coverage gate**: for each of the 11 source families in `references/research/source-map.md`, record native / generic / private / gap.
-5. **Artifact gate**: each recommended dataset has its exact artifact, URL, mirror, parser, registry key. Family named ≠ done.
-6. **Describe before pricing**: `gtm providers` and the provider playbooks give the basis; probe with the smallest call.
-7. **Report** with `references/research/fanout-consolidation.md`'s template: Key Findings, What I learned, GTM Data Sources Found, Materializable Datasets, Market Language, Proprietary Data To Join Later, Route (native/generic/gap), Recommended Workflow, Cost Estimate (pilot / full / unknowns).
+1. **Parse the job**: objective, entity scope, time window (default 30 days), private sources available, outputs wanted. State the scope to the user before any call.
+2. **Plan the queries offline**: one query type (who / where / how many / what do they say), two or three source-specific variants per family, the extraction keys you expect back. Write them down before running anything.
+3. **Public fanout** with the smallest probes: communities (Reddit, HN, X, LinkedIn posts), web (`serper`, `exa`), registries and open data (`site:data.gouv.fr`, `site:data.gov`, "<dataset> parser github"), market language (reviews, G2/Capterra, job posts).
+4. **Coverage gate**: for each source family touched, record native / generic route / private / gap. A family named from memory is not covered.
+5. **Artifact gate**: each recommended dataset has its exact artifact, URL, mirror, parser, registry key.
+6. **Describe before pricing**: `gtm providers` and the provider playbooks give the basis; probe with the smallest call and read the receipt.
+7. **Report**: key findings, sources found (with artifacts), market language, private data to join later, route per source (native / generic / gap), recommended plays, cost estimate (pilot / full / unknowns).
 
 ## Scope notes
 
-- The plan is `query_design.py` plus this doc; no hosted planning service.
-- Providers: serper, exa, parallel are native; Reddit/X/YouTube/TikTok need a scraper (Apify is not wired) → `generic route` or `gap`.
-- Evaluation corpus: `evals/last30days-public-private-corpus.json` + `scripts/evaluate_public_private_corpus.py` check the planner offline.
+- Providers: serper, exa, parallel are native search legs; Reddit/X/YouTube/TikTok need a scraper (not wired) → `generic route` or `gap`.
+- Research output feeds `icp-to-companies` (filters and keywords) and `writing-outreach.md` (buyer language); it never bypasses the pilot rule.

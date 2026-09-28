@@ -1,5 +1,5 @@
 {
-  "_comment": "Lexical routing evals for SKILL.md (pattern from Cargo's evals/routing.jsonl, MIT). Each route lists the doc/play it stands for and the words that should pull a prompt to it.",
+  "_comment": "Lexical routing evals for SKILL.md. Each route lists the doc/play it stands for and the words that should pull a prompt to it (multi-word phrases weigh 2, single words 1).",
   "routes": {
     "enriching-and-researching.md": [
       "email",
@@ -56,7 +56,10 @@
       "a publié",
       "posted on linkedin",
       "publient",
-      "posts"
+      "posts",
+      "de ma liste ont publié",
+      "quels cto de ma liste",
+      "ma liste ont publié"
     ],
     "scoring.md": [
       "score",

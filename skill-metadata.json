@@ -1,6 +1,6 @@
 {
   "title": "GTM Harness",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "documents": {
     "SKILL.md": {
       "kind": "entrypoint",
@@ -61,8 +61,7 @@
       "title": "Writing outreach and qualification",
       "tags": [
         "outreach",
-        "qualification",
-        "prompts"
+        "qualification"
       ],
       "providers": []
     },
@@ -104,14 +103,6 @@
       ],
       "providers": []
     },
-    "references/ads-audiences.md": {
-      "kind": "reference",
-      "title": "Ads audiences",
-      "tags": [
-        "reference"
-      ],
-      "providers": []
-    },
     "references/contact-accuracy.md": {
       "kind": "reference",
       "title": "Contact accuracy",
@@ -128,33 +119,9 @@
       ],
       "providers": []
     },
-    "references/design-notes.md": {
-      "kind": "reference",
-      "title": "Deepline authoring notes",
-      "tags": [
-        "reference"
-      ],
-      "providers": []
-    },
     "references/email-status-policy.md": {
       "kind": "reference",
       "title": "Email status policy",
-      "tags": [
-        "reference"
-      ],
-      "providers": []
-    },
-    "references/prompts-index.md": {
-      "kind": "reference",
-      "title": "Prompts index",
-      "tags": [
-        "reference"
-      ],
-      "providers": []
-    },
-    "references/review-loop.md": {
-      "kind": "reference",
-      "title": "Review loop",
       "tags": [
         "reference"
       ],
@@ -165,166 +132,6 @@
       "title": "Schema",
       "tags": [
         "reference"
-      ],
-      "providers": []
-    },
-    "references/research/fanout-consolidation.md": {
-      "kind": "reference",
-      "title": "research: fanout-consolidation",
-      "tags": [
-        "research"
-      ],
-      "providers": []
-    },
-    "references/research/last30days-gtm-corpus.md": {
-      "kind": "reference",
-      "title": "research: last30days-gtm-corpus",
-      "tags": [
-        "research"
-      ],
-      "providers": []
-    },
-    "references/research/query-design.md": {
-      "kind": "reference",
-      "title": "research: query-design",
-      "tags": [
-        "research"
-      ],
-      "providers": []
-    },
-    "references/research/source-map.md": {
-      "kind": "reference",
-      "title": "research: source-map",
-      "tags": [
-        "research"
-      ],
-      "providers": []
-    },
-    "references/scoring/buyer-language-research.md": {
-      "kind": "reference",
-      "title": "scoring: buyer-language-research",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/capacity-evidence.md": {
-      "kind": "reference",
-      "title": "scoring: capacity-evidence",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/dedupe.md": {
-      "kind": "reference",
-      "title": "scoring: dedupe",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/keyword-catalog.md": {
-      "kind": "reference",
-      "title": "scoring: keyword-catalog",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/pitfalls.md": {
-      "kind": "reference",
-      "title": "scoring: pitfalls",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/proven-signals.md": {
-      "kind": "reference",
-      "title": "scoring: proven-signals",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/quality-gate.md": {
-      "kind": "reference",
-      "title": "scoring: quality-gate",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/report-template.md": {
-      "kind": "reference",
-      "title": "scoring: report-template",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/scorecard-creation.md": {
-      "kind": "reference",
-      "title": "scoring: scorecard-creation",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/scoring-delivery.md": {
-      "kind": "reference",
-      "title": "scoring: scoring-delivery",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/scoring-diagnostics.md": {
-      "kind": "reference",
-      "title": "scoring: scoring-diagnostics",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/scoring-pitfalls.md": {
-      "kind": "reference",
-      "title": "scoring: scoring-pitfalls",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/signal-interpretation.md": {
-      "kind": "reference",
-      "title": "scoring: signal-interpretation",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/step-7-prospects.md": {
-      "kind": "reference",
-      "title": "scoring: step-7-prospects",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/technology-evidence.md": {
-      "kind": "reference",
-      "title": "scoring: technology-evidence",
-      "tags": [
-        "scoring"
-      ],
-      "providers": []
-    },
-    "references/scoring/testing-and-evaluation.md": {
-      "kind": "reference",
-      "title": "scoring: testing-and-evaluation",
-      "tags": [
-        "scoring"
       ],
       "providers": []
     },
@@ -517,102 +324,6 @@
         "zerobounce"
       ]
     },
-    "scripts/analyze_signals_v2.py": {
-      "kind": "script",
-      "title": "analyze_signals_v2.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/contact-accuracy-audit.py": {
-      "kind": "script",
-      "title": "contact-accuracy-audit.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/dedupe_utils_v2.py": {
-      "kind": "script",
-      "title": "dedupe_utils_v2.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/evaluate_public_private_corpus.py": {
-      "kind": "script",
-      "title": "evaluate_public_private_corpus.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/query_design.py": {
-      "kind": "script",
-      "title": "query_design.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/select-current-role.py": {
-      "kind": "script",
-      "title": "select-current-role.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/technology_evidence.py": {
-      "kind": "script",
-      "title": "technology_evidence.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/validate-emails.py": {
-      "kind": "script",
-      "title": "validate-emails.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "scripts/validate-linkedin-names.py": {
-      "kind": "script",
-      "title": "validate-linkedin-names.py",
-      "tags": [
-        "python"
-      ],
-      "providers": []
-    },
-    "prompts.json": {
-      "kind": "reference",
-      "title": "181 prompt templates (Deepline/Clay)",
-      "tags": [
-        "prompts"
-      ],
-      "providers": []
-    },
-    "THIRD_PARTY_NOTICES.md": {
-      "kind": "notice",
-      "title": "MIT notices (last30days-skill, Cargo skills)",
-      "tags": [
-        "license"
-      ],
-      "providers": []
-    },
-    "vendor/NOTICE.md": {
-      "kind": "notice",
-      "title": "Provenance and private-use rule for vendored reference material",
-      "tags": [
-        "license"
-      ],
-      "providers": []
-    },
     "recipes/linkedin-signals.md": {
       "kind": "specialized-workflow",
       "title": "LinkedIn signals: keywords, competitor engagement, tracked people",
@@ -695,20 +406,6 @@
       "title": "Recipe",
       "tags": [
         "recipe"
-      ],
-      "providers": []
-    },
-    "scripts/": {
-      "kind": "script",
-      "title": "Script",
-      "tags": [],
-      "providers": []
-    },
-    "vendor/": {
-      "kind": "other",
-      "title": "Vendored (private)",
-      "tags": [
-        "vendor"
       ],
       "providers": []
     }
