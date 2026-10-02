@@ -1,7 +1,7 @@
 # Recipe: one account to a 3-step sequence
 
 Use when the user names one software vendor and asks for its decision makers, the context, and a sequence
-("find me decision makers at Moss and write the sequence"). Built for Chift: the account is a B2B software
+("find me decision makers at <company> and write the sequence"). Built for Chift: the account is a B2B software
 vendor, the reason to write is its accounting coverage. Nothing is ever sent: the output is a draft for an AE.
 
 ## Steps
@@ -94,25 +94,25 @@ Netherlands. Use the line only where it is true.
 
 Cost line for step 2: Chift estimates one accounting connector built in-house at 22 to 44k euros, before maintenance.
 
-## Worked example: Moss (getmoss.com), step 1
+## Worked example: Adfin (adfin.com), step 1
 
-Facts: integrations page names 17 accounting tools, no Cegid, Pennylane or ACD; benchmark, France: 6 of the 7 other
-expense tools connect to Cegid Quadra, all 7 to Cegid Loop; Spendesk's own Sage 100, Odoo, Exact Online and ACD pages
-read "Developed by: Spendesk via Chift"; no timing signal found.
+Facts: partners page lists Xero, QuickBooks and FreeAgent only, nothing for Exact (NL), DATEV (DE) or Pennylane (FR);
+$18M Series A led by Index in May 2026 (timing signal, under 6 months); contact: co-founder and CTO, email HIGH.
+Opens on the page fact (rule 1, second rank: Adfin is not in the benchmark), with the funding as the hook.
 
-> Subject: Moss and the French ledgers
+> Subject: Adfin beyond the UK ledgers
 >
 > Hi {{first_name}},
 >
-> Your integrations page names 17 accounting tools, from DATEV and Exact to Sage 50 and NetSuite. None of them is
-> Cegid, Pennylane or ACD, the ledgers French accountants mostly run.
+> Your partners page lists Xero, QuickBooks and FreeAgent. That covers UK customers well, and nothing yet for a
+> customer whose books run on Exact in the Netherlands, DATEV in Germany or Pennylane in France.
 >
-> I compared the 7 other expense tools active in France: 6 connect to Cegid Quadra, all 7 to Cegid Loop. Spendesk's
-> own pages for Sage 100, Odoo, Exact Online and ACD read "Developed by: Spendesk via Chift".
+> After the Series A from Index, those are the customers the next stage depends on. In Germany and France the
+> accountant usually picks the ledger, so a missing connector tends to cost the deal, not just a workaround.
 >
-> Chift is one API to 50+ European accounting software, maintained by us.
+> Chift is one API to 50+ European accounting software, maintained by us. Qonto, Pleo and Sellsy run their accounting
+> integrations through it.
 >
-> The comparison is online, ledger by ledger, with the source of every cell:
-> connectivity-benchmark-ag.vercel.app/?domain=getmoss.com&countries=FR. Shall I send the full report for France?
+> I mapped Adfin's coverage against the ledgers SMEs use in those three countries. Shall I send it over?
 >
 > Not the right person? Tell me and I won't write again.
