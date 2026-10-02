@@ -9,6 +9,7 @@
 // FullEnrich email waterfall (1 credit an email found), no database (--no-db). --rehearse mocks both, spends nothing.
 //   node scripts/demo-one-account.mjs --domain finom.co --people 2 --max-credits 10
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +25,8 @@ if (!domain) { console.error('usage: demo-one-account.mjs --domain <domain> [--w
 const node = process.execPath; const t0 = Date.now(); const lap = (label, since) => console.log(`   ${label}: ${((Date.now() - since) / 1000).toFixed(1)} s`);
 const run = (script, a) => execFileSync(node, [path.join(root, 'scripts', script), ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 
-const rows = parse(fs.readFileSync(listPath), { columns: true, skip_empty_lines: true }).filter((r) => r.domain.toLowerCase() === domain);
+// The prepared list lives in gtm-data/ (git-ignored, personal data). On a fresh clone it is absent: every domain goes live.
+const rows = fs.existsSync(listPath) ? parse(fs.readFileSync(listPath), { columns: true, skip_empty_lines: true }).filter((r) => r.domain.toLowerCase() === domain) : [];
 const rehearse = args.includes('--rehearse');
 const prepared = rows.length > 0;
 
@@ -56,7 +58,7 @@ if (prepared) {
   if (!people.length) { console.log('   nobody found at this domain: nothing to push.'); process.exit(0); }
   const company = live.integrations_page_url ? new URL(live.integrations_page_url).hostname.replace(/^www\./, '').split('.')[0] : domain.split('.')[0];
   const base = { company: company[0].toUpperCase() + company.slice(1), domain, integrations_today: live.accounting_today ?? '', coverage_gap: live.coverage_gap ?? '', signal: 'Coverage gap read live on the public integrations page', signal_date: new Date().toISOString().slice(0, 10), signal_source: live.integrations_page_url ?? '' };
-  const inCsv = path.join(root, 'gtm-data/chift-test', `.demo-${domain}.people.csv`), outCsv = inCsv.replace('.people.', '.emails.');
+  const inCsv = path.join(os.tmpdir(), `gtm-demo-${domain}.people.csv`), outCsv = inCsv.replace('.people.', '.emails.');
   fs.writeFileSync(inCsv, stringify(people.map((p) => ({ ...base, first_name: p.first_name, last_name: p.last_name, title: p.title ?? '', linkedin_url: p.linkedin_url ?? '' })), { header: true }));
   t = Date.now();
   gtm(['run', 'name-domain-to-email', '--csv', inCsv, '--out', outCsv, '--legs', 'fullenrich', '--max-credits', maxCredits]);
@@ -71,7 +73,7 @@ for (const r of rows) if (r.first_name) console.log(`   ${r.first_name} ${r.last
 
 console.log(`\n4. HubSpot ${write ? 'write' : 'preview (nothing written)'}`);
 t = Date.now();
-const tmp = path.join(root, 'gtm-data/chift-test', `.demo-${domain}.csv`);
+const tmp = path.join(os.tmpdir(), `gtm-demo-${domain}.csv`);
 fs.writeFileSync(tmp, stringify(rows, { header: true }));
 const out = run('push-csv-to-hubspot.mjs', ['--csv', tmp, ...(write ? ['--write'] : [])]);
 fs.rmSync(tmp, { force: true });

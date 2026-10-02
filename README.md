@@ -153,6 +153,26 @@ gtm receipt <run-id>                                           # reçu figé d'u
 gtm audit --csv out.csv                                        # cohérence e-mail / domaine, exit 1 au-delà de 20 % d'écarts
 ```
 
+## Rejouer la démo Chift : un domaine jusqu'à HubSpot
+
+Le parcours montré dans la vidéo, sans Supabase. Seules deux clés servent : `FULLENRICH_API_KEY` (recherche de personnes et emails) et `HUBSPOT_TOKEN` (écriture du CRM), dans `.env`.
+
+```bash
+# 1. Lire la page intégrations d'un éditeur et calculer ce qui manque, pays par pays (aucune clé)
+node scripts/integrations-signal.mjs --domain rentman.io --countries NL,DE,FR
+
+# 2. Répéter le parcours complet sur des simulateurs : rien n'est dépensé, HubSpot n'est pas appelé
+node scripts/demo-one-account.mjs --domain abacum.ai --rehearse
+
+# 3. En réel : lecture de la page, 2 décideurs trouvés sur FullEnrich, leurs emails, aperçu HubSpot (rien n'est écrit)
+node scripts/demo-one-account.mjs --domain abacum.ai --people 2 --max-credits 5
+
+# 4. Même chose, avec l'écriture de l'entreprise et des contacts dans HubSpot
+node scripts/demo-one-account.mjs --domain abacum.ai --people 2 --max-credits 5 --write
+```
+
+Le coût de l'étape 3 : 0,25 crédit FullEnrich par personne trouvée, 1 par email trouvé, rien quand rien n'est trouvé. Seuls les emails HIGH et MEDIUM partent dans HubSpot. `--no-db` fait tourner n'importe quel play en réel sans base : `gtm run company-to-people --no-db --input '{"domain":"abacum.ai","titles":["CTO"],"limit":2}'`.
+
 ## Signaux et planification
 
 Aucun fournisseur ne nous appelle. Les plays de signaux sont réveillés par **GitHub Actions** : `.github/workflows/linkedin-signals.yml` tourne les jours ouvrés à 06:00 UTC, tire HarvestAPI, compare à la table `signals`, et poste les nouveautés ICP sur Slack. Sans secrets, il tourne en `--dry-run` et reste vert. Détails et cadences dans `references/scheduling.md`.
