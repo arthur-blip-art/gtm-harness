@@ -33,6 +33,7 @@ describe('gtm-gate hook', () => {
     expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --people 2 --max-credits 5')).toBe('ask');
     expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --people 2 --max-credits 5 --write')).toBe('ask');
     expect(decide('node scripts/push-csv-to-hubspot.mjs --csv a.csv')).toBe('allow');
+    expect(decide('node scripts/hubspot-domains.mjs --out gtm-data/known.txt')).toBe('allow');
     expect(decide('node scripts/push-csv-to-hubspot.mjs --csv a.csv --write')).toBe('ask');
   });
   it('falls through to the normal prompt on anything chained or unrelated', () => {

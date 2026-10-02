@@ -31,7 +31,7 @@ if has '^[[:space:]]*supabase[[:space:]]+db[[:space:]]+push'; then emit ask "gtm
 # The demo scripts: a page read is free, a rehearsal is mocked, a live run bills FullEnrich, --write writes HubSpot.
 script="$(printf '%s' "$cmd" | sed -nE 's#^[[:space:]]*node[[:space:]]+([^[:space:]]*/)?scripts/([a-z-]+)\.mjs([[:space:]].*)?$#\2#p')"
 case "$script" in
-  integrations-signal|score-universe) emit allow "gtm-gate: public page read, no provider spend" ;;
+  integrations-signal|score-universe|hubspot-domains) emit allow "gtm-gate: public page read, no provider spend" ;;
   push-csv-to-hubspot)
     if has '(^|[[:space:]])--write([[:space:]]|$)'; then emit ask "gtm-gate: writes companies and contacts to HubSpot"; fi
     emit allow "gtm-gate: HubSpot preview, nothing written" ;;
