@@ -134,6 +134,12 @@ tool('apollo.mixed_people_search', 'per_call', 0, async (i) => {
   const titles = (i.titles as string[] | undefined) ?? ['CTO'];
   return { status: 'hit', output: { people: titles.slice(0, 2).map((t, k) => ({ first_name: ['Alice', 'Marc'][k], last_name: ['Durand', 'Petit'][k], title: t, linkedin_url: `https://www.linkedin.com/in/${['alice-durand', 'marc-petit'][k]}`, domain })), total: 5 } };
 }, { normalize: (i) => ({ ...i }) });
+tool('fullenrich.search_people', 'per_result', 0.25, async (i) => {
+  const domain = String((i.domains as string[] | undefined)?.[0] ?? 'example.com');
+  const titles = (i.titles as string[] | undefined) ?? ['CEO'];
+  const people = titles.slice(0, 2).map((t, k) => ({ first_name: ['Claire', 'Hugo'][k], last_name: ['Ollier', 'Perrin'][k], title: t, linkedin_url: `https://www.linkedin.com/in/${['claire-ollier', 'hugo-perrin'][k]}`, domain }));
+  return { status: 'hit', output: { people, total: 4 }, costOverride: people.length * 0.25 };
+}, { normalize: (i) => ({ ...i }) });
 tool('prospeo.search_person', 'per_call', 1, async () => ({ status: 'hit', output: { people: [], total: 0 } }), { normalize: (i) => ({ ...i }) });
 tool('prospeo.search_company', 'per_call', 1, async () => ({ status: 'hit', output: { companies: [], total: 0 } }), { normalize: (i) => ({ ...i }) });
 

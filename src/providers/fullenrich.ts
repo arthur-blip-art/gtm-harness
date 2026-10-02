@@ -4,7 +4,13 @@ import { nameToken } from '../core/normalize.ts';
 import type { ToolInput, ToolResult } from '../core/types.ts';
 
 const BASE = 'https://app.fullenrich.com/api/v1/contact/enrich';
-const PRICE = { bulk_enrich: { basis: 'per_hit', credits: 1, note: 'per contact with an email found; phones ~10x, never requested here' } } as const;
+const SEARCH = 'https://app.fullenrich.com/api/v2/people/search';
+const PRICE = {
+  bulk_enrich: { basis: 'per_hit', credits: 1, note: 'per contact with an email found; phones ~10x, never requested here' },
+  search_people: { basis: 'per_result', credits: 0.25, note: '0.25 per person returned; free when already exported once (docs.fullenrich.com/api/v2/general/credit)' },
+} as const;
+const filter = (values: unknown, exact = false) =>
+  Array.isArray(values) && values.length ? values.map((value) => ({ value: String(value), exact_match: exact })) : undefined;
 const POLL_MS = 15_000;
 const MAX_WAIT_MS = 15 * 60_000;
 
@@ -18,6 +24,35 @@ export const fullenrich = defineAdapter({
   pricing: { usdPerCredit: 0.1, verifiedOn: '2026-09-23 (estimate, check your plan)', table: PRICE },
   requiredEnv: ['FULLENRICH_API_KEY'],
   tools: {
+    search_people: {
+      description: 'People currently at a company domain, filtered by titles and seniorities. Names, titles, LinkedIn; no email.',
+      normalize: (i) => ({
+        domains: ((i.domains as string[] | undefined) ?? [i.domain]).filter(Boolean).map((d) => String(d).toLowerCase()),
+        titles: i.titles ?? [], seniorities: i.seniorities ?? [], limit: Math.min(Number(i.limit ?? 10), 100),
+      }),
+      async execute(input, ctx) {
+        const body = {
+          limit: input.limit,
+          current_company_domains: filter(input.domains, true),
+          current_position_titles: filter(input.titles),
+          current_position_seniority_level: filter(input.seniorities),
+        };
+        const { status, body: res } = await httpJson(ctx, SEARCH, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${env('FULLENRICH_API_KEY') ?? ''}` },
+          body: JSON.stringify(body),
+        });
+        if (status !== 200) return errorResult(status, res, res?.message);
+        const people = ((res?.people ?? []) as any[]).map((p) => ({
+          first_name: p.first_name, last_name: p.last_name, title: p.employment?.current?.title,
+          linkedin_url: p.social_profiles?.professional_network?.url, domain: p.employment?.current?.company?.domain,
+        }));
+        const credits = typeof res?.metadata?.credits === 'number' ? res.metadata.credits : people.length * PRICE.search_people.credits;
+        const output = { people, total: res?.metadata?.total ?? null };
+        return people.length ? { status: 'hit', output, costOverride: credits } : { status: 'miss', missReason: 'no_match', output, costOverride: 0 };
+      },
+      cost: costFromTable(PRICE.search_people),
+    },
     bulk_enrich: {
       description: 'Batch work-email enrichment from name + domain (LinkedIn URL improves accuracy).',
       maxBatch: 50,

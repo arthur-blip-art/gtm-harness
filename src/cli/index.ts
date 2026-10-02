@@ -48,9 +48,10 @@ program
   .option('--max-credits <n>', `abort when this run spends more (default ${defaults.maxCreditsPerRun})`, (v) => Number(v))
   .option('--refresh', 'ignore cached receipts and re-buy', false)
   .option('--dry-run', 'mock every provider, in-memory store, no keys needed', false)
+  .option('--no-db', 'live providers, in-memory store: no Supabase needed, no receipt cache across runs')
   .option('--column <mapping...>', 'header override, e.g. --column domain=Website first_name=Prenom')
   .action(async (playName: string, o) => {
-    const store = openStore({ dryRun: o.dryRun });
+    const store = openStore({ dryRun: o.dryRun, db: o.db });
     const common = { store, resolvePlay, dryRun: o.dryRun, refresh: o.refresh, legs: o.legs ? String(o.legs).split(',') : undefined, maxCredits: o.maxCredits ?? defaults.maxCreditsPerRun, log };
     try {
       if (o.csv) {

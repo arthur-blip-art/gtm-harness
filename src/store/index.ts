@@ -3,11 +3,12 @@ import { MemoryStore } from './memory.ts';
 import { PgStore } from './pg.ts';
 import type { Store } from './store.ts';
 
-export function openStore(opts: { dryRun?: boolean }): Store {
-  if (opts.dryRun) return new MemoryStore();
+/** --dry-run and --no-db both keep receipts in memory: nothing is cached across runs, live providers still bill. */
+export function openStore(opts: { dryRun?: boolean; db?: boolean }): Store {
+  if (opts.dryRun || opts.db === false) return new MemoryStore();
   const url = env('DATABASE_URL');
-  if (!url) {
-    throw new Error('DATABASE_URL is not set. Add it to .env (Supabase session pooler URL) or pass --dry-run.');
+  if (!url || url.includes('<')) {
+    throw new Error('DATABASE_URL is not set (or still the .env.example placeholder). Add the Supabase session pooler URL, or pass --no-db to run live without a database.');
   }
   return new PgStore(url);
 }

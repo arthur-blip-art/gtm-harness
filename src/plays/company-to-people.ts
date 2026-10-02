@@ -5,7 +5,7 @@ import { legEnabled } from './name-domain-to-email.ts';
 import type { LegMeta } from '../core/types.ts';
 
 export const NAME = 'company-to-people';
-export const DESCRIPTION = 'People at a known domain matching titles/seniorities: apollo search, prospeo fallback. Returns rows ready for the email play.';
+export const DESCRIPTION = 'People at a known domain matching titles/seniorities: fullenrich search (works on a free Apollo plan), apollo and prospeo as fallbacks. Returns rows ready for the email play.';
 
 export const Input = z.object({
   domain: z.string().min(1),
@@ -25,6 +25,7 @@ export const play = definePlay<Input, Output>({
     let total: number | null = null;
     const seen = new Set<string>();
     const sources: Array<[string, string, string, Record<string, unknown>]> = [
+      ['fullenrich', 'fullenrich', 'search_people', { domains: [domain], titles: input.titles, seniorities: input.seniorities, limit: input.limit }],
       ['apollo', 'apollo', 'mixed_people_search', { domains: [domain], titles: input.titles, seniorities: input.seniorities, per_page: input.limit, page: 1 }],
       ['prospeo', 'prospeo', 'search_person', { filters: { company_website_or: [domain], job_title_or: input.titles, seniority_or: input.seniorities }, page: 1, limit: Math.min(input.limit, 25) }],
     ];
