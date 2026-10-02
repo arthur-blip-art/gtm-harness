@@ -5,6 +5,7 @@
 #   ask    → paid full runs (gtm run without --dry-run and without a pilot limit),
 #            --refresh (re-buys cached calls), sync-hubspot without dry_run,
 #            `supabase db push`, `gtm signals pull` without --dry-run
+#   demo scripts → page reads and rehearsals allowed; live runs and HubSpot writes ask
 #   (silent) → anything else falls through to Claude Code's normal prompt
 # Only plain single-line `gtm …` invocations are classified. Anything chained, redirected,
 # substituted, escaped or multi-line falls through to Claude Code's normal prompt (fail open).
@@ -26,6 +27,19 @@ has() { printf '%s' "$cmd" | grep -Eq -- "$1"; }
 
 # supabase schema changes always ask
 if has '^[[:space:]]*supabase[[:space:]]+db[[:space:]]+push'; then emit ask "gtm-gate: schema push to the live database"; fi
+
+# The demo scripts: a page read is free, a rehearsal is mocked, a live run bills FullEnrich, --write writes HubSpot.
+script="$(printf '%s' "$cmd" | sed -nE 's#^[[:space:]]*node[[:space:]]+([^[:space:]]*/)?scripts/([a-z-]+)\.mjs([[:space:]].*)?$#\2#p')"
+case "$script" in
+  integrations-signal|score-universe) emit allow "gtm-gate: public page read, no provider spend" ;;
+  push-csv-to-hubspot)
+    if has '(^|[[:space:]])--write([[:space:]]|$)'; then emit ask "gtm-gate: writes companies and contacts to HubSpot"; fi
+    emit allow "gtm-gate: HubSpot preview, nothing written" ;;
+  demo-one-account)
+    if has '(^|[[:space:]])--rehearse([[:space:]]|$)'; then emit allow "gtm-gate: rehearsal, mock providers, no spend"; fi
+    if has '(^|[[:space:]])--write([[:space:]]|$)'; then emit ask "gtm-gate: live run, FullEnrich credits (see --max-credits) and a HubSpot write"; fi
+    emit ask "gtm-gate: live run, FullEnrich credits (see --max-credits), HubSpot preview only" ;;
+esac
 
 # normalise `node bin/gtm.mjs …` / `node …/gtm.mjs …` to `gtm …`
 norm="$(printf '%s' "$cmd" | sed -E 's#^[[:space:]]*node[[:space:]]+[^[:space:]]*gtm\.mjs[[:space:]]+#gtm #')"

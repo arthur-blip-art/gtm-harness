@@ -1,6 +1,6 @@
 ---
 name: gtm
-description: "GTM Harness: CLI-first GTM engine driven by a coding agent (waterfalls ordered by cost, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also: research method, scoring method, outreach contracts."
+description: "GTM Harness: CLI-first GTM engine driven by a coding agent (waterfalls ordered by cost, pilot-before-scale, receipt cache, cost receipts, approval gate) with our own provider keys (19 adapters: harvestapi, apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, pdl, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, hubspot) on Supabase. Plays: emails, LinkedIn URLs, phones, company enrich, ICP→companies, company→people, signals, scoring, HubSpot sync, full pipeline. Also one account end to end: its decision makers, the context and a 3-step outbound sequence (\"trouve-moi des décideurs chez X et crée une séquence\", \"lead gen on this domain\"). Also: research method, scoring method, outreach contracts."
 ---
 
 # GTM Engine (meta skill)
@@ -50,6 +50,7 @@ gtm cache stats · gtm db ping
 | Building a company list from an ICP, finding people at companies, the full pipeline | [finding-companies-and-contacts.md](finding-companies-and-contacts.md) |
 | Signals, account scoring, won/lost analysis | [scoring.md](scoring.md) |
 | Source discovery before spending, public datasets, buyer language | [research.md](research.md) |
+| One account: its decision makers, the context and a 3-step sequence ("find decision makers at X and write the sequence") | [recipes/account-to-sequence.md](recipes/account-to-sequence.md) |
 | Qualification, sequences, personalization | [writing-outreach.md](writing-outreach.md) |
 | An upcoming trade show, conference or dinner: who will be there, who to meet, top 5 and briefs | the `event-brief` skill, `skills/event-brief/SKILL.md` |
 | LinkedIn buying signals, competitor engagement, tracked people | [recipes/linkedin-signals.md](recipes/linkedin-signals.md), `provider-playbooks/harvestapi.md` |

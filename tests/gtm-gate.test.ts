@@ -27,6 +27,14 @@ describe('gtm-gate hook', () => {
     expect(decide('gtm signals pull --domains d.txt')).toBe('ask');
     expect(decide('supabase db push')).toBe('ask');
   });
+  it('classifies the demo scripts by what they spend or write', () => {
+    expect(decide('node scripts/integrations-signal.mjs --domain getmoss.com --countries FR,DE')).toBe('allow');
+    expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --rehearse')).toBe('allow');
+    expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --people 2 --max-credits 5')).toBe('ask');
+    expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --people 2 --max-credits 5 --write')).toBe('ask');
+    expect(decide('node scripts/push-csv-to-hubspot.mjs --csv a.csv')).toBe('allow');
+    expect(decide('node scripts/push-csv-to-hubspot.mjs --csv a.csv --write')).toBe('ask');
+  });
   it('falls through to the normal prompt on anything chained or unrelated', () => {
     expect(decide('gtm providers && rm -rf /')).toBeNull();
     expect(decide('gtm providers | cat')).toBeNull();

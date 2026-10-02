@@ -6,7 +6,7 @@ Inputs: an enriched export (email, confidence, company fields, signals) and a co
 
 **Qualification JSON** per prospect: `score` integer 0–10, `score_label` ("Strong fit: X/10" | "Possible fit: X/10" | "Weak fit: X/10"), `fit_band` (STRONG_FIT | POSSIBLE_FIT | WEAK_FIT), `weights[]` of `{factor, weight, evidence, impact: positive|negative|neutral}`, `confidence` HIGH/MEDIUM/LOW, `summary {positives, risks, next_checks}`. Each qualification question is answered Yes/No/Unknown with evidence; mark Unknown when evidence is missing. Default to higher recall unless strict matching is requested.
 
-**Sequence JSON**: exactly 4 emails (`step` 1..4), each mapped to a pain or risk from the qualification summary; 8 subject-line variants max 7 words each; no clickbait, no ALL CAPS, no exclamation marks; concise, no fluff, no markdown; no claims unsupported by inputs.
+**Sequence JSON**: 3 steps by default (`step` 1..3, see `recipes/account-to-sequence.md` for the flow, rules and copy audit; 4 only when the user asks), each mapped to a pain or risk from the qualification summary; 8 subject-line variants max 7 words each; no clickbait, no ALL CAPS, no exclamation marks; concise, no fluff, no markdown; no claims unsupported by inputs.
 
 ## Personalization
 
