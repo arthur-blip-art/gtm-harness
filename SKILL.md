@@ -51,6 +51,7 @@ gtm cache stats · gtm db ping
 | Signals, account scoring, won/lost analysis | [scoring.md](scoring.md) |
 | Source discovery before spending, public datasets, buyer language | [research.md](research.md) |
 | Qualification, sequences, personalization | [writing-outreach.md](writing-outreach.md) |
+| An upcoming trade show, conference or dinner: who will be there, who to meet, top 5 and briefs | the `event-brief` skill, `skills/event-brief/SKILL.md` |
 | LinkedIn buying signals, competitor engagement, tracked people | [recipes/linkedin-signals.md](recipes/linkedin-signals.md), `provider-playbooks/harvestapi.md` |
 | Scheduling, cron, alerts, "how do we get pinged" | [references/scheduling.md](references/scheduling.md) |
 | Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (18 files) |

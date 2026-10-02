@@ -8,3 +8,6 @@ supabase/.branches/
 __pycache__/
 *.pyc
 gtm-data/
+
+# Skill test runs: large, and they hold scraped event attendee lists
+skills/*-workspace/

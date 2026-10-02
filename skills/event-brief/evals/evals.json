@@ -1,0 +1,44 @@
+{
+  "skill_name": "event-brief",
+  "evals": [
+    {
+      "id": 1,
+      "name": "accountex-espana-top5",
+      "prompt": "On va à Accountex España à Madrid en novembre pour Chift. Regarde qui sera là et sors-moi le top 5 des personnes à rencontrer avec un brief pour chacune. Le contexte du projet est dans /Users/arthurgrebertgmail.com/Documents/Corpo/gtm-harness/gtm-data/chift-test/ (context/icp.md, context/product_context.md, chift-exclusions.csv, final-accounts.csv).",
+      "expected_output": "Un brief markdown avec un top 5 de personnes réelles lues sur le site de l'événement, un brief par personne (où et quand, phrase d'ouverture, chemin chaud), les clients et concurrents présents, les limites, et un CSV de toutes les personnes trouvées.",
+      "files": [],
+      "assertions": [
+        "A brief file named event-brief-<slug>.md and a people file named event-people-<slug>.csv are saved",
+        "The people CSV has the columns of the output format, including source_url, status, priority and why",
+        "The top 5 table contains exactly five named people, each with a company and a place or time",
+        "Every top 5 person has a source_url on the event's own site in the CSV",
+        "No company from the exclusion list (customer or competitor) appears as a target or in the top 5",
+        "Each of the five briefs has an opening line, a pre-event message under 60 words, and a warm path line",
+        "The brief has a section on who else is in the room (customers, competitors, accounts already targeted)",
+        "The brief states what was not readable or not checked",
+        "Swan and Sage are classified as customers, not targets",
+        "STEL Order and Holded are flagged as already targeted"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "techsolutions-paris-top5",
+      "prompt": "prépare le salon TechSolutions à Paris (14-15 octobre, salons-solutions.fr) pour Chift : qui on doit voir, top 5 + brief. Contexte projet : /Users/arthurgrebertgmail.com/Documents/Corpo/gtm-harness/gtm-data/chift-test/",
+      "expected_output": "Même format sur un salon généraliste : le skill doit garder peu de cibles, écarter les intégrateurs et revendeurs, et dire que l'audience est moins centrée.",
+      "files": [],
+      "assertions": [
+        "A brief file named event-brief-<slug>.md and a people file named event-people-<slug>.csv are saved",
+        "The people CSV has the columns of the output format, including source_url, status, priority and why",
+        "The top 5 table contains exactly five named people, each with a company and a place or time",
+        "Every top 5 person has a source_url on the event's own site in the CSV",
+        "No company from the exclusion list (customer or competitor) appears as a target or in the top 5",
+        "Each of the five briefs has an opening line, a pre-event message under 60 words, and a warm path line",
+        "The brief has a section on who else is in the room (customers, competitors, accounts already targeted)",
+        "The brief states what was not readable or not checked",
+        "Agicap is classified as a customer, not a target",
+        "Praxedo is flagged as already targeted",
+        "The brief says the audience is generalist and keeps resellers and integrators out of the targets"
+      ]
+    }
+  ]
+}
