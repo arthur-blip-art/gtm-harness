@@ -112,6 +112,8 @@ export interface Store {
   // signals, scores, crm
   upsertSignals(rows: Signal[]): Promise<number>;
   listSignals(domains: string[], since?: string): Promise<Signal[]>;
+  /** Every signal observed since a date, all domains (signal-to-action). */
+  listRecentSignals(since: string, types?: string[]): Promise<Signal[]>;
   upsertScore(s: Score): Promise<void>;
   listScores(model: string, domains?: string[]): Promise<Score[]>;
   getCrmSync(entityType: CrmSync['entityType'], entityId: string, crm: string): Promise<CrmSync | null>;

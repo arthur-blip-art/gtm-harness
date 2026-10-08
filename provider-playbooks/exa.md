@@ -4,6 +4,7 @@
 
 **Operations (adapter `src/providers/exa.ts`):**
 - `search` — `POST /search` `{query, numResults, type:'auto'}` → `results[{url,title}]`. The play takes the first result not on a social/directory domain.
+- `find_similar` — `POST https://api.exa.ai/findSimilar {url, numResults, excludeSourceDomain:true}` → `{results[{url,title}]}`. On a customer's homepage, mostly companies of the same kind: lookalike sourcing for `icp-to-companies` (`seed_domains`). Directories and review sites are filtered out.
 
 **Pricing basis:** per_call, ~$0.005 per search without contents (0.05 credit).
 

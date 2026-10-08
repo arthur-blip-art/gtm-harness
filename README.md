@@ -1,6 +1,6 @@
 # GTM Harness
 
-Moteur de prospection B2B en ligne de commande, piloté par un agent de code. Il source et enrichit des entreprises et des personnes chez 19 fournisseurs de données, avec nos propres clés, garde tout dans une base Supabase, détecte des signaux d'achat, score les comptes et pousse les contacts qualifiés dans HubSpot. Le dépôt est aussi un **skill Claude Code** : Claude lit `SKILL.md` et pilote le moteur en conversation, sous le contrôle d'un hook d'approbation.
+Moteur de prospection B2B en ligne de commande, piloté par un agent de code. Il source et enrichit des entreprises et des personnes, **sources gratuites et publiques d'abord** (site de l'entreprise, DNS, boards de recrutement, presse, dépôts légaux, registres), puis chez 19 fournisseurs de données avec nos propres clés, garde tout dans une base Supabase, détecte des signaux d'achat, score les comptes et pousse les contacts qualifiés dans HubSpot. Le dépôt est aussi un **skill Claude Code** : Claude lit `SKILL.md` et pilote le moteur en conversation, sous le contrôle d'un hook d'approbation.
 
 ## Démo en 60 secondes, sans aucune clé
 
@@ -41,6 +41,25 @@ Comment le lire :
 - **`NEVER REACHED`** : les étapes moins chères avaient déjà répondu. `CUT CANDIDATE` marquerait une étape qui dépense sans jamais accepter.
 - Relancer la même commande coûte 0 : chaque appel est mis en cache par empreinte de son entrée normalisée (`receipts: 0 new / 16 cached`).
 
+## Le bouton : « trouve-moi les bonnes personnes et prépare des séquences »
+
+```bash
+cp config/prospect.example.json config/prospect.json   # ICP, personas, offre, signature
+node bin/gtm.mjs run prospect --input @config/prospect.json --dry-run
+```
+
+Un run fait toute la cascade, chaque étape par la source la moins chère d'abord :
+
+1. **Les comptes** : lookalikes des meilleurs clients (Exa) et registre public français (NAF, effectif, dirigeants), puis Apollo, TheirStack et Crustdata pour ce qui manque.
+2. **La situation et le timing** : offres d'emploi lues sur le board ATS de l'entreprise, presse datée (levée, nouveau dirigeant, lancement), SEC Form D et BODACC.
+3. **Le classement** : un score de timing transparent sur les signaux encore frais.
+4. **Les bonnes personnes** : les dirigeants légaux, puis un dork LinkedIn via Serper, puis FullEnrich, Apollo et Prospeo.
+5. **Les emails** : la cascade de 9 fournisseurs.
+6. **Le contexte** : un brief d'une page par compte (pages lues, stack, recrutements, actualités, standard, angles avec sources).
+7. **La séquence** : un brouillon en 3 étapes qui ouvre sur le fait le plus fort, audité par code.
+
+Rien n'est envoyé : chaque brouillon dit ce qu'il faut vérifier avant de partir. Le même bouton existe dans GitHub (*Actions → prospect → Run workflow*). Et chaque matin, `signals-to-action` transforme les nouveaux signaux (levée, nouveau dirigeant, champion qui change de boîte, engagé chez un concurrent) en brouillons. La carte complète des capacités, de leurs sources et de leur mode d'exécution est dans `docs/capability-map.md`.
+
 ## Pourquoi
 
 Les plateformes de type Clay sont des harnais : une interface qui revend de la donnée à l'unité, enchaîne des workflows et branche des fournisseurs entre eux. La valeur est dans l'orchestration, pas dans l'interface, et la donnée est facturée deux fois, par le fournisseur puis par la plateforme.
@@ -65,8 +84,11 @@ Un agent de code n'a pas besoin de l'interface. Il lui faut une ligne de command
 | `icp-to-companies` | filtres ICP | liste d'entreprises, dimensionnée à 1 ligne par source avant achat |
 | `company-enrich` | domaine | profil fusionné par précédence de sources |
 | `company-to-people` | domaine, titres | personnes prêtes pour la cascade e-mail |
-| `company-signals` | domaine | levées, offres d'emploi, croissance d'effectif → table `signals` |
-| `linkedin-signals` | mots-clés, concurrents, profils suivis | posts, engagements et publications LinkedIn → `signals` + alerte Slack |
+| `company-signals` | domaine | offres d'emploi (board ATS), presse datée, Form D, BODACC gratuits ; PredictLeads, TheirStack, Crustdata pour les trous → table `signals` |
+| `linkedin-signals` | mots-clés, concurrents, profils suivis, champions | posts, engagements, publications et changements de poste LinkedIn → `signals` + alerte Slack |
+| `account-context` | domaine | brief d'une page : ce qu'ils vendent, à qui, pourquoi maintenant, angles sourcés, stack, recrutements, standard |
+| `tech-stack` | domaine | stack commerciale, marketing et produit par DNS, source du site et offres d'emploi, preuve à l'appui |
+| `social-listening` | sujets, comptes X | mentions sur Hacker News, presse, LinkedIn, Reddit, X, web ; intention d'achat signalée |
 | `score-accounts` | — | `account_fit` et `account_engagement` par règles auditables |
 
 **Livrer et composer**
@@ -75,6 +97,9 @@ Un agent de code n'a pas besoin de l'interface. Il lui faut une ligne de command
 |---|---|
 | `sync-hubspot` | upsert entreprises et contacts, seulement HIGH/MEDIUM, jamais `do_not_contact`, skip par hash |
 | `icp-to-pipeline` | ICP → entreprises → personnes → e-mails → HubSpot, un seul run, un seul reçu |
+| `prospect` | le bouton : ICP → comptes → signaux → classement → personnes → e-mails → briefs → brouillons, fichiers dans `out_dir` |
+| `signal-to-action` | signaux frais → personnes → e-mails → brief → brouillon qui ouvre sur le signal, une fois par signal |
+| `draft-sequence` | 3 étapes sur le fait daté le plus fort, audit de copy par code, liste de vérifications ; n'envoie jamais |
 
 Chaque play existe en version unitaire (`--input`) et, quand ça a du sens, en version lot sur CSV (`--csv --out`).
 
@@ -123,7 +148,13 @@ Principes tenus par le code, pas par la documentation :
 
 ## Fournisseurs
 
-19 adaptateurs, un fichier chacun dans `src/providers/`, avec table de prix, date de vérification et fiche `provider-playbooks/<nom>.md` : apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, peopledatalabs, crustdata, lusha, kaspr, serper, exa, parallel, theirstack, predictleads, harvestapi, hubspot. `gtm providers` dit lesquels ont une clé. Une clé absente désactive la leg, le play tourne quand même.
+26 adaptateurs, un fichier chacun dans `src/providers/`, avec table de prix, date de vérification et fiche `provider-playbooks/<nom>.md` :
+
+- **Couche gratuite, sans clé** : `web` (pages et DNS), `ats` (Greenhouse, Lever, Ashby, Workable, Recruitee), `publicweb` (Google News, Hacker News, SEC Form D), `registry_fr` (Recherche d'entreprises, BODACC).
+- **Recherche et social peu chers** : serper (recherche, news, maps), exa (recherche, lookalikes), harvestapi (LinkedIn), scrapecreators (Reddit, X), scrapegraph (rendu des sites en JavaScript).
+- **Données de contact et d'entreprise** : apollo, fullenrich, hunter, zerobounce, leadmagic, prospeo, findymail, millionverifier, peopledatalabs, crustdata, lusha, kaspr, parallel, theirstack, predictleads.
+- **CRM** : hubspot.
+- **Jugement dans les plays** : `llm`, l'API Claude en sortie structurée ; `GTM_LLM_MODEL`, haiku pour le moins cher. `gtm providers` dit lesquels ont une clé. Une clé absente désactive la leg, le play tourne quand même.
 
 Les endpoints sont écrits d'après les documentations publiques et marqués `verify against docs` : le premier pilote réel par fournisseur est obligatoire avant tout run à l'échelle.
 
@@ -179,6 +210,8 @@ Aucun fournisseur ne nous appelle. Les plays de signaux sont réveillés par **G
 
 Secrets attendus : `DATABASE_URL`, `HARVESTAPI_API_KEY`, `SLACK_WEBHOOK_URL`.
 
+`.github/workflows/signals-to-action.yml` suit à 06:30 UTC : social listening, puis `signal-to-action`, qui transforme les signaux frais en brouillons (artefact téléchargeable et résumé Slack). Il a besoin de `DATABASE_URL` pour se souvenir des signaux déjà traités, et des clés des fournisseurs que vous voulez utiliser (`ANTHROPIC_API_KEY` pour les briefs et brouillons). `.github/workflows/prospect.yml` est le bouton manuel.
+
 ## Le skill Claude Code
 
 `SKILL.md` route vers les documents de méthode :
@@ -212,9 +245,9 @@ La CI (`.github/workflows/ci.yml`) enchaîne typecheck, tests, évals de routage
 
 ## État
 
-**Vérifié** : typecheck, 52 tests, tous les plays en dry-run, CI verte. Un test manuel réel le 25 septembre 2026 : 4 CTO de fintechs européennes trouvés par signal (levée, nouveau CTO, intégrations manquantes) et enrichis via FullEnrich pour 4 crédits.
+**Vérifié** : typecheck, 71 tests, tous les plays en dry-run (y compris le bouton `prospect` de bout en bout), évals de routage 23/23 core et 5/5 hard. Un test manuel réel le 25 septembre 2026 : 4 CTO de fintechs européennes trouvés par signal (levée, nouveau CTO, intégrations manquantes) et enrichis via FullEnrich pour 4 crédits.
 
-**Non vérifié** : les tarifs et endpoints des autres fournisseurs sont des estimations marquées `verify against docs` ; aucun run réel à l'échelle ; le projet Supabase de production reste à créer.
+**Non vérifié** : les tarifs et endpoints des autres fournisseurs sont des estimations marquées `verify against docs`, y compris ceux de la couche gratuite (APIs publiques non joignables depuis l'environnement de développement) ; aucun run réel à l'échelle ; le projet Supabase de production reste à créer.
 
 **Prochaines étapes** : un pilote réel par fournisseur avec reçu committé, puis remplacer le reçu de démonstration ci-dessus par un reçu réel.
 

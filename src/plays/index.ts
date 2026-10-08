@@ -11,6 +11,12 @@ import * as scoreAccounts from './score-accounts.ts';
 import * as syncHubspot from './sync-hubspot.ts';
 import * as icpToPipeline from './icp-to-pipeline.ts';
 import * as linkedinSignals from './linkedin-signals.ts';
+import * as accountContext from './account-context.ts';
+import * as techStack from './tech-stack.ts';
+import * as socialListening from './social-listening.ts';
+import * as draftSequence from './draft-sequence.ts';
+import * as signalToAction from './signal-to-action.ts';
+import * as prospect from './prospect.ts';
 
 const all: Play[] = [
   nameDomainToEmail.scalar, nameDomainToEmail.batch,
@@ -22,6 +28,8 @@ const all: Play[] = [
   companySignals.play, companySignals.batch,
   scoreAccounts.play, syncHubspot.play, icpToPipeline.play,
   linkedinSignals.play,
+  accountContext.play, techStack.play, techStack.batch, socialListening.play,
+  draftSequence.play, signalToAction.play, prospect.play,
 ];
 
 export const plays: Record<string, Play> = Object.fromEntries(all.map((p) => [p.name, p]));

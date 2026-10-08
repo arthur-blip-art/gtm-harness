@@ -1,0 +1,6 @@
+{
+  "terms": ["YourBrand", "CompetitorA", "alternative to CompetitorA", "the problem you solve, in buyer words"],
+  "x_handles": ["competitora"],
+  "days": 7,
+  "notify": true
+}

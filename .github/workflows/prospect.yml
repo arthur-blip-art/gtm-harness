@@ -1,0 +1,74 @@
+# The button. Actions → prospect → Run workflow: ICP config in, accounts / people / briefs / drafts out
+# (downloadable artifact). Nothing is sent and nothing is written to a CRM.
+# Without secrets the run is a --dry-run (mock providers), so the button always works.
+name: prospect
+
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: 'ICP config file (see config/prospect.example.json)'
+        default: 'config/prospect.example.json'
+      max_credits:
+        description: 'Abort above this spend (credits)'
+        default: '50'
+      dry_run:
+        description: 'Force --dry-run (mock providers, no database)'
+        type: boolean
+        default: false
+
+jobs:
+  prospect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GTM_LLM_MODEL: ${{ vars.GTM_LLM_MODEL }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+      APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+      FULLENRICH_API_KEY: ${{ secrets.FULLENRICH_API_KEY }}
+      PROSPEO_API_KEY: ${{ secrets.PROSPEO_API_KEY }}
+      HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+      LEADMAGIC_API_KEY: ${{ secrets.LEADMAGIC_API_KEY }}
+      FINDYMAIL_API_KEY: ${{ secrets.FINDYMAIL_API_KEY }}
+      MILLIONVERIFIER_API_KEY: ${{ secrets.MILLIONVERIFIER_API_KEY }}
+      ZEROBOUNCE_API_KEY: ${{ secrets.ZEROBOUNCE_API_KEY }}
+      THEIRSTACK_API_KEY: ${{ secrets.THEIRSTACK_API_KEY }}
+      PREDICTLEADS_API_KEY: ${{ secrets.PREDICTLEADS_API_KEY }}
+      PREDICTLEADS_API_TOKEN: ${{ secrets.PREDICTLEADS_API_TOKEN }}
+      CRUSTDATA_API_KEY: ${{ secrets.CRUSTDATA_API_KEY }}
+      SCRAPEGRAPH_API_KEY: ${{ secrets.SCRAPEGRAPH_API_KEY }}
+      SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Decide mode
+        id: mode
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ -z "$SERPER_API_KEY$APOLLO_API_KEY$FULLENRICH_API_KEY" ]; then
+            echo "flag=--dry-run" >> "$GITHUB_OUTPUT"; echo "::notice::no provider key or dry_run requested → --dry-run"
+          elif [ -z "$DATABASE_URL" ]; then
+            echo "flag=--no-db" >> "$GITHUB_OUTPUT"; echo "::notice::no DATABASE_URL → live providers, in-memory store"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run prospect
+        run: |
+          jq --arg out "out/prospect-${{ github.run_id }}" '. + {out_dir: $out}' "${{ inputs.config }}" > run-input.json
+          node bin/gtm.mjs run prospect --input @run-input.json --max-credits "${{ inputs.max_credits }}" ${{ steps.mode.outputs.flag }} | tee out-run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospect-${{ github.run_id }}
+          path: |
+            out/
+            out-run.log
+          retention-days: 30

@@ -18,3 +18,11 @@
 {"prompt": "Enrichis ces personnes avec leur email pro puis synchronise le CRM", "expect": "enriching-and-researching.md", "tier": "hard"}
 {"prompt": "Je veux savoir chaque matin quels CTO de ma liste ont publié", "expect": "recipes/linkedin-signals.md", "tier": "hard"}
 {"prompt": "C'est quoi le RGPD ici, on stocke quoi sur les gens ?", "expect": "references/schema.md", "tier": "hard"}
+{"prompt": "Trouve-moi des VP Sales dans des SaaS B2B français et prépare des séquences", "expect": "recipes/prospect.md", "tier": "core"}
+{"prompt": "Find me the right people at mid-market SaaS and write the emails", "expect": "recipes/prospect.md", "tier": "core"}
+{"prompt": "Qui appeler cette semaine ? fais-moi la lead gen complète", "expect": "recipes/prospect.md", "tier": "core"}
+{"prompt": "Dès qu'une boîte de ma liste lève, prépare-moi un mail pour le CEO", "expect": "recipes/prospect.md", "tier": "hard"}
+{"prompt": "Prépare-moi un brief sur acme.io avant mon appel", "expect": "recipes/market-intel.md", "tier": "core"}
+{"prompt": "Quelle stack utilise cette boîte ?", "expect": "recipes/market-intel.md", "tier": "core"}
+{"prompt": "What are people saying about Clay on Reddit and Hacker News?", "expect": "recipes/market-intel.md", "tier": "core"}
+{"prompt": "Mets en place une veille sur nos concurrents", "expect": "recipes/market-intel.md", "tier": "hard"}

@@ -119,6 +119,9 @@ export class MemoryStore implements Store {
   async listSignals(domains: string[], since?: string) {
     return [...this.signals.values()].filter((s) => domains.includes(s.domain) && (!since || !s.observedAt || s.observedAt >= since));
   }
+  async listRecentSignals(since: string, types?: string[]) {
+    return [...this.signals.values()].filter((s) => (s.observedAt ?? '') >= since && (!types || types.includes(s.type))).sort((a, b) => (b.observedAt ?? '').localeCompare(a.observedAt ?? ''));
+  }
   async upsertScore(sc: Score) {
     this.scores.set(`${sc.domain}|${sc.model}|${sc.dimension}`, sc);
   }

@@ -61,6 +61,16 @@ export function buildReceipt(runId: string, rowsIn: number, receipts: Receipt[],
       label: '',
     };
   });
+  // A pipeline runs the same leg once per account: one line per (leg, provider, tool), summed.
+  const merged = new Map<string, LegStat>();
+  for (const s of stats) {
+    const k = `${s.leg}|${s.provider}|${s.tool}`;
+    const m = merged.get(k);
+    if (!m) { merged.set(k, { ...s }); continue; }
+    for (const f of ['rowsReached', 'calls', 'cached', 'hits', 'misses', 'errors', 'accepted', 'credits', 'usd'] as const) m[f] = round(m[f] + s[f]);
+    m.costPerAccepted = m.accepted > 0 ? round(m.credits / m.accepted) : null;
+  }
+  stats.splice(0, stats.length, ...merged.values());
   for (const s of stats) {
     if (s.rowsReached === 0) s.label = 'NEVER REACHED';
     else if (s.calls > 0 && s.cached === s.calls) s.label = 'cached';

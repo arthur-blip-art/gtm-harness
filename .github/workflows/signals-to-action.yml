@@ -1,0 +1,76 @@
+# Every weekday after linkedin-signals: listen (free and cheap sources), then turn fresh signals
+# into drafts (people → emails → brief → 3-step sequence). Drafts land as an artifact and a Slack
+# summary; nothing is sent. Needs DATABASE_URL to remember which signals were already actioned.
+name: signals-to-action
+
+on:
+  schedule:
+    - cron: '30 6 * * 1-5'   # 06:30 UTC, after linkedin-signals at 06:00
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Force --dry-run (mock providers, no database)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: signals-to-action
+  cancel-in-progress: false
+
+jobs:
+  act:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GTM_LLM_MODEL: ${{ vars.GTM_LLM_MODEL }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+      HARVESTAPI_API_KEY: ${{ secrets.HARVESTAPI_API_KEY }}
+      SCRAPECREATORS_API_KEY: ${{ secrets.SCRAPECREATORS_API_KEY }}
+      APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+      FULLENRICH_API_KEY: ${{ secrets.FULLENRICH_API_KEY }}
+      PROSPEO_API_KEY: ${{ secrets.PROSPEO_API_KEY }}
+      HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+      LEADMAGIC_API_KEY: ${{ secrets.LEADMAGIC_API_KEY }}
+      FINDYMAIL_API_KEY: ${{ secrets.FINDYMAIL_API_KEY }}
+      MILLIONVERIFIER_API_KEY: ${{ secrets.MILLIONVERIFIER_API_KEY }}
+      ZEROBOUNCE_API_KEY: ${{ secrets.ZEROBOUNCE_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GTM_MAX_CREDITS_PER_RUN: '30'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Decide mode
+        id: mode
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ -z "$DATABASE_URL" ]; then
+            echo "flag=--dry-run" >> "$GITHUB_OUTPUT"; echo "::notice::no DATABASE_URL or dry_run requested → --dry-run"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Social listening
+        run: |
+          cfg=config/social-listening.json; [ -f "$cfg" ] || cfg=config/social-listening.example.json
+          node bin/gtm.mjs run social-listening --input "@$cfg" ${{ steps.mode.outputs.flag }} | tee listening.log
+      - name: Signals to drafts
+        run: |
+          cfg=config/signal-to-action.json; [ -f "$cfg" ] || cfg=config/signal-to-action.example.json
+          jq --arg out "out/actions-${{ github.run_id }}" '. + {out_dir: $out}' "$cfg" > run-input.json
+          node bin/gtm.mjs run signal-to-action --input @run-input.json ${{ steps.mode.outputs.flag }} | tee actions.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drafts-${{ github.run_id }}
+          path: |
+            out/
+            listening.log
+            actions.log
+          retention-days: 30

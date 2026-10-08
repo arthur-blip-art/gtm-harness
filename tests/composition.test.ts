@@ -12,9 +12,9 @@ import type { CompanyProfile } from '../src/plays/company-enrich.ts';
 const quiet = () => {};
 
 describe('company plays', () => {
-  it('icp-to-companies sizes with limit:1 then buys and dedupes', async () => {
+  it('icp-to-companies (paid only) sizes with limit:1 then buys and dedupes', async () => {
     const store = new MemoryStore();
-    const r = await executePlay<IcpOutput>({ store, resolvePlay, play: resolvePlay('icp-to-companies'), input: { countries: ['FR'], limit: 4 }, dryRun: true, log: quiet });
+    const r = await executePlay<IcpOutput>({ store, resolvePlay, play: resolvePlay('icp-to-companies'), input: { countries: ['FR'], limit: 4, public_first: false }, dryRun: true, log: quiet });
     expect(r.output!.counts).toEqual({ apollo: 42, theirstack: 17, crustdata: 9 });
     expect(r.output!.companies).toHaveLength(4);
     expect(r.output!.bought.apollo).toBe(3);
@@ -32,9 +32,10 @@ describe('company plays', () => {
     const store = new MemoryStore();
     await executePlay<CompanyProfile>({ store, resolvePlay, play: resolvePlay('company-enrich'), input: { domain: 'chift.eu' }, dryRun: true, log: quiet });
     await executePlay<CompanyProfile>({ store, resolvePlay, play: resolvePlay('company-enrich'), input: { domain: 'other.io' }, dryRun: true, log: quiet });
-    const s1 = await executePlay<SignalsOutput>({ store, resolvePlay, play: resolvePlay('company-signals'), input: { domain: 'chift.eu' }, dryRun: true, log: quiet });
-    expect(s1.output!.inserted).toBe(5); // 1 funding + 2 predictleads jobs + 1 theirstack job + 1 headcount growth
-    const s2 = await executePlay<SignalsOutput>({ store, resolvePlay, play: resolvePlay('company-signals'), input: { domain: 'chift.eu' }, dryRun: true, log: quiet });
+    const s1 = await executePlay<SignalsOutput>({ store, resolvePlay, play: resolvePlay('company-signals'), input: { domain: 'chift.eu', paid: 'always', country: 'FR' }, dryRun: true, log: quiet });
+    // free: 2 ATS jobs + 2 news (funding, new CTO); paid always: 1 funding + 2 predictleads jobs + 1 theirstack job + 1 headcount growth
+    expect(s1.output!.inserted).toBe(9);
+    const s2 = await executePlay<SignalsOutput>({ store, resolvePlay, play: resolvePlay('company-signals'), input: { domain: 'chift.eu', paid: 'always', country: 'FR' }, dryRun: true, log: quiet });
     expect(s2.output!.inserted).toBe(0);
     expect(s2.newReceipts).toBe(0);
     const sc = await executePlay<ScoreOutput>({ store, resolvePlay, play: resolvePlay('score-accounts'), input: {}, dryRun: true, log: quiet });
@@ -68,7 +69,7 @@ describe('sync-hubspot', () => {
 describe('icp-to-pipeline (composition)', () => {
   it('runs children under one run id with one receipt whose credits equal the sum', async () => {
     const store = new MemoryStore();
-    const r = await executePlay<PipelineOutput>({ store, resolvePlay, play: resolvePlay('icp-to-pipeline'), input: { countries: ['FR'], limit: 2, titles: ['CTO', 'VP Product'], people_per_company: 2, sync: true }, dryRun: true, log: quiet });
+    const r = await executePlay<PipelineOutput>({ store, resolvePlay, play: resolvePlay('icp-to-pipeline'), input: { countries: ['FR'], limit: 2, public_first: false, titles: ['CTO', 'VP Product'], people_per_company: 2, sync: true }, dryRun: true, log: quiet });
     expect(r.status).toBe('done');
     expect(r.output).toMatchObject({ companies: 2, people: 4 });
     expect(r.output!.emails.high + r.output!.emails.medium + r.output!.emails.hold + r.output!.emails.none).toBe(4);

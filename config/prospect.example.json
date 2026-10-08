@@ -1,0 +1,14 @@
+{
+  "countries": ["FR"],
+  "headcount_min": 20,
+  "headcount_max": 200,
+  "seed_domains": ["your-best-customer.com", "another-great-customer.io"],
+  "industries": ["software"],
+  "titles": ["VP Sales", "Head of Revenue Operations", "Head of Growth", "CEO"],
+  "offer": "We help B2B SaaS sales teams build account lists and reach the right people, cheapest data source first. One customer cut list building from two days to one hour. Step 1 offer: the 20 accounts we would start with for them, free.",
+  "sender": "Arthur, YourCompany",
+  "language": "fr",
+  "accounts": 10,
+  "people_per_account": 2,
+  "paid_signals": "never"
+}

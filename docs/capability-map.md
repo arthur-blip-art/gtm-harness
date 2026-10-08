@@ -1,99 +1,62 @@
 # Carte des capacités du harnais
 
-État au 2026-10-08. Ce document classe ce qui existe par **métier** (ce qu'on cherche à obtenir), pas par fichier, et dit pour chaque brique comment elle s'exécute et comment elle casse. Il sert de base au refactoring.
+État au 2026-10-08, après le refactoring « gratuit d'abord ». Ce document classe ce qui existe par **métier** (ce qu'on cherche à obtenir), dit pour chaque brique comment elle s'exécute et comment elle casse, et quelle source passe en premier.
 
-## Les deux produits qu'on construit
+## Les deux produits
 
-1. **Un moteur qui tourne seul** (le bouton) : ICP en entrée ; comptes, bonnes personnes, coordonnées, contexte et timing en sortie, sans humain dans la boucle.
-2. **Un copilote** (Claude Code + `SKILL.md` + recettes) : un humain demande, Claude pilote le moteur et apporte le jugement.
+1. **Le bouton (le moteur)** : on lui donne un ICP ou un signal, il rend comptes, bonnes personnes, coordonnées, contexte et brouillons de séquence, sans humain dans la boucle. Il se lance de trois façons : `gtm run prospect`, le workflow GitHub Actions `prospect` (bouton *Run workflow*) et le cron `signals-to-action`.
+2. **Le copilote** (Claude Code + `SKILL.md` + recettes) : un humain demande, Claude pilote les mêmes plays et explique les résultats.
 
-Règle de partage : **tout ce qui est récupération de donnée va dans le moteur** (plays, testés, avec cache et reçu de coûts). Le copilote ne garde que le jugement et l'écriture. Aujourd'hui, une partie de la récupération vit encore dans les recettes et les scripts, donc elle exige Claude ou casse sans prévenir.
+Toute la récupération de donnée vit dans les plays. Le jugement (ce qu'une entreprise vend, quel fait ouvre le mail, la rédaction) est un appel LLM *à l'intérieur* du play, en sortie structurée, chaque fait accompagné de son URL source. Ça tourne donc sans Claude Code.
 
 ## Les 4 modes d'exécution
 
 | Mode | Où | Tourne seul ? | Comment ça casse |
 |---|---|---|---|
-| **Play API** | `src/plays/*` avec `src/providers/*` | oui (CLI, CI, cron) | erreur HTTP 4xx ou quota. Le 429 et les 5xx sont relancés (`_adapter.ts`), l'échec est visible dans le reçu |
-| **Script HTTP** | `scripts/*.mjs`, `skills/event-brief/scripts/fetch_page.py` | oui, mais hors moteur | silencieusement : une page change de structure, un dictionnaire rate un nom, sans cache ni reçu |
-| **Recette ou skill agent** | `recipes/*.md`, `skills/event-brief`, `SKILL.md` | non : Claude Code et un humain | si personne ne la lance, ou si l'agent lit mal (d'où les étapes « re-lire » des recettes) |
-| **MCP** | connecteurs de la session (FullEnrich, BuiltWith, HubSpot, Instantly…) | non : session Claude | le moteur ne les utilise pas. Ils font doublon avec nos adapters et ne passent ni par le cache ni par le reçu |
+| **Play API** | `src/plays/*` avec `src/providers/*` | oui (CLI, Actions, cron) | erreur visible dans le reçu, 429 et 5xx relancés, plafond `--max-credits` |
+| **Lecture publique** | adapters `web`, `ats`, `publicweb`, `registry_fr` | oui, gratuit, en cache | `miss` daté et explicite (`unreachable`, `board_not_found`, `no_news`) : jamais d'échec silencieux |
+| **Recette agent** | `recipes/*.md`, `skills/event-brief` | non, Claude Code | lecture de l'agent ; les recettes appellent désormais des plays |
+| **MCP de session** | FullEnrich, BuiltWith, HubSpot… | non | hors cache et hors reçu : à réserver à l'exploration manuelle |
 
-## Les capacités métier
+## Les capacités, de la moins chère à la plus chère
 
-Chaque capacité doit rendre **une donnée, une situation et un timing**, chacun avec sa source.
+Chaque capacité rend **une donnée, une situation et un timing**, chacun avec sa source.
 
-### 1. Lead gen : trouver les comptes
+| Capacité | Play | Gratuit | Peu cher | Payant, seulement pour le manque |
+|---|---|---|---|---|
+| **Lead gen** | `icp-to-companies` | registre FR par NAF et tranche d'effectif (dirigeants inclus) | lookalikes Exa `find_similar` (~0,005 $), résolution du domaine par Serper (~0,001 $) | Apollo, TheirStack, Crustdata, dimensionnés à 1 ligne avant achat |
+| **Bonne personne** | `company-to-people` | dirigeants légaux (FR) pour une demande niveau CEO | dork `site:linkedin.com/in "<titre>" "<entreprise>"` via Serper (~0,001 $ par titre) | FullEnrich search, Apollo, Prospeo |
+| **Joindre (email)** | `name-domain-to-email` | | pattern + MillionVerifier, Hunter, LeadMagic, Findymail | Prospeo, Apollo, FullEnrich, Crustdata, PDL |
+| **Joindre (téléphone)** | `person-to-phone`, `account-context` | standard affiché sur le site (`tel:`) | standard Google Maps via Serper (~0,003 $) | Lusha, Kaspr, FullEnrich (mobile) |
+| **Contexte** | `account-context` | pages du site (pricing, clients, intégrations, carrières, équipe), DNS, offres d'emploi, actualités | un appel LLM par compte | rendu ScrapeGraph pour les sites 100 % JavaScript |
+| **Stack technique** | `tech-stack` | DNS (MX, SPF, TXT), source du site, offres d'emploi | | TheirStack (technographie à l'échelle, à brancher) |
+| **Signaux d'entreprise** | `company-signals` | board ATS (Greenhouse, Lever, Ashby, Workable, Recruitee), Google News RSS, SEC Form D (US), BODACC (FR) | Serper News si le RSS est vide | PredictLeads, TheirStack, Crustdata (`paid: gap`) |
+| **Signaux LinkedIn** | `linkedin-signals` | | HarvestAPI : posts par mot-clé, engagés chez les concurrents, posts suivis, changements de poste des champions | |
+| **Ce qui se dit** | `social-listening` | Hacker News, Google News | LinkedIn (HarvestAPI), Reddit et X (ScrapeCreators), web (Exa) | |
+| **Signal → action** | `signal-to-action` | | enchaîne personnes, email, contexte et brouillon, une fois par signal | |
+| **Séquence** | `draft-sequence` | audit de copy par code (8 règles) | un appel LLM | |
+| **Le bouton** | `prospect` | tout ce qui précède, dans l'ordre | | |
+| **Livrer** | `sync-hubspot` (optionnel) | | | |
 
-| Brique | Mode | Sources | Limite |
-|---|---|---|---|
-| `icp-to-companies` | play API | Apollo, TheirStack, Crustdata (bases payantes, dimensionnées à 1 ligne avant achat) | aucune source publique ou gratuite avant les bases payantes |
-| `recipes/find-accounts.md` + `../chift-benchmark` | recette + collecteur hors dépôt | pages d'intégrations et marketplaces, scrapées par mots-clés, puis vérifiées par Claude | spécifique à Chift, vit dans un autre dépôt, Claude obligatoire |
-| `scripts/integrations-signal.mjs` | script HTTP | `fetch` des pages d'intégrations + dictionnaire | fragile, hors cache et hors reçu |
+## Pourquoi cette couche publique pour un SaaS B2B généraliste
 
-**Manque** : un étage public et gratuit avant les bases payantes. En France, il s'agit de l'API Recherche d'entreprises (code NAF, département, tranche d'effectif, dirigeants), des certifications (RGE ADEME…), du BODACC, puis de la recherche Serper (dorks Google, Maps) et des lookalikes Exa.
+- **Le site de l'entreprise** est la source la plus juste et elle est gratuite. Il dit ce qu'elle vend (accueil), à qui (clients), comment (pricing), avec quoi (intégrations, scripts chargés) et si elle recrute (carrières).
+- **Le board ATS** (Greenhouse, Lever, Ashby…) est la source que les API d'offres d'emploi payantes scrapent. Lu directement, il donne le signal de recrutement, le texte des annonces et les outils qu'elles citent.
+- **Le DNS** ne ment pas sur les outils autorisés à envoyer des mails : HubSpot, Salesforce, SendGrid, Outreach.
+- **La presse datée** (Google News RSS) couvre levées, nominations, lancements et expansions. Le timing est ce qui fait répondre.
+- **Les dépôts légaux** donnent le financement avant le communiqué : Form D pour les levées privées américaines, BODACC pour les changements de capital et de dirigeants en France.
+- **Le registre français** (API Recherche d'entreprises) liste tous les éditeurs de logiciels par code NAF (58.29C, 62.01Z…) avec leurs dirigeants légaux : la lead gen et la bonne personne, gratuitement, pour les PME.
 
-### 2. Trouver la bonne personne dans le compte
+## Les trois décisions humaines
 
-| Brique | Mode | Sources |
-|---|---|---|
-| `company-to-people` | play API | FullEnrich search, puis Apollo, puis Prospeo |
-| `person-to-linkedin` | play API | Serper `site:linkedin.com/in`, puis Exa, avec une porte de validation du nom |
+1. **Une fois, à l'installation** : l'ICP, les personas dans l'ordre et l'offre (`config/prospect.json`).
+2. **Au-delà du budget** : `--max-credits` arrête le run, et le hook `gtm-gate` demande avant tout run payant complet.
+3. **Avant que quoi que ce soit sorte** : aucun envoi ni écriture CRM par défaut. Chaque brouillon porte la liste exacte de ce qu'il faut vérifier : fait périmé, source non lue, email pas HIGH ou MEDIUM, règle de copy non respectée.
 
-**Manque** : les dirigeants légaux (gratuits via le registre, l'idéal pour les PME), la page équipe du site, une recherche Serper par titre (`"directeur commercial" "<entreprise>" site:linkedin.com/in`) et la recherche de profils HarvestAPI. Apollo est utilisé en recherche alors qu'il coûte 0,01 $ par appel quel que soit le nombre de résultats.
+## Ce qui reste à faire
 
-### 3. Joindre : email et téléphone
-
-| Brique | Mode | Sources |
-|---|---|---|
-| `name-domain-to-email` | play API | pattern + MillionVerifier, puis Hunter, LeadMagic, Findymail, Prospeo, Apollo, FullEnrich, Crustdata, PDL, puis vérification |
-| `person-linkedin-to-email` | play API | Prospeo, Findymail, Kaspr, Lusha, Apollo, PDL |
-| `person-to-phone` | play API | Lusha, Kaspr, FullEnrich |
-
-C'est la partie la plus mûre : cascades ordonnées par le coût réel, cache et politique de statut. **Manque** : le standard de l'entreprise (Google Maps via Serper, registre), qui est souvent la meilleure voie pour une PME, avant de payer un mobile.
-
-### 4. Contexte : comprendre le compte avant d'appeler
-
-| Brique | Mode |
-|---|---|
-| étape 2-4 de `recipes/account-to-sequence.md` | recette agent : Claude lit les pages et cherche sur le web |
-| `skills/event-brief` | skill agent : `fetch_page.py` + lecture et classement par Claude |
-
-**Manque** : un play `account-context`. Il lirait le site (gratuit), les actualités via Serper News (~0,001 $), et lancerait une recherche Parallel ou Exa seulement si besoin. Une extraction LLM en sortie structurée, appelée depuis le play, permettrait de tourner sans Claude Code.
-
-### 5. Signaux : situation et timing
-
-| Brique | Mode | Sources |
-|---|---|---|
-| `company-signals` | play API | PredictLeads (levées, offres), TheirStack (offres), Crustdata (effectif) |
-| `linkedin-signals` | play API, **cron GitHub Actions** en semaine, alerte Slack | HarvestAPI (posts, engagements) |
-
-**Manque** :
-- des signaux publics gratuits : BODACC (changement de dirigeant, augmentation de capital, nouvel établissement), Serper News, flux RSS, pages carrières ;
-- **le chaînage signal → action** : un signal enregistré ne déclenche ni la recherche de personnes, ni l'email, ni le brief.
-
-### 6. Livrer
-
-| Brique | Mode |
-|---|---|
-| `sync-hubspot` | play API (HIGH et MEDIUM seulement, jamais `do_not_contact`) |
-| `icp-to-pipeline` | play API composé : ICP, entreprises, personnes, emails, HubSpot |
-| `scripts/push-csv-to-hubspot.mjs`, `demo-one-account.mjs`, `score-universe.mjs`, `hubspot-domains.mjs` | scripts spécifiques Chift, qui doublonnent en partie les plays |
-
-## Principe de coût : le contexte d'abord
-
-Pour chaque capacité, l'ordre est le suivant :
-1. **gratuit et contextuel** : registres publics, certifications, site de l'entreprise ;
-2. **recherche bon marché** : Serper (~0,001 $), Exa (~0,005 $) ;
-3. **API à 0,01 $** : Apollo, Hunter ;
-4. **cascades payantes** ;
-5. **agents de recherche chers** : Parallel, PDL.
-
-Exemple : des dirigeants d'installateurs de pompes à chaleur. On part de l'API Recherche d'entreprises avec le NAF 43.22B, qu'on croise avec la certification RGE QualiPAC. On obtient ainsi les dirigeants gratuitement, puis l'email par pattern + vérification, et le standard via Maps. Les bases payantes ne servent qu'en complément.
-
-## Feuille de route proposée
-
-1. **Étage public gratuit** : adapters `recherche-entreprises` (NAF, dirigeants), `rge` et `bodacc`, plus Serper `places` et `news`. On les branche en tête de `icp-to-companies`, de `company-to-people` et de `company-signals`.
-2. **Play `account-context`** : site, news et recherche, puis extraction structurée. Il remplace la lecture ad hoc des recettes.
-3. **Chaînage signal → action** : un signal qualifié lance `company-to-people`, la cascade email et `account-context`, puis HubSpot. On l'exécute dans le cron existant.
-4. **Faire entrer les scripts dans le moteur** : `integrations-signal` devient un play `page-signal` générique, avec cache et reçu. Le collecteur `chift-benchmark` se branche via un CSV ou un adapter.
-5. **Les recettes deviennent minces** : elles appellent des plays et ne gardent que le jugement (choix du first line, rédaction, audit).
+- La technographie TheirStack en repli payant de `tech-stack`.
+- Des adapters ATS pour Welcome to the Jungle, Teamtailor et Personio.
+- Les registres UK (Companies House) et US (formulaires SEC hors Form D).
+- L'ingestion des visiteurs du site (Snitcher, RB2B), qui demande un pixel installé chez le client.
+- Les plays de recettes Chift (`integrations-signal`, le benchmark) à faire entrer dans le moteur sous la forme d'un play générique `page-signal`.

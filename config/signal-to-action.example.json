@@ -1,0 +1,10 @@
+{
+  "since_days": 30,
+  "titles": ["VP Sales", "Head of Revenue Operations", "CEO"],
+  "offer": "We help B2B SaaS sales teams build account lists and reach the right people, cheapest data source first. One customer cut list building from two days to one hour. Step 1 offer: the 20 accounts we would start with for them, free.",
+  "sender": "Arthur, YourCompany",
+  "language": "fr",
+  "max_accounts": 10,
+  "people_per_account": 2,
+  "notify": true
+}

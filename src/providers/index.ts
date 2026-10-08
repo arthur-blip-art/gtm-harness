@@ -20,10 +20,23 @@ import { lusha } from './lusha.ts';
 import { kaspr } from './kaspr.ts';
 import { hubspot } from './hubspot.ts';
 import { harvestapi } from './harvestapi.ts';
+import { web } from './web.ts';
+import { ats } from './ats.ts';
+import { publicweb } from './publicweb.ts';
+import { registryFr } from './registry-fr.ts';
+import { scrapecreators } from './scrapecreators.ts';
+import { scrapegraph } from './scrapegraph.ts';
+import { llm } from './llm.ts';
 
 export const registry: Record<string, Adapter> = {
   mock, apollo, fullenrich, millionverifier, peopledatalabs, crustdata, exa, parallel,
   hunter, zerobounce, leadmagic, prospeo, findymail, serper, theirstack, predictleads, lusha, kaspr, hubspot, harvestapi,
+  // free public layer
+  web, ats, publicweb, registry_fr: registryFr,
+  // cheap paid, social and rendering
+  scrapecreators, scrapegraph,
+  // judgment inside the plays
+  llm,
 };
 
 export function isConfigured(a: Adapter): boolean {

@@ -25,3 +25,5 @@ jobs:
           node bin/gtm.mjs run name-domain-to-email --csv tests/fixtures/3rows.csv --out /tmp/smoke.csv --dry-run
           node bin/gtm.mjs run icp-to-pipeline --input '{"countries":["FR"],"limit":2,"titles":["CTO"]}' --dry-run
           node bin/gtm.mjs run linkedin-signals --input @config/linkedin-signals.chift.json --dry-run
+          node bin/gtm.mjs run prospect --input @config/prospect.example.json --dry-run
+          node bin/gtm.mjs run social-listening --input @config/social-listening.example.json --dry-run

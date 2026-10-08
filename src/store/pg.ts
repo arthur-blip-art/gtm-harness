@@ -164,6 +164,13 @@ export class PgStore implements Store {
     return rows.map((r) => ({ dedupeKey: r.dedupe_key, domain: r.domain, type: r.type, value: r.value, source: r.source, observedAt: r.observed_at?.toISOString(), receiptId: r.receipt_id ?? undefined }));
   }
 
+  async listRecentSignals(since: string, types?: string[]) {
+    const rows = await this.sql<SignalDb[]>`
+      select * from signals where observed_at >= ${since} and (${types ?? null}::text[] is null or type = any(${types ?? null}::text[]))
+      order by observed_at desc limit 2000`;
+    return rows.map((r) => ({ dedupeKey: r.dedupe_key, domain: r.domain, type: r.type, value: r.value, source: r.source, observedAt: r.observed_at?.toISOString(), receiptId: r.receipt_id ?? undefined }));
+  }
+
   async upsertScore(sc: Score) {
     await this.sql`
       insert into scores (domain, model, dimension, score, tier, reasons, inputs, miss_reason, company_id)

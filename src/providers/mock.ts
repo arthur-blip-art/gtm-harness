@@ -103,6 +103,20 @@ tool('leadmagic.mobile_finder', 'per_hit', 2, async () => miss());
 // ---- search
 tool('serper.google_search', 'per_call', 0.01, async (i) => {
   const q = String(i.q ?? i.query ?? '');
+  const quoted = [...q.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  if (/site:linkedin\.com\/in/.test(q) && quoted.length >= 2) {
+    // company-to-people dork: `site:linkedin.com/in "<title>" "<company>"`
+    const [title, company] = quoted;
+    const slug = `${nameToken(title).slice(0, 6)}-${nameToken(company).slice(0, 8)}`;
+    return { status: 'hit', output: { results: [
+      { title: `Sophie Laurent${slug} - ${title} - ${company} | LinkedIn`, link: `https://www.linkedin.com/in/sophie-laurent-${slug}`, snippet: `${company} · Paris`, position: 1 },
+      { title: `Old Profile - ${title} - Someone Else Inc | LinkedIn`, link: 'https://www.linkedin.com/in/old-profile', snippet: 'Someone Else Inc', position: 2 },
+    ] } };
+  }
+  if (/site officiel/i.test(q)) {
+    const word = q.replace(/site officiel/i, '').trim().split(/\s+/).slice(0, 2).join('').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return { status: 'hit', output: { results: [{ title: 'Annuaire', link: `https://www.societe.com/${word}`, snippet: '' }, { title: word, link: `https://www.${word}.fr/`, snippet: '' }] } };
+  }
   if (/site:linkedin\.com\/in/.test(q)) {
     const m = /"([^"]+)"/.exec(q);
     const [first = 'jane', ...rest] = (m?.[1] ?? 'Jane Doe').split(/\s+/);
@@ -181,6 +195,106 @@ tool('harvestapi.post_comments', 'per_result', 0.02, async (i) => ({ status: 'hi
   { name: 'Nina Rossi', title: 'Head of Partnerships at Billwise', linkedin_url: 'https://www.linkedin.com/in/nina-rossi', reaction: 'comment', text: 'Does it cover Exact and Odoo?' },
 ], count: 1 }, costOverride: 0.02 }), { normalize: (i) => ({ post: String(i.post ?? '') }) });
 tool('harvestapi.get_profile', 'per_hit', 0.04, async (i) => ({ status: 'hit', output: { linkedin_url: i.url, headline: 'CTO', title: 'CTO', company: 'TrackedCo' } }), { normalize: (i) => ({ url: String(i.url ?? '') }) });
+
+
+// ---- free public layer: website, DNS, ATS boards, news, registries
+const ago = (days: number) => new Date(Date.now() - days * 86400000).toISOString();
+const hostOf = (u: unknown) => { try { return new URL(String(u)).hostname.replace(/^www\./, ''); } catch { return 'example.com'; } };
+const brand = (host: string) => host.split('.')[0].replace(/^\w/, (c) => c.toUpperCase());
+const PAGES: Record<string, (n: string) => string> = {
+  '/pricing': (n) => `<h1>${n} pricing</h1><p>Starter 49 EUR per month. Growth 199 EUR per month. Enterprise: talk to sales. Usage-based add-ons for API calls.</p>`,
+  '/customers': (n) => `<h1>Customers</h1><p>Trusted by Qonto, Alan and Swile. Qonto cut onboarding time by 40% with ${n}.</p>`,
+  '/integrations': () => `<h1>Integrations</h1><p>Salesforce, HubSpot, Pipedrive, Slack and 40 more connectors.</p>`,
+  '/careers': (n) => `<h1>Join ${n}</h1><p>We are hiring across product and sales.</p><a href="https://boards.greenhouse.io/${n.toLowerCase()}">Open roles</a>`,
+  '/about': (n) => `<h1>About ${n}</h1><p>Founded in 2019 in Paris. 85 people. Backed by Partech.</p>`,
+};
+function mockHtml(url: string): string | null {
+  const u = new URL(url);
+  const host = u.hostname.replace(/^www\./, '');
+  const n = brand(host);
+  const page = PAGES[u.pathname.replace(/\/$/, '')];
+  if (page) return `<html><head><title>${n} | ${u.pathname.slice(1)}</title></head><body>${page(n)}</body></html>`;
+  if (u.pathname !== '/' && u.pathname !== '') return null;
+  const body = `${n} helps B2B revenue teams find the accounts worth calling and the right people inside them. `.repeat(6);
+  return `<html><head><title>${n} | Revenue data for B2B teams</title><meta name="description" content="${n} helps B2B sales teams find and enrich accounts.">
+<script src="https://js.hs-scripts.com/123.js"></script><script src="https://cdn.segment.com/analytics.js/v1/k/analytics.min.js"></script><script src="https://widget.intercom.io/widget/abc"></script><script src="https://js.stripe.com/v3"></script><script>window._linkedin_partner_id = "1";</script></head>
+<body><nav><a href="/pricing">Pricing</a><a href="/customers">Customers</a><a href="/integrations">Integrations</a><a href="/careers">Careers</a><a href="/about">About us</a><a href="https://www.linkedin.com/company/${host.split('.')[0]}">LinkedIn</a><a href="https://twitter.com/${host.split('.')[0]}hq">X</a><a href="tel:+33 1 84 80 00 00">Call us</a></nav><main><p>${body}</p></main></body></html>`;
+}
+tool('web.fetch_page', 'free', 0, async (i) => {
+  const url = String(i.url);
+  if (hostOf(url).startsWith('down')) return { status: 'miss', missReason: 'unreachable', output: { url } };
+  const html = mockHtml(url);
+  if (!html) return { status: 'miss', missReason: 'http_404', output: { url, status: 404 } };
+  const { parsePage } = await import('./web.ts');
+  return { status: 'hit', output: { ...parsePage(html, url), status: 200 } };
+}, { normalize: (i) => ({ url: String(i.url ?? '') }) });
+tool('web.dns_records', 'free', 0, async (i) => ({ status: 'hit', output: { domain: i.domain, mx: ['aspmx.l.google.com'], txt: ['v=spf1 include:_spf.google.com include:sendgrid.net include:_spf.salesforce.com ~all', 'hubspot-developer-verification=abc'], dmarc: ['v=DMARC1; p=quarantine'] } }), { normalize: (i) => ({ domain: String(i.domain ?? '') }) });
+const atsJobsMock = async (i: ToolInput): Promise<ToolResult> => String(i.board).startsWith('down') ? { status: 'miss', missReason: 'board_not_found', output: { board: i.board } } : { status: 'hit', output: { board: i.board, count: 2, jobs: [
+  { title: 'Senior Integration Engineer', url: `https://boards.greenhouse.io/${i.board}/jobs/1`, location: 'Paris', department: 'Engineering', posted_at: ago(5), text: 'You will build connectors with Salesforce, dbt and Snowflake.' },
+  { title: 'Account Executive DACH', url: `https://boards.greenhouse.io/${i.board}/jobs/2`, location: 'Berlin', department: 'Sales', posted_at: ago(20), text: 'Own the DACH pipeline; HubSpot experience a plus.' },
+] } };
+for (const t of ['greenhouse_jobs', 'lever_jobs', 'ashby_jobs', 'workable_jobs', 'recruitee_jobs']) tool(`ats.${t}`, 'free', 0, atsJobsMock, { normalize: (i) => ({ board: String(i.board ?? '') }) });
+tool('publicweb.news_search', 'free', 0, async (i) => {
+  const name = /"([^"]+)"/.exec(String(i.q))?.[1] ?? String(i.q);
+  if (/^quiet/i.test(name)) return { status: 'miss', missReason: 'no_news', output: { q: i.q, items: [], count: 0 } };
+  const items = [
+    { title: `${name} raises $25M Series B to expand in Europe`, link: `https://techcrunch.example/${nameToken(name)}-series-b`, published_at: ago(12), source: 'TechCrunch' },
+    { title: `${name} appoints Jane Roe as new CTO`, link: `https://news.example/${nameToken(name)}-cto`, published_at: ago(40), source: 'Maddyness' },
+    { title: 'Unrelated Corp launches a product', link: 'https://news.example/unrelated', published_at: ago(3), source: 'Wire' },
+  ];
+  return { status: 'hit', output: { q: i.q, items, count: items.length } };
+}, { normalize: (i) => ({ q: String(i.q ?? ''), days: Number(i.days ?? 90) }) });
+tool('publicweb.hn_search', 'free', 0, async (i) => ({ status: 'hit', output: { query: i.query, count: 1, hits: [{ title: `Ask HN: alternative to ${i.query}?`, url: 'https://news.ycombinator.com/item?id=1', hn_url: 'https://news.ycombinator.com/item?id=1', created_at: ago(2), points: 40, comments: 22, author: 'pg' }] } }), { normalize: (i) => ({ query: String(i.query ?? ''), days: Number(i.days ?? 90) }) });
+tool('publicweb.form_d_search', 'free', 0, async (i) => ({ status: 'miss', missReason: 'no_filing', output: { company: i.company, filings: [], count: 0 } }), { normalize: (i) => ({ company: String(i.company ?? '') }) });
+tool('registry_fr.search_companies', 'free', 0, async (i) => {
+  if (i.q) return { status: 'hit', output: { total: 1, companies: [{ siren: '899999999', name: String(i.q).toUpperCase(), city: 'Paris', country: 'FR', headcount_band: '20-49', officers: [{ first_name: 'CLAIRE', last_name: 'FONTAINE', role: 'Président' }] }] } };
+  if (Number(i.page ?? 1) > 1) return { status: 'miss', missReason: 'no_results', output: { companies: [], total: 1234 } };
+  return { status: 'hit', output: { total: 1234, companies: [
+    { siren: '812345678', name: 'Logiciel Alpha', naf: '58.29C', city: 'Paris', country: 'FR', headcount_band: '20-49', created_at: '2018-03-01', officers: [{ first_name: 'MARIE', last_name: 'MARTIN', role: 'Président' }] },
+    { siren: '823456789', name: 'Beta Cloud', naf: '62.01Z', city: 'Lyon', country: 'FR', headcount_band: '50-99', created_at: '2016-09-12', officers: [{ first_name: 'PAUL', last_name: 'DURAND', role: 'Directeur général' }] },
+  ] } };
+}, { normalize: (i) => ({ ...i }) });
+tool('registry_fr.bodacc_events', 'free', 0, async (i) => ({ status: 'hit', output: { siren: i.siren, count: 1, events: [{ published_at: ago(30).slice(0, 10), family: 'Modifications diverses', kind: 'Avis initial', detail: 'Modification survenue sur le capital', url: `https://www.bodacc.fr/annonce/${i.siren}` }] } }), { normalize: (i) => ({ siren: String(i.siren ?? '') }) });
+
+// ---- cheap paid search, social, rendering
+tool('serper.news', 'per_call', 0.01, async (i) => ({ status: 'hit', output: { q: i.q, items: [{ title: `${/"([^"]+)"/.exec(String(i.q))?.[1] ?? i.q} opens a London office`, link: 'https://news.example/london', date: '3 days ago', source: 'Sifted' }] } }), { normalize: (i) => ({ q: String(i.q ?? '') }) });
+tool('serper.places', 'per_call', 0.03, async (i) => ({ status: 'hit', output: { q: i.q, places: [{ title: String(i.q).split(' ')[0], phone: '+33 1 00 00 00 00', website: null, address: 'Paris' }] } }), { normalize: (i) => ({ q: String(i.q ?? '') }) });
+tool('exa.find_similar', 'per_call', 0.05, async (i) => {
+  const seed = hostOf(i.url).split('.')[0];
+  return { status: 'hit', output: { results: [
+    { url: `https://www.${seed}twin.io/`, title: `${brand(seed)}twin | B2B data` },
+    { url: `https://${seed}rival.com/`, title: `${brand(seed)}rival - Sales intelligence` },
+    { url: 'https://www.g2.com/products/x', title: 'G2 listing' },
+  ] } };
+}, { normalize: (i) => ({ url: String(i.url ?? '') }) });
+tool('scrapecreators.reddit_search', 'per_call', 0.02, async (i) => ({ status: 'hit', output: { count: 1, posts: [{ title: `Looking for an alternative to ${i.query}`, url: 'https://www.reddit.com/r/sales/1', subreddit: 'r/sales', score: 12, created_at: ago(4), text: 'We outgrew it.' }] } }), { normalize: (i) => ({ query: String(i.query ?? '') }) });
+tool('scrapecreators.twitter_user_tweets', 'per_call', 0.02, async (i) => ({ status: 'hit', output: { handle: i.handle, count: 1, tweets: [{ text: 'We just shipped our new enrichment API', url: `https://x.com/${i.handle}/status/1`, created_at: ago(1) }] } }), { normalize: (i) => ({ handle: String(i.handle ?? '') }) });
+tool('scrapegraph.smartscraper', 'per_call', 0.5, async (i) => ({ status: 'hit', output: { url: i.url, result: { product: 'rendered', customers: ['Acme'] } } }), { normalize: (i) => ({ url: String(i.url ?? ''), prompt: String(i.prompt ?? '') }) });
+
+// ---- llm: structured answers by task, built from the prompt so sources are the ones given
+tool('llm.generate', 'per_call', 1, async (i) => {
+  const prompt = String(i.prompt);
+  const urls = [...prompt.matchAll(/(?:source: |\[source: )(https?:\/\/[^\s\]]+)/g)].map((m) => m[1].replace(/[,\]]$/, ''));
+  const company = /Company: ([^(\n]+)/.exec(prompt)?.[1]?.trim() ?? / at ([^(]+) \(/.exec(prompt)?.[1]?.trim() ?? 'the company';
+  if (i.task === 'account_context') return { status: 'hit', costOverride: 0.4, output: { task: i.task, result: {
+    one_liner: `${company} sells revenue data to B2B sales teams.`, sells_to: 'B2B sales and RevOps teams, 50 to 500 people', business_model: 'self-serve tiers plus enterprise, usage-based add-ons',
+    why_now: `${company} raised a Series B 12 days ago and is hiring an integration engineer.`,
+    angles: [{ angle: 'funding', fact: 'Series B, $25M, to expand in Europe', source_url: urls.find((u) => /series-b/.test(u)) ?? urls[0] ?? '' }, { angle: 'invented', fact: 'not in the facts', source_url: 'https://invented.example/' }],
+    unknowns: ['who owns outbound tooling'] } } };
+  if (i.task === 'sequence') {
+    const first = /Prospect: (\S+)/.exec(prompt)?.[1] ?? 'there';
+    const src = /First-line fact[^\[]*\[source: ([^\],]+)/.exec(prompt)?.[1] ?? urls[0] ?? '';
+    return { status: 'hit', costOverride: 0.6, output: { task: i.task, result: {
+      steps: [
+        { step: 1, channel: 'email', subject: 'Your Series B and Europe', body: `Hi ${first},\n\nTechCrunch reported your $25M Series B to expand in Europe.\n\nNew markets usually mean new account lists to build before reps can call.\n\nWe give B2B teams the accounts and contacts that match their ICP, cheapest source first.\n\nWant the list of 20 accounts we would start with in Germany?\n\nNot the right person? Tell me and I won't write again.` },
+        { step: 2, channel: 'linkedin', subject: '', body: `Hi ${first}, I sent a note about building the German account list after your Series B. Worth a short call next week?` },
+        { step: 3, channel: 'email', subject: 'Integration engineer role', body: `Hi ${first},\n\nSaw the Senior Integration Engineer role on your careers page.\n\nTeams that hire for connectors often also want cleaner CRM data before launch.\n\nShould I send how two similar teams handled it?` },
+      ],
+      claims: [{ claim: '$25M Series B', source_url: src }],
+    } } };
+  }
+  return { status: 'hit', costOverride: 0.1, output: { task: i.task, result: {} } };
+}, { normalize: (i) => ({ task: String(i.task ?? ''), prompt: String(i.prompt ?? ''), schema: i.schema ?? null }) });
 
 // ---- shared fallbacks by bare tool name (used by unit tests)
 tools.people_match = tools['apollo.people_match']; table.people_match = table['apollo.people_match'];

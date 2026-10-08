@@ -8,12 +8,13 @@ import type { LegMeta } from '../core/types.ts';
 import type { Signal } from '../store/store.ts';
 
 export const NAME = 'linkedin-signals';
-export const DESCRIPTION = 'Three LinkedIn signal agents via HarvestAPI: keyword posts, engagement on competitor posts, posts of tracked people. Diffs against the signals table, alerts Slack with what is new. Pull-based: run it on a schedule.';
+export const DESCRIPTION = 'Four LinkedIn signal agents via HarvestAPI: keyword posts, engagement on competitor posts, posts of tracked people, and job changes of champions (a past user or buyer who moved company is the warmest account there is). Diffs against the signals table, alerts Slack with what is new. Pull-based: run it on a schedule.';
 
 export const Input = z.object({
   keywords: z.array(z.string()).default([]).describe('phrases to search in posts, e.g. "intégration comptable"'),
   competitors: z.array(z.string()).default([]).describe('LinkedIn company URLs or slugs, e.g. https://www.linkedin.com/company/codat'),
   profiles: z.array(z.string()).default([]).describe('LinkedIn profile URLs of tracked people (CTOs, champions)'),
+  champions: z.array(z.string()).default([]).describe('LinkedIn profile URLs of past users and buyers: a new company on their profile is a job_change signal'),
   posted_limit: z.enum(['24h', 'week', 'month']).default('week'),
   max_posts_per_source: z.number().int().min(1).max(50).default(20),
   icp_title_pattern: z.string().default('cto|chief technology|vp eng|head of eng|head of product|cpo|partnership|integration|platform|founder').describe('regex on the engager title to flag ICP matches'),
@@ -95,6 +96,23 @@ export const play = definePlay<Input, Output>({
       }
     }
 
+    // Agent 4 — champions: the first read records where they work; a different company later is a job change
+    for (const prof of input.champions) {
+      const url = normalizeLinkedin(prof);
+      if (!url) continue;
+      const out = await call(`champion:${url.split('/in/')[1]}`, 'get_profile', { url });
+      if (!out?.company) continue;
+      const personDomain = `person:${url.split('/in/')[1]}`;
+      const history = (await ctx.store.listSignals([personDomain])).filter((s) => s.type === 'champion_position');
+      const current = norm(out.company);
+      const seen = history.some((h) => norm((h.value as any).company) === current);
+      signals.push({ dedupeKey: key('champion_position', url, current), domain: personDomain, type: 'champion_position', source: 'harvestapi', observedAt: now, value: { profile: url, company: out.company, company_linkedin: out.company_linkedin, title: out.title, icp_match: false } });
+      if (history.length && !seen) {
+        const prev = history.sort((a, b) => (b.observedAt ?? '').localeCompare(a.observedAt ?? ''))[0].value as any;
+        signals.push({ dedupeKey: key('job_change', url, current), domain: companyDomainKey(out.company_linkedin ?? out.company), type: 'job_change', source: 'harvestapi', observedAt: now, value: { profile: url, name: [out.firstName, out.lastName].filter(Boolean).join(' '), title: out.title, from_company: prev.company, to_company: out.company, to_company_linkedin: out.company_linkedin, icp_match: true } });
+      }
+    }
+
     // Diff: only what the store has never seen counts as new
     const before = new Set((await ctx.store.listSignals([...new Set(signals.map((s) => s.domain))])).map((s) => s.dedupeKey));
     const fresh = signals.filter((s) => !before.has(s.dedupeKey));
@@ -109,6 +127,7 @@ export const play = definePlay<Input, Output>({
       const top = fresh.filter((s) => (s.value as any).icp_match).slice(0, 10);
       const lines = top.map((s) => {
         const v = s.value as any;
+        if (s.type === 'job_change') return `• ${v.name || v.profile} moved from ${v.from_company} to ${v.to_company} (${v.title ?? ''}) ${v.profile}`;
         if (s.type === 'linkedin_competitor_engagement') return `• ${v.engager} (${v.engager_title}) ${v.kind === 'comment' ? 'commented' : 'reacted'} on ${v.competitor}: ${v.post_url}`;
         return `• ${v.author} (${v.author_title}) — ${v.excerpt.slice(0, 120)}… ${v.post_url}`;
       });

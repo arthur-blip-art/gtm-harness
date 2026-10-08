@@ -3,7 +3,9 @@
 **Best for:** Google SERP as JSON at ~$0.001/query: LinkedIn URL lookup (`site:linkedin.com/in "First Last" Company`), website resolution, `site:` existence checks.
 
 **Operations (adapter `src/providers/serper.ts`, header `X-API-KEY`):**
-- `google_search` — `POST https://google.serper.dev/search {q, num (default 10), gl (default 'fr'), hl?}` → `{results[{title,link,snippet,position}], q, credits}`. Hit when `organic` is non-empty.
+- `google_search` — `POST https://google.serper.dev/search {q, num (default 10), gl (default 'fr'), hl?}` → `{results[{title,link,snippet,position}], q, credits}`. Hit when `organic` is non-empty. Also the people dork of `company-to-people`: `site:linkedin.com/in "<title>" "<company>"` (~$0.001 a title, before any paid people search), and domain resolution for registry companies.
+- `news` — `POST https://google.serper.dev/news {q, gl, tbs}` → `{items[{title,link,date,source,snippet}]}`. Paid fallback (~$0.001) when free Google News RSS returns nothing.
+- `places` — `POST https://google.serper.dev/places {q, gl}` → `{places[{title,address,phone,website,rating,category}]}`. The company switchboard when the site shows no phone (~$0.003, 3 credits; verify).
 
 **Pricing basis:** per_call 0.01 credit (~$0.001, 1 Serper credit) — billed even when there are no organic results. Verified on: estimate 2026-09-24, verify against docs.
 
