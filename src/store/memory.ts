@@ -33,6 +33,12 @@ export class MemoryStore implements Store {
   async getReceipt(id: string) {
     return this.receipts.find((r) => r.id === id) ?? null;
   }
+  async spendSince(since: string) {
+    const byProvider: Record<string, number> = {};
+    let usd = 0;
+    for (const r of this.receipts) if (r.createdAt >= since) { usd += r.costUsd ?? 0; byProvider[r.provider] = (byProvider[r.provider] ?? 0) + (r.costUsd ?? 0); }
+    return { usd, byProvider };
+  }
   async receiptStats() {
     const byProvider: Record<string, { count: number; credits: number }> = {};
     for (const r of this.receipts) {

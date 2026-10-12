@@ -6,6 +6,8 @@ import { createNotifier } from '../core/notify.ts';
 import { legEnabled } from './name-domain-to-email.ts';
 import type { LegMeta } from '../core/types.ts';
 import type { Signal } from '../store/store.ts';
+import { charge, checkAfter, checkBefore } from '../core/budget.ts';
+import { budgetOf } from '../core/leg.ts';
 
 export const NAME = 'linkedin-signals';
 export const DESCRIPTION = 'Four LinkedIn signal agents via HarvestAPI: keyword posts, engagement on competitor posts, posts of tracked people, and job changes of champions (a past user or buyer who moved company is the warmest account there is). Diffs against the signals table, alerts Slack with what is new. Pull-based: run it on a schedule.';
@@ -44,9 +46,11 @@ export const play = definePlay<Input, Output>({
     const call = async (leg: string, tool: string, inp: Record<string, unknown>) => {
       const meta: LegMeta = { leg, provider: 'harvestapi', tool, rowsReached: 1, accepted: 0, receiptIds: [] };
       ctx.metas.push(meta);
+      checkBefore(budgetOf(ctx), 'harvestapi', tool, inp);
       const rc = await ctx.runner.execute({ provider: 'harvestapi', tool, input: inp, runId: ctx.runId });
       meta.receiptIds!.push(rc.id);
-      if (!rc.cached) ctx.spent.credits += rc.costCredits;
+      charge(budgetOf(ctx), rc);
+      checkAfter(budgetOf(ctx));
       const out = (rc.output as any) ?? {};
       meta.accepted = Number(out.count ?? 0);
       return rc.status === 'hit' ? out : null;

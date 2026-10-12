@@ -38,7 +38,8 @@ jobs:
       MILLIONVERIFIER_API_KEY: ${{ secrets.MILLIONVERIFIER_API_KEY }}
       ZEROBOUNCE_API_KEY: ${{ secrets.ZEROBOUNCE_API_KEY }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      GTM_MAX_CREDITS_PER_RUN: '30'
+      GTM_MAX_USD_PER_RUN: '3'
+      GTM_MONTHLY_BUDGET_USD: ${{ vars.GTM_MONTHLY_BUDGET_USD }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -1,0 +1,11 @@
+# Copy to config/suppression.txt (or point GTM_SUPPRESSION_FILE elsewhere).
+# Everything listed here is skipped BEFORE any provider call: no credit is ever spent on it.
+# One entry per line: a domain (all its people), an email, or a LinkedIn profile URL.
+
+# customers
+# acme.io
+# competitors
+# rival.com
+# opt-outs and hard bounces
+# jane.doe@example.com
+# https://www.linkedin.com/in/someone

@@ -8,6 +8,8 @@ import { defineRowPlay } from '../core/row-play.ts';
 import { apexDomain, normalizeLinkedin } from '../core/normalize.ts';
 import { canonicalStatus, decide, emailPolicy } from '../core/email-policy.ts';
 import type { Store } from '../store/store.ts';
+import { charge, checkAfter, checkBefore } from '../core/budget.ts';
+import { budgetOf } from '../core/leg.ts';
 
 export const NAME = 'name-domain-to-email';
 export const DESCRIPTION = 'Work email waterfall from first name + last name + domain (or company).';
@@ -75,9 +77,10 @@ export async function resolveDomains(rows: RowState[], ctx: PlayCtx): Promise<Le
   }
   meta.rowsReached = todo.length;
   for (const r of todo) {
+    checkBefore(budgetOf(ctx), 'exa', 'search');
     const rc = await ctx.runner.execute({ provider: 'exa', tool: 'search', input: { query: `${r.input.company} official website`, numResults: 3 }, runId: ctx.runId });
     meta.receiptIds!.push(rc.id);
-    if (!rc.cached) ctx.spent.credits += rc.costCredits;
+    charge(budgetOf(ctx), rc);
     const results: { url: string }[] = (rc.output as any)?.results ?? [];
     const pick = results.find((x) => x.url && !SOCIAL.test(x.url));
     const apex = pick ? apexDomain(pick.url) : null;
@@ -104,9 +107,10 @@ export async function verifyHeld(rows: RowState[], ctx: PlayCtx): Promise<LegMet
     meta.rowsReached = held.length;
     for (const r of held) {
       const cell = r.cells.email as EmailCell;
+      checkBefore(budgetOf(ctx), provider, tool);
       const rc = await ctx.runner.execute({ provider, tool, input: { email: cell.value }, runId: ctx.runId });
       meta.receiptIds!.push(rc.id);
-      if (!rc.cached) ctx.spent.credits += rc.costCredits;
+      charge(budgetOf(ctx), rc);
       const raw = (rc.output as any)?.result ?? (rc.output as any)?.email_status ?? (rc.output as any)?.status;
       const status = canonicalStatus(provider, raw);
       r.cells[`email_result__${id}`] = cellOf(rc.status === 'error' ? 'error' : rc.status, { value: cell.value ?? undefined, rawStatus: String(raw ?? ''), receiptId: rc.id, cached: rc.cached ?? false, costCredits: rc.cached ? 0 : rc.costCredits, missReason: rc.status === 'hit' ? undefined : String(raw ?? rc.error ?? '') });

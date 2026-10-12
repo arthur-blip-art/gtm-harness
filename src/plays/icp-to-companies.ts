@@ -2,10 +2,11 @@ import { z } from 'zod';
 import { definePlay, type PlayCtx } from '../core/play.ts';
 import { apexDomain } from '../core/normalize.ts';
 import { legEnabled } from './name-domain-to-email.ts';
-import { callLeg } from '../core/leg.ts';
+import { budgetOf, callLeg } from '../core/leg.ts';
 import { NOT_A_COMPANY, resolveDomain } from '../core/resolve-domain.ts';
 import { headcountBands, SAAS_NAF } from '../providers/registry-fr.ts';
 import type { LegMeta } from '../core/types.ts';
+import { charge, checkAfter, checkBefore } from '../core/budget.ts';
 
 export const NAME = 'icp-to-companies';
 export const DESCRIPTION = 'ICP filters → company list, cheapest sources first. Free: lookalikes of seed customers (Exa find_similar, ~$0.005) and, for France, the public registry by NAF code and headcount band (officers included, domain resolved by one Serper query). Paid databases (Apollo, TheirStack, Crustdata) are sized with limit:1, then bought only for the rows still missing. Dedupes by apex domain.';
@@ -95,9 +96,10 @@ export const play = definePlay<Input, Output>({
       const [provider, tool] = TOOL[s];
       const meta: LegMeta = { leg: `${s}_size`, provider, tool, rowsReached: 1, accepted: 0, receiptIds: [] };
       ctx.metas.push(meta);
+      checkBefore(budgetOf(ctx), provider, tool, { limit: 1 });
       const rc = await ctx.runner.execute({ provider, tool, input: buildQuery(s, input, 1, 0), runId: ctx.runId });
       meta.receiptIds!.push(rc.id);
-      if (!rc.cached) ctx.spent.credits += rc.costCredits;
+      charge(budgetOf(ctx), rc);
       const total = (rc.output as any)?.total ?? (rc.output as any)?.pagination?.total_entries ?? (rc.output as any)?.metadata?.total_results ?? null;
       counts[s] = total === null ? null : Number(total);
       if (rc.status === 'hit') meta.accepted = 1;
@@ -114,11 +116,12 @@ export const play = definePlay<Input, Output>({
       bought[s] = 0;
       for (let page = 0; byDomain.size < input.limit && page < 200; page++) {
         const want = Math.min(PAGE, input.limit - byDomain.size);
+        checkBefore(budgetOf(ctx), provider, tool, { limit: want });
         const rc = await ctx.runner.execute({ provider, tool, input: buildQuery(s, input, want, page), runId: ctx.runId });
         meta.receiptIds!.push(rc.id);
         meta.rowsReached++;
-        if (!rc.cached) ctx.spent.credits += rc.costCredits;
-        if (ctx.maxCredits !== undefined && ctx.spent.credits > ctx.maxCredits) throw new (await import('../core/waterfall.ts')).BudgetExceeded(ctx.spent.credits, ctx.maxCredits);
+        charge(budgetOf(ctx), rc);
+        checkAfter(budgetOf(ctx));
         const rows = rowsOf(rc.output);
         if (!rows.length) break;
         for (const r of rows) {

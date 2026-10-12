@@ -4,6 +4,7 @@ import type { ToolRunner } from './tools.ts';
 import type { Store } from '../store/store.ts';
 import type { FieldPolicy, Leg } from './waterfall.ts';
 import { runWaterfall } from './waterfall.ts';
+import type { LegStat, Spend } from './budget.ts';
 import { DatasetBuilder, type DatasetOpts } from './batch.ts';
 
 export type PlayKind = 'scalar' | 'batch' | 'pipeline';
@@ -30,9 +31,13 @@ export interface PlayCtx {
   refresh: boolean;
   legs?: string[];
   maxCredits?: number;
+  /** USD cap for the whole run: checked before each paid call against its worst-case price. */
+  maxUsd?: number;
   metas: LegMeta[];
-  /** Credits spent so far in this run (non-cached receipts), updated by waterfalls. */
-  spent: { credits: number };
+  /** Spent so far in this run (non-cached receipts), credits and USD. */
+  spent: Spend;
+  /** Probation state per leg (demotion), shared by the whole run. */
+  legStats: Map<string, LegStat>;
   runPlay<I, O>(play: Play<I, O> | string, input: I): Promise<O>;
   waterfall(rows: RowState[], legs: Leg[], policy: FieldPolicy<any>): Promise<LegMeta[]>;
   dataset(rows: Record<string, string>[], opts?: DatasetOpts): DatasetBuilder;
@@ -53,6 +58,7 @@ export interface RootCtxOpts {
   refresh?: boolean;
   legs?: string[];
   maxCredits?: number;
+  maxUsd?: number;
   resolvePlay: (name: string) => Play;
 }
 
@@ -60,7 +66,7 @@ export function createCtx(o: RootCtxOpts): PlayCtx {
   const log = o.log ?? (() => {});
   const ctx: PlayCtx = {
     runId: o.runId, playName: o.playName, runner: o.runner, store: o.store, log, dryRun: o.dryRun,
-    refresh: o.refresh ?? false, legs: o.legs, maxCredits: o.maxCredits, metas: [], spent: { credits: 0 },
+    refresh: o.refresh ?? false, legs: o.legs, maxCredits: o.maxCredits, maxUsd: o.maxUsd, metas: [], spent: { credits: 0, usd: 0 }, legStats: new Map(),
     resolvePlay: o.resolvePlay,
     async runPlay(play, input) {
       const p = typeof play === 'string' ? o.resolvePlay(play) : play;
@@ -69,11 +75,12 @@ export function createCtx(o: RootCtxOpts): PlayCtx {
       // share mutable state explicitly (spread copies references, which is what we want)
       child.metas = ctx.metas;
       child.spent = ctx.spent;
+      child.legStats = ctx.legStats;
       return p.run(parsed, child);
     },
     async waterfall(rows, legs, policy) {
       const metas = await runWaterfall(rows, legs, ctx.runner, {
-        runId: ctx.runId, policy, maxCredits: ctx.maxCredits, spent: ctx.spent, log: ctx.log,
+        runId: ctx.runId, policy, maxCredits: ctx.maxCredits, maxUsd: ctx.maxUsd, spent: ctx.spent, legStats: ctx.legStats, log: ctx.log,
       });
       ctx.metas.push(...metas);
       return metas;

@@ -96,6 +96,8 @@ export interface Store {
   listReceiptsByRun(runId: string): Promise<Receipt[]>;
   getReceipt(id: string): Promise<Receipt | null>;
   receiptStats(): Promise<{ total: number; byProvider: Record<string, { count: number; credits: number }> }>;
+  /** USD actually spent since a date (new receipts only: cached reuse is never written as a receipt), by provider. */
+  spendSince(since: string): Promise<{ usd: number; byProvider: Record<string, number> }>;
   // runs
   createRun(play: string, inputSummary: Record<string, unknown>, datasetId?: string): Promise<Run>;
   finishRun(id: string, patch: Partial<Run> & { status: RunStatus }): Promise<void>;

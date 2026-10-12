@@ -44,7 +44,7 @@ gtm providers
 **Input:** the CSV, 3 rows.
 
 ```bash
-gtm run name-domain-to-email --csv leads.csv --out gtm-data/leads/leads.emails.csv --limit 3 --max-credits 10
+gtm run name-domain-to-email --csv leads.csv --out gtm-data/leads/leads.emails.csv --limit 3 --max-usd 1
 ```
 
 **Output:** 3 exported rows, receipt table.
@@ -58,7 +58,7 @@ If the user stated the scope, skip. Otherwise post the four-header approval mess
 ### Step 4: full run — [enrich]
 
 ```bash
-gtm run name-domain-to-email --csv leads.csv --out gtm-data/leads/leads.emails.csv --max-credits <cap>
+gtm run name-domain-to-email --csv leads.csv --out gtm-data/leads/leads.emails.csv --max-usd <cap>   # check the worst case first: same command with --estimate
 ```
 
 **Output:** full export at the requested path; golden records in `people`.

@@ -40,6 +40,15 @@ export class PgStore implements Store {
     return rows[0] ? toReceipt(rows[0]) : null;
   }
 
+  async spendSince(since: string) {
+    const rows = await this.sql<{ provider: string; usd: string }[]>`
+      select provider, coalesce(sum(cost_usd),0)::text as usd from tool_receipts where created_at >= ${since} group by provider`;
+    const byProvider: Record<string, number> = {};
+    let usd = 0;
+    for (const r of rows) { byProvider[r.provider] = Number(r.usd); usd += Number(r.usd); }
+    return { usd, byProvider };
+  }
+
   async receiptStats() {
     const rows = await this.sql<{ provider: string; count: string; credits: string }[]>`
       select provider, count(*)::text as count, coalesce(sum(cost_credits),0)::text as credits

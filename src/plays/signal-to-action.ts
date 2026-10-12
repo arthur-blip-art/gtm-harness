@@ -6,6 +6,7 @@ import { normalizeLinkedin } from '../core/normalize.ts';
 import { isFresh } from '../core/signal-rules.ts';
 import { resolveDomain } from '../core/resolve-domain.ts';
 import { createNotifier } from '../core/notify.ts';
+import { loadSuppression, suppressedBy } from '../core/suppression.ts';
 import type { Signal } from '../store/store.ts';
 import type { BatchOutput } from '../core/row-play.ts';
 import type { EmailCell } from '../core/types.ts';
@@ -61,6 +62,7 @@ export async function signalToAction(input: Input, ctx: PlayCtx): Promise<Output
   const queue = [...byKey.values()].slice(0, input.max_accounts);
   ctx.log(`${all.length} signals since ${since.slice(0, 10)}, ${fresh.length} fresh and not actioned, ${queue.length} accounts to work`);
 
+  const sup = await loadSuppression(ctx.store);
   const actions: Action[] = [];
   for (const s of queue) {
     const v = s.value as any;
@@ -82,6 +84,8 @@ export async function signalToAction(input: Input, ctx: PlayCtx): Promise<Output
     }
     action.domain = domain;
     if (!domain) { action.status = 'no_domain'; continue; }
+    if (suppressedBy(sup, { domain })) { action.status = 'skipped'; continue; }
+    people = people.filter((p) => !suppressedBy(sup, { linkedin_url: p.linkedin_url }));
     if (!people.length) { action.status = 'no_people'; continue; }
 
     // Reach: the email cascade, cost-ordered, cached

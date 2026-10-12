@@ -9,6 +9,7 @@ import { exportCsv, loadCsv, summarizeCsv } from '../core/dataset.ts';
 import { renderReceipt } from '../core/receipt.ts';
 import { AuditColumnError, auditCsv, renderAudit } from '../core/audit.ts';
 import { executePlay } from '../core/run.ts';
+import { estimateRun, renderEstimate } from '../core/estimate.ts';
 import { plays, resolvePlay } from '../plays/index.ts';
 import type { BatchOutput } from '../core/row-play.ts';
 import type { FieldCell } from '../core/types.ts';
@@ -45,14 +46,34 @@ program
   .option('--limit <n>', 'only the first n rows (pilot)', (v) => Number(v))
   .option('--dataset <slug>', 'dataset slug; defaults to the CSV basename')
   .option('--legs <ids>', 'comma-separated subset of legs, e.g. apollo,fullenrich')
-  .option('--max-credits <n>', `abort when this run spends more (default ${defaults.maxCreditsPerRun})`, (v) => Number(v))
+  .option('--max-usd <n>', `stop before any call that would take this run past $n (default $${defaults.maxUsdPerRun}, GTM_MAX_USD_PER_RUN)`, (v) => Number(v))
+  .option('--max-credits <n>', 'legacy cap in provider credits, checked after each leg (prefer --max-usd)', (v) => Number(v))
+  .option('--estimate', 'print the worst-case cost of this run without spending anything (dry-run structure, real prices)', false)
   .option('--refresh', 'ignore cached receipts and re-buy', false)
   .option('--dry-run', 'mock every provider, in-memory store, no keys needed', false)
   .option('--no-db', 'live providers, in-memory store: no Supabase needed, no receipt cache across runs')
   .option('--column <mapping...>', 'header override, e.g. --column domain=Website first_name=Prenom')
   .action(async (playName: string, o) => {
+    if (o.estimate) {
+      const legs = o.legs ? String(o.legs).split(',') : undefined;
+      let est;
+      if (o.csv) {
+        const overrides: Record<string, string> = {};
+        for (const m of o.column ?? []) { const [k, v] = String(m).split('='); if (k && v) overrides[k] = v; }
+        const csv = loadCsv(o.csv, overrides, o.limit);
+        const name = playName.endsWith(':batch') ? playName : `${playName}:batch`;
+        est = await estimateRun({ play: resolvePlay(name), input: { rows: csv.rows, slug: 'estimate' }, resolvePlay, legs, log: () => {} });
+      } else {
+        const input = o.input ? JSON.parse(String(o.input).startsWith('@') ? fs.readFileSync(String(o.input).slice(1), 'utf8') : o.input) : {};
+        est = await estimateRun({ play: resolvePlay(playName), input, resolvePlay, legs, log: () => {} });
+      }
+      console.log(renderEstimate(est));
+      const cap = o.maxUsd ?? defaults.maxUsdPerRun;
+      console.log(`\nrun cap: $${cap}${est.worstUsd > cap ? `   the worst case is above the cap: the run would stop at $${cap} (pass --max-usd ${Math.ceil(est.worstUsd)} to allow it)` : ''}`);
+      return;
+    }
     const store = openStore({ dryRun: o.dryRun, db: o.db });
-    const common = { store, resolvePlay, dryRun: o.dryRun, refresh: o.refresh, legs: o.legs ? String(o.legs).split(',') : undefined, maxCredits: o.maxCredits ?? defaults.maxCreditsPerRun, log };
+    const common = { store, resolvePlay, dryRun: o.dryRun, refresh: o.refresh, legs: o.legs ? String(o.legs).split(',') : undefined, maxCredits: o.maxCredits, maxUsd: o.maxUsd ?? defaults.maxUsdPerRun, monthlyBudgetUsd: defaults.monthlyBudgetUsd, log };
     try {
       if (o.csv) {
         if (!o.out) throw new Error('--out is required with --csv');
@@ -102,6 +123,20 @@ program.command('receipt').description('Print the frozen cost receipt of a run.'
 const csvCmd = program.command('csv').description('Inspect a CSV without loading it into the conversation.');
 csvCmd.command('show').requiredOption('--csv <path>').option('--summary', 'shape, detected columns, 2-row sample', true).action((o) => console.log(summarizeCsv(o.csv)));
 
+program.command('budget').description('Month-to-date spend from the receipts ledger, by provider, against GTM_MONTHLY_BUDGET_USD.').action(async () => {
+  const store = openStore({});
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const s = await store.spendSince(monthStart);
+  const budget = defaults.monthlyBudgetUsd;
+  console.log(`month-to-date (since ${monthStart.slice(0, 10)}): $${s.usd.toFixed(2)}${budget !== undefined ? ` of $${budget} (${Math.round((100 * s.usd) / budget)}%, $${Math.max(0, budget - s.usd).toFixed(2)} left)` : '   (no GTM_MONTHLY_BUDGET_USD set)'}`);
+  console.log(`per-run cap: $${defaults.maxUsdPerRun} (GTM_MAX_USD_PER_RUN)\n`);
+  console.log('| provider | spent $ |');
+  console.log('|---|---|');
+  for (const [p, usd] of Object.entries(s.byProvider).sort((a, b) => b[1] - a[1])) console.log(`| ${p} | ${usd.toFixed(3)} |`);
+  await store.close();
+});
+
 const cache = program.command('cache').description('Receipt cache.');
 cache.command('stats').action(async () => {
   const store = openStore({});
@@ -141,7 +176,7 @@ signals.command('pull').description('Pull signals for a one-column file of domai
   const domains = fs.readFileSync(o.domains, 'utf8').split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#') && s !== 'domain');
   const store = openStore({ dryRun: o.dryRun });
   try {
-    const res = await executePlay({ store, resolvePlay, play: resolvePlay('company-signals:batch'), input: { rows: domains.map((domain) => ({ domain })), slug: path.basename(o.domains) }, dryRun: o.dryRun, maxCredits: o.maxCredits ?? defaults.maxCreditsPerRun, log });
+    const res = await executePlay({ store, resolvePlay, play: resolvePlay('company-signals:batch'), input: { rows: domains.map((domain) => ({ domain })), slug: path.basename(o.domains) }, dryRun: o.dryRun, maxCredits: o.maxCredits, maxUsd: defaults.maxUsdPerRun, monthlyBudgetUsd: defaults.monthlyBudgetUsd, log });
     console.log(renderReceipt(res.receipt));
     console.log(`\nstatus: ${res.status}`);
   } finally {

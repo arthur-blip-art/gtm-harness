@@ -21,4 +21,8 @@ export function requireEnv(name: string): string {
 
 export const defaults = {
   maxCreditsPerRun: Number(env('GTM_MAX_CREDITS_PER_RUN') ?? 50),
+  /** USD cap per run, checked before each paid call against its worst-case price. */
+  maxUsdPerRun: Number(env('GTM_MAX_USD_PER_RUN') ?? 5),
+  /** Month-to-date USD budget across all runs (receipts ledger); unset = no monthly cap. */
+  monthlyBudgetUsd: env('GTM_MONTHLY_BUDGET_USD') ? Number(env('GTM_MONTHLY_BUDGET_USD')) : undefined,
 };

@@ -43,7 +43,7 @@ gtm run linkedin-signals --input @config/linkedin-signals.chift.json --dry-run
 ### Step 3: first real pull — [search]
 
 ```bash
-gtm run linkedin-signals --input @config/linkedin-signals.chift.json --max-credits 5
+gtm run linkedin-signals --input @config/linkedin-signals.chift.json --max-usd 2
 ```
 
 **Output:** rows in `signals` (types `linkedin_keyword_post`, `linkedin_competitor_engagement`, `linkedin_tracked_post`), Slack message with up to 10 ICP matches.

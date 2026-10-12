@@ -28,7 +28,8 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       HARVESTAPI_API_KEY: ${{ secrets.HARVESTAPI_API_KEY }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      GTM_MAX_CREDITS_PER_RUN: '20'
+      GTM_MAX_USD_PER_RUN: '2'
+      GTM_MONTHLY_BUDGET_USD: ${{ vars.GTM_MONTHLY_BUDGET_USD }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -89,7 +89,14 @@ gtm cache stats · gtm db ping
 ## Approval Question
 ```
 
-Stay in AWAIT_APPROVAL until the user confirms. Approval of the pilot is not approval of the full run. The rule is also enforced by `.claude/hooks/gtm-gate.sh` (Claude Code PreToolUse): read-only and `--dry-run` commands pass silently, pilots up to 3 rows pass, any paid full run, `--refresh`, HubSpot write or schema push asks first. `--max-credits` is a soft cap: the run aborts once spend passes it; rows already processed are kept and the rerun resumes from cache.
+Stay in AWAIT_APPROVAL until the user confirms. Approval of the pilot is not approval of the full run. The rule is also enforced by `.claude/hooks/gtm-gate.sh` (Claude Code PreToolUse): read-only, `--dry-run` and `--estimate` commands pass silently, pilots up to 3 rows pass, any paid full run, `--refresh`, HubSpot write or schema push asks first.
+
+**Cost control, in dollars** (`docs/cost-control.md`):
+- **Estimate first.** Before any paid full run, `gtm run <play> … --estimate` prints the worst case (dry-run call structure, real list prices, every call billed). Put that number in `## Credits + Scope + Cap`.
+- **The cap is checked before spending.** `--max-usd` (default `GTM_MAX_USD_PER_RUN`, $5) is compared with each call's worst-case price *before* the call; a waterfall leg that cannot afford every row runs only the rows it can, then the run stops. Rows already processed are kept; the rerun resumes from cache.
+- **Probation.** A paid leg with no hit on its first 5 rows is demoted for the rest of the run (`DEMOTED` in the receipt; `GTM_DEMOTE_AFTER`).
+- **Monthly budget.** `GTM_MONTHLY_BUDGET_USD` caps month-to-date spend from the receipts ledger: a warning at 80%, paid runs refused at 100%. `gtm budget` shows where it went.
+- **Suppress before paying.** `config/suppression.txt` (domains, emails, LinkedIn URLs) and `do_not_contact` people are skipped before any provider call; `prospect` also drops accounts whose known headcount or country is outside the ICP before any paid step.
 
 **Size before buying.** `icp-to-companies --input '{..., "size_only": true}'` returns the totals for one row per source. Over-provision ~1.4×N and drop incomplete rows; never chase misses by hand. Companies first, then people.
 

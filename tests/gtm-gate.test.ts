@@ -17,6 +17,8 @@ describe('gtm-gate hook', () => {
     expect(decide('node bin/gtm.mjs run icp-to-pipeline --input \'{"limit":2}\' --dry-run')).toBe('allow');
     expect(decide('gtm run name-domain-to-email --csv a.csv --out b.csv --limit 3')).toBe('allow');
     expect(decide('gtm db ping')).toBe('allow');
+    expect(decide('gtm budget')).toBe('allow');
+    expect(decide('gtm run prospect --input @config/prospect.json --estimate')).toBe('allow');
   });
   it('asks on paid full runs, refresh, hubspot writes, signals and schema pushes', () => {
     expect(decide('gtm run name-domain-to-email --csv a.csv --out b.csv')).toBe('ask');
@@ -26,6 +28,7 @@ describe('gtm-gate hook', () => {
     expect(decide('gtm run sync-hubspot --input \'{"dry_run": true}\'')).toBe('ask'); // still a paid-run shape without --dry-run flag
     expect(decide('gtm signals pull --domains d.txt')).toBe('ask');
     expect(decide('supabase db push')).toBe('ask');
+    expect(decide('gtm run prospect --input @config/prospect.json --max-usd 8')).toBe('ask');
   });
   it('classifies the demo scripts by what they spend or write', () => {
     expect(decide('node scripts/integrations-signal.mjs --domain getmoss.com --countries FR,DE')).toBe('allow');

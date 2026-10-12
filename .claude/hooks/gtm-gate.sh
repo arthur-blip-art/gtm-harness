@@ -47,17 +47,18 @@ case "$norm" in gtm\ *) ;; *) exit 0 ;; esac
 sub="$(printf '%s' "$norm" | awk '{print $2}')"
 
 case "$sub" in
-  providers|plays|csv|receipt|cache|audit) emit allow "gtm-gate: read-only gtm command" ;;
+  providers|plays|csv|receipt|cache|audit|budget) emit allow "gtm-gate: read-only gtm command" ;;
   db) if printf '%s' "$norm" | grep -Eq 'gtm[[:space:]]+db[[:space:]]+ping'; then emit allow "gtm-gate: db ping"; fi; exit 0 ;;
   run|signals)
     if has '(^|[[:space:]])--dry-run([[:space:]]|$)'; then emit allow "gtm-gate: dry-run, mock providers, no spend"; fi
+    if has '(^|[[:space:]])--estimate([[:space:]]|$)'; then emit allow "gtm-gate: cost estimate, no spend"; fi
     if has '(^|[[:space:]])--refresh([[:space:]]|$)'; then emit ask "gtm-gate: --refresh re-buys cached provider calls"; fi
     if has 'sync-hubspot' && ! has '"dry_run":[[:space:]]*true'; then emit ask "gtm-gate: writes to HubSpot"; fi
     if [ "$sub" = signals ]; then emit ask "gtm-gate: paid signal pull"; fi
     limit="$(printf '%s' "$norm" | sed -nE 's/.*--limit[[:space:]=]+([0-9]+).*/\1/p')"
     if [ -n "$limit" ] && [ "$limit" -le 3 ]; then emit allow "gtm-gate: pilot of $limit rows"; fi
     if has '(^|[[:space:]])--csv([[:space:]]|$)'; then emit ask "gtm-gate: full paid run over a CSV — pilot with --limit 3 first, or confirm"; fi
-    emit ask "gtm-gate: paid run — confirm scope and cap (--max-credits)"
+    emit ask "gtm-gate: paid run — run it with --estimate first, then confirm scope and cap (--max-usd)"
     ;;
 esac
 exit 0

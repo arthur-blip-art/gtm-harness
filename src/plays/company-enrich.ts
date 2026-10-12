@@ -6,6 +6,8 @@ import type { GoldenCompany } from '../store/store.ts';
 import type { LegMeta } from '../core/types.ts';
 import { BatchInput, type BatchOutput } from '../core/row-play.ts';
 import type { RowState } from '../core/types.ts';
+import { charge, checkAfter, checkBefore } from '../core/budget.ts';
+import { budgetOf } from '../core/leg.ts';
 
 export const NAME = 'company-enrich';
 export const DESCRIPTION = 'Company profile from domain: apollo → pdl → crustdata, merged field by field by precedence (not a waterfall).';
@@ -30,9 +32,11 @@ export async function enrichOne(domainRaw: string, ctx: PlayCtx): Promise<Compan
     ctx.metas.push(meta);
     if (!legEnabled(ctx, provider, id)) { profile.sources[id] = 'skipped'; continue; }
     meta.rowsReached = 1;
+    checkBefore(budgetOf(ctx), provider, tool);
     const rc = await ctx.runner.execute({ provider, tool, input: { domain }, runId: ctx.runId });
     meta.receiptIds!.push(rc.id);
-    if (!rc.cached) ctx.spent.credits += rc.costCredits;
+    charge(budgetOf(ctx), rc);
+    checkAfter(budgetOf(ctx));
     profile.sources[id] = rc.status;
     if (rc.status !== 'hit') continue;
     meta.accepted = 1;

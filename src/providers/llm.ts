@@ -19,7 +19,9 @@ const PRICES_PER_MTOK: Record<string, [number, number]> = {
   'claude-haiku-5-5': [0.1, 0.5],
   'claude-fable-5-1': [10, 50],
 };
-const PRICE = { generate: { basis: 'per_call', credits: 1, note: 'exact cost from token usage (1 credit = $0.01)' } } as const;
+// The table price is the worst-case estimate used before the call (~$0.06: a few thousand tokens in,
+// one to two thousand out, on Opus); the receipt then records the exact cost from token usage.
+const PRICE = { generate: { basis: 'per_call', credits: 6, note: 'estimate before the call; exact cost from token usage after (1 credit = $0.01)' } } as const;
 
 export const DEFAULT_MODEL = () => env('GTM_LLM_MODEL') ?? 'claude-opus-5-5';
 

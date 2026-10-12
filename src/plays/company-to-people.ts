@@ -2,8 +2,10 @@ import { z } from 'zod';
 import { definePlay } from '../core/play.ts';
 import { apexDomain, normalizeLinkedin } from '../core/normalize.ts';
 import { legEnabled } from './name-domain-to-email.ts';
-import { callLeg, canRun } from '../core/leg.ts';
+import { budgetOf, callLeg, canRun } from '../core/leg.ts';
 import type { LegMeta } from '../core/types.ts';
+import { charge, checkAfter, checkBefore } from '../core/budget.ts';
+import { loadSuppression, suppressedBy } from '../core/suppression.ts';
 
 export const NAME = 'company-to-people';
 export const DESCRIPTION = 'People at a known domain matching titles, cheapest first: legal officers from the public registry (free, FR), Google dorks on LinkedIn profiles via Serper (~$0.001 a title), then FullEnrich search, Apollo and Prospeo for what is still missing. Returns rows ready for the email play.';
@@ -46,10 +48,14 @@ export const play = definePlay<Input, Output>({
       const li = normalizeLinkedin(p.linkedin_url);
       const key = li ?? `${String(p.first_name).toLowerCase()}|${String(p.last_name).toLowerCase()}`;
       if (seen.has(key) || !p.first_name || !p.last_name || people.length >= input.limit) return;
+      if (li && sup.linkedin.has(li)) return;
       seen.add(key);
       people.push({ first_name: String(p.first_name), last_name: String(p.last_name), title: p.title ? String(p.title ?? p.job_title) : undefined, linkedin_url: li ?? undefined, domain, source: id });
       if (meta) meta.accepted++;
     };
+    const sup = await loadSuppression(ctx.store);
+    const why = suppressedBy(sup, { domain });
+    if (why) { ctx.log(`${domain} suppressed (${why}): no people search`); return { domain, total: null, people: [] }; }
     const company = (await ctx.store.listCompanies([domain]))[0];
     const name = input.company ?? company?.name ?? domain.split('.')[0];
 
@@ -90,9 +96,11 @@ export const play = definePlay<Input, Output>({
       ctx.metas.push(meta);
       if (people.length >= input.limit || !legEnabled(ctx, provider, id)) continue;
       meta.rowsReached = 1;
+      checkBefore(budgetOf(ctx), provider, tool, query);
       const rc = await ctx.runner.execute({ provider, tool, input: query, runId: ctx.runId });
       meta.receiptIds!.push(rc.id);
-      if (!rc.cached) ctx.spent.credits += rc.costCredits;
+      charge(budgetOf(ctx), rc);
+      checkAfter(budgetOf(ctx));
       const o = rc.output as any;
       total ??= o?.total ?? o?.pagination?.total_entries ?? null;
       for (const p of (o?.people ?? o?.results ?? []) as Record<string, unknown>[]) add(p, id, meta);

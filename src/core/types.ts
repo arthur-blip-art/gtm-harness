@@ -142,6 +142,8 @@ export interface LegMeta {
   accepted: number;
   /** Receipts attributed to this leg; when present the receipt groups by these ids instead of provider/tool. */
   receiptIds?: string[];
+  /** Paid leg that returned nothing on its probation rows: skipped for the rest of the run. */
+  demoted?: boolean;
 }
 
 // ---- Runs --------------------------------------------------------------------

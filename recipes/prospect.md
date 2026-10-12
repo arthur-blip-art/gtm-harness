@@ -28,7 +28,8 @@ Two entry points, same cascade:
 ```bash
 cp config/prospect.example.json config/prospect.json      # edit ICP, titles, offer, sender, language
 gtm run prospect --input @config/prospect.json --dry-run  # rehearsal, no keys, no spend
-gtm run prospect --input @config/prospect.json --max-credits 30
+gtm run prospect --input @config/prospect.json --estimate      # worst-case cost, nothing spent
+gtm run prospect --input @config/prospect.json --max-usd 8
 ```
 
 Output in `out_dir` (default `gtm-data/prospect-<date>/`): `README.md` (one table: account, timing, signals, why now,
@@ -39,7 +40,7 @@ draft link), `accounts.csv`, `people.csv` (sequencer import), `accounts/<domain>
 
 1. **Once, at setup**: the ICP, the personas in order, the offer (what we sell, one proof, the step-1 resource). These
    are in the config file; the agent asks for them if missing, never invents them.
-2. **Before spending past the cap**: `--max-credits` aborts; the gate hook asks before any paid full run.
+2. **Before spending**: `--estimate` gives the worst case; `--max-usd` is checked before every paid call (the run stops before overshooting) and `GTM_MONTHLY_BUDGET_USD` caps the month. The gate hook asks before any paid full run.
 3. **Before anything leaves the building**: every draft is `draft` or `needs_review` with the exact reasons (fact past
    its shelf life, claim with an unread source, email not HIGH/MEDIUM, a copy-audit check failed). Nothing is sent and
    nothing is pushed to a CRM by default (`sync_hubspot: false`): wiring the sequencer and the CRM stays each company's

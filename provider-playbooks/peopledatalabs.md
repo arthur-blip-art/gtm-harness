@@ -4,6 +4,7 @@
 
 **Operations (adapter `src/providers/peopledatalabs.ts`):**
 - `person_enrich` — `GET /v5/person/enrich` with `first_name`, `last_name`, `company=<domain>` (or `profile=<linkedin_url>`), `required=work_email`, `min_likelihood=6`.
+- `company_enrich` — `GET https://api.peopledatalabs.com/v5/company/enrich?website=` → `{name, employee_count, industry, founded, linkedin_url, size, country}`. Bills on 200 only; `x-call-credits-spent` is authoritative. Second source in `company-enrich`, after Apollo.
 
 **Pricing basis:** per_hit; bills on 200 only, 404 is free. The `x-call-credits-spent` header is written to the receipt as the exact cost.
 

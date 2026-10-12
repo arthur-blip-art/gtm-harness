@@ -1,5 +1,8 @@
 import type { Candidate, FieldCell, LegCell, LegMeta, Receipt, RowState, ToolInput } from './types.ts';
 import type { ToolRunner } from './tools.ts';
+import { affordable, BudgetExceeded, checkAfter, isDemoted, PROBE, recordOutcome, unitUsd, type BudgetState, type LegStat, type Spend } from './budget.ts';
+
+export { BudgetExceeded } from './budget.ts';
 
 /** Everything the waterfall needs to know about one target field. Pure, testable. */
 export interface FieldPolicy<S extends string = string> {
@@ -34,17 +37,14 @@ export interface WaterfallOpts {
   runId: string;
   policy: FieldPolicy<any>;
   maxCredits?: number;
+  maxUsd?: number;
   /** Shared spend counter for the whole run (composition): mutated in place. */
-  spent?: { credits: number };
+  spent?: Spend;
+  /** Shared probation state (demoted legs) for the whole run. */
+  legStats?: Map<string, LegStat>;
   log?: (msg: string) => void;
   onLegDone?: (leg: Leg, meta: LegMeta) => Promise<void> | void;
   onRowUpdated?: (row: RowState) => Promise<void> | void;
-}
-
-export class BudgetExceeded extends Error {
-  constructor(public spent: number, public cap: number) {
-    super(`Budget exceeded: ${spent} credits spent, cap ${cap}`);
-  }
 }
 
 /**
@@ -57,7 +57,8 @@ export async function runWaterfall(rows: RowState[], legs: Leg[], runner: ToolRu
   const policy = opts.policy;
   const field = policy.field;
   const metas: LegMeta[] = [];
-  const spent = opts.spent ?? { credits: 0 };
+  const spent = opts.spent ?? { credits: 0, usd: 0 };
+  const budget: BudgetState = { spent, maxUsd: opts.maxUsd, maxCredits: opts.maxCredits, legStats: opts.legStats ?? new Map(), log };
   let legsTried = 0;
   const cands = (r: RowState) => (r.candidates[field] ??= []);
   const accepted = (r: RowState) => cands(r).some((c) => policy.isAccepted(c));
@@ -81,28 +82,61 @@ export async function runWaterfall(rows: RowState[], legs: Leg[], runner: ToolRu
       if (!input) r.cells[col] = cellOf('skipped', { missReason: 'missing_input' });
       else work.push({ row: r, input });
     }
+    if (work.length && isDemoted(budget, leg.id, leg.provider, leg.tool)) {
+      for (const w of work) w.row.cells[col] = cellOf('skipped', { missReason: 'leg_demoted' });
+      meta.demoted = true;
+      metas.push(meta);
+      await opts.onLegDone?.(leg, meta);
+      continue;
+    }
+
+    // Before spending: the worst case of this leg (every row billed) must fit under the USD cap.
+    const unit = unitUsd(leg.provider, leg.tool, work[0]?.input);
+    const canAfford = affordable(budget, unit);
+    let cutByBudget = false;
+    if (work.length > canAfford) {
+      cutByBudget = true;
+      log(`leg ${leg.id}: budget allows ${canAfford}/${work.length} rows at up to $${Math.round(unit * 10000) / 10000} each`);
+      for (const w of work.slice(canAfford)) w.row.cells[col] = cellOf('skipped', { missReason: 'budget' });
+      work.splice(canAfford);
+    }
     meta.rowsReached = work.length;
     log(`leg ${leg.id} (${leg.provider}/${leg.tool}): ${work.length} rows`);
 
-    if (work.length > 0) {
+    // Probation: a paid leg runs its first PROBE rows alone; no hit there and it is demoted.
+    const probeFirst = unit > 0 && PROBE > 0 && work.length > PROBE * 2 && !budget.legStats!.get(`${leg.id}|${leg.provider}|${leg.tool}`);
+    const chunks = probeFirst ? [work.slice(0, PROBE), work.slice(PROBE)] : [work];
+    for (const chunk of chunks) {
+      if (!chunk.length) continue;
+      if (isDemoted(budget, leg.id, leg.provider, leg.tool)) {
+        for (const w of chunk) w.row.cells[col] = cellOf('skipped', { missReason: 'leg_demoted' });
+        meta.rowsReached -= chunk.length;
+        continue;
+      }
       const receipts = await runner.executeBatch({
-        provider: leg.provider, tool: leg.tool, inputs: work.map((w) => w.input), runId: opts.runId,
+        provider: leg.provider, tool: leg.tool, inputs: chunk.map((w) => w.input), runId: opts.runId,
       });
-      for (let i = 0; i < work.length; i++) {
-        const { row } = work[i];
+      let hits = 0;
+      for (let i = 0; i < chunk.length; i++) {
+        const { row } = chunk[i];
         const rc = receipts[i];
-        if (!rc.cached) spent.credits += rc.costCredits;
+        if (!rc.cached) { spent.credits += rc.costCredits; spent.usd += rc.costUsd ?? 0; }
+        if (rc.status === 'hit') hits++;
         meta.receiptIds!.push(rc.id);
         row.cells[col] = toCell(rc, leg, row, meta, policy);
         await opts.onRowUpdated?.(row);
       }
+      recordOutcome(budget, leg.id, leg.provider, leg.tool, chunk.filter((_, i) => receipts[i].status !== 'error').length, hits, meta);
     }
     metas.push(meta);
     await opts.onLegDone?.(leg, meta);
 
-    if (opts.maxCredits !== undefined && spent.credits > opts.maxCredits) {
+    try {
+      if (cutByBudget) throw new BudgetExceeded(spent.usd, opts.maxUsd!, 'usd', `leg ${leg.id} could not afford every row`);
+      checkAfter(budget);
+    } catch (e) {
       finalize(rows, legs, legsTried, policy, true);
-      throw new BudgetExceeded(spent.credits, opts.maxCredits);
+      throw e;
     }
   }
 

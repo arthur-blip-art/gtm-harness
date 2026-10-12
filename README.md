@@ -204,6 +204,24 @@ node scripts/demo-one-account.mjs --domain abacum.ai --people 2 --max-credits 5 
 
 Le coût de l'étape 3 : 0,25 crédit FullEnrich par personne trouvée, 1 par email trouvé, rien quand rien n'est trouvé. Seuls les emails HIGH et MEDIUM partent dans HubSpot. `--no-db` fait tourner n'importe quel play en réel sans base : `gtm run company-to-people --no-db --input '{"domain":"abacum.ai","titles":["CTO"],"limit":2}'`.
 
+## Contrôle des coûts
+
+```bash
+gtm run prospect --input @config/prospect.json --estimate   # pire cas en dollars, rien n'est dépensé
+gtm run prospect --input @config/prospect.json --max-usd 8  # plafond vérifié AVANT chaque appel payant
+gtm budget                                                  # dépense du mois par fournisseur
+```
+
+Sept protections, de la moins chère à la plus fine :
+1. Les exclusions et les comptes hors ICP sont retirés avant tout appel.
+2. `--estimate` chiffre le pire cas avant de lancer.
+3. Le plafond par run est en dollars et vérifié avant chaque appel : le run s'arrête avant de dépasser.
+4. Une étape payante sans résultat sur ses 5 premières lignes est coupée.
+5. Le cache évite de payer deux fois le même appel.
+6. Le budget mensuel est tenu sur le registre des reçus.
+
+Le détail est dans `docs/cost-control.md`.
+
 ## Signaux et planification
 
 Aucun fournisseur ne nous appelle. Les plays de signaux sont réveillés par **GitHub Actions** : `.github/workflows/linkedin-signals.yml` tourne les jours ouvrés à 06:00 UTC, tire HarvestAPI, compare à la table `signals`, et poste les nouveautés ICP sur Slack. Sans secrets, il tourne en `--dry-run` et reste vert. Détails et cadences dans `references/scheduling.md`.
@@ -245,7 +263,7 @@ La CI (`.github/workflows/ci.yml`) enchaîne typecheck, tests, évals de routage
 
 ## État
 
-**Vérifié** : typecheck, 71 tests, tous les plays en dry-run (y compris le bouton `prospect` de bout en bout), évals de routage 23/23 core et 5/5 hard. Un test manuel réel le 25 septembre 2026 : 4 CTO de fintechs européennes trouvés par signal (levée, nouveau CTO, intégrations manquantes) et enrichis via FullEnrich pour 4 crédits.
+**Vérifié** : typecheck, 80 tests, tous les plays en dry-run (y compris le bouton `prospect` de bout en bout), évals de routage 23/23 core et 5/5 hard. Un test manuel réel le 25 septembre 2026 : 4 CTO de fintechs européennes trouvés par signal (levée, nouveau CTO, intégrations manquantes) et enrichis via FullEnrich pour 4 crédits.
 
 **Non vérifié** : les tarifs et endpoints des autres fournisseurs sont des estimations marquées `verify against docs`, y compris ceux de la couche gratuite (APIs publiques non joignables depuis l'environnement de développement) ; aucun run réel à l'échelle ; le projet Supabase de production reste à créer.
 

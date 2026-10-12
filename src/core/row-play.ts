@@ -5,6 +5,21 @@ import { definePlay } from './play.ts';
 import type { Store } from '../store/store.ts';
 import { personKey } from './keys.ts';
 import { apexDomain } from './normalize.ts';
+import { loadSuppression, suppressedBy } from './suppression.ts';
+
+/** Suppressed rows never reach a provider: they get a LOW cell with the reason and are left out. */
+async function withoutSuppressed(rows: RowState[], field: string, ctx: PlayCtx): Promise<RowState[]> {
+  const s = await loadSuppression(ctx.store);
+  if (!s.size) return rows;
+  const keep: RowState[] = [];
+  for (const r of rows) {
+    const why = suppressedBy(s, r.input);
+    if (why) r.cells[field] = { value: null, status: null, source: null, confidence: 'LOW', missReason: `suppressed: ${why}` };
+    else keep.push(r);
+  }
+  if (keep.length < rows.length) ctx.log(`${rows.length - keep.length} suppressed row(s) skipped before any provider call`);
+  return keep;
+}
 
 export const BatchInput = z.object({
   rows: z.array(z.record(z.string(), z.string())),
@@ -44,7 +59,8 @@ export function defineRowPlay<I extends Record<string, unknown>, O>(spec: RowPla
       const record = Object.fromEntries(Object.entries(input).map(([k, v]) => [k, v == null ? '' : String(v)]));
       if (record.domain) record.domain = apexDomain(record.domain) ?? record.domain;
       const row: RowState = { rowKey: (spec.rowKey ?? personKey)(record), input: record, cells: {}, candidates: {} };
-      await spec.steps([row], ctx);
+      const keep = await withoutSuppressed([row], spec.field, ctx);
+      if (keep.length) await spec.steps(keep, ctx);
       if (spec.golden) await spec.golden([row], ctx.store);
       return spec.output(row);
     },
@@ -56,7 +72,8 @@ export function defineRowPlay<I extends Record<string, unknown>, O>(spec: RowPla
         .dataset(input.rows, { slug: input.slug, rowKey: spec.rowKey })
         .withStep(async (rows, ctx) => {
           for (const r of rows) seedAccepted(r, spec.field, ctx.refresh);
-          await spec.steps(rows, ctx);
+          const keep = await withoutSuppressed(rows, spec.field, ctx);
+          if (keep.length) await spec.steps(keep, ctx);
         })
         .run();
       if (spec.golden) await spec.golden(rows, ctx.store);

@@ -4,6 +4,8 @@
 
 **Operations (adapter `src/providers/crustdata.ts`):**
 - `person_enrich` — `GET /screener/person/enrich?linkedin_profile_url=…&fields=business_email,…`, header `Authorization: Token <key>`.
+- `company_enrich` — `GET https://api.crustdata.com/screener/company?company_domain=` → `{name, linkedin_url, country, industry, headcount, headcount_growth_6m_pct, funding_total_usd}`. The only source of headcount growth in `company-signals` (no free equivalent).
+- `company_search` — `POST https://api.crustdata.com/screener/company/search {filters:[{filter_type: REGION|COMPANY_HEADCOUNT|INDUSTRY|KEYWORD, type:'in', value}], page}` → `{companies[{name,domain,linkedin_url,employee_count,country}], total}`. Headcount is mapped to Crustdata bands (1-10, 11-50, 51-200…), ISO country codes to names.
 
 **Pricing basis:** per_result (~1 credit per returned person); empty results free. Estimate 2026-09-23.
 

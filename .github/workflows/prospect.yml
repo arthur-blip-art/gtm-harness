@@ -9,9 +9,9 @@ on:
       config:
         description: 'ICP config file (see config/prospect.example.json)'
         default: 'config/prospect.example.json'
-      max_credits:
-        description: 'Abort above this spend (credits)'
-        default: '50'
+      max_usd:
+        description: 'Never spend more than this in the run (USD); check the worst case first with --estimate'
+        default: '5'
       dry_run:
         description: 'Force --dry-run (mock providers, no database)'
         type: boolean
@@ -41,6 +41,7 @@ jobs:
       CRUSTDATA_API_KEY: ${{ secrets.CRUSTDATA_API_KEY }}
       SCRAPEGRAPH_API_KEY: ${{ secrets.SCRAPEGRAPH_API_KEY }}
       SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+      GTM_MONTHLY_BUDGET_USD: ${{ vars.GTM_MONTHLY_BUDGET_USD }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -64,11 +65,13 @@ jobs:
       - name: Run prospect
         run: |
           jq --arg out "out/prospect-${{ github.run_id }}" '. + {out_dir: $out}' "${{ inputs.config }}" > run-input.json
-          node bin/gtm.mjs run prospect --input @run-input.json --max-credits "${{ inputs.max_credits }}" ${{ steps.mode.outputs.flag }} | tee out-run.log
+          node bin/gtm.mjs run prospect --input @run-input.json --estimate --max-usd "${{ inputs.max_usd }}" | tee out-estimate.log
+          node bin/gtm.mjs run prospect --input @run-input.json --max-usd "${{ inputs.max_usd }}" ${{ steps.mode.outputs.flag }} | tee out-run.log
       - uses: actions/upload-artifact@v4
         with:
           name: prospect-${{ github.run_id }}
           path: |
             out/
+            out-estimate.log
             out-run.log
           retention-days: 30

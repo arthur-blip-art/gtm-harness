@@ -2,7 +2,10 @@ import { costFromTable, defineAdapter, errorResult, httpJson, pick } from './_ad
 import { env } from '../config.ts';
 import { nameToken } from '../core/normalize.ts';
 
-const PRICE = { person_enrich: { basis: 'per_hit', credits: 3, note: 'bills only on 200; x-call-credits-spent header is authoritative' } } as const;
+const PRICE = {
+  person_enrich: { basis: 'per_hit', credits: 3, note: 'bills only on 200; x-call-credits-spent header is authoritative' },
+  company_enrich: { basis: 'per_hit', credits: 1, note: 'bills only on 200 (estimate ~$0.10); x-call-credits-spent header is authoritative' },
+} as const;
 
 /** People Data Labs person enrichment. Expensive: last leg only. Emails are not verified by PDL → status unknown. */
 export const peopledatalabs = defineAdapter({
@@ -34,6 +37,19 @@ export const peopledatalabs = defineAdapter({
         return { status: 'hit', output: { ...out, email: d.work_email, email_status: 'unknown' }, costOverride };
       },
       cost: costFromTable(PRICE.person_enrich),
+    },
+    company_enrich: {
+      description: 'Company profile by website domain: name, headcount, industry, country, founded year, LinkedIn.',
+      normalize: (i) => ({ domain: String(i.domain ?? '').trim().toLowerCase() }),
+      async execute(i, ctx) { // verify against docs
+        const { status, body, headers } = await httpJson(ctx, `https://api.peopledatalabs.com/v5/company/enrich?website=${encodeURIComponent(String(i.domain))}`, { headers: { 'X-Api-Key': env('PDL_API_KEY') ?? '' } });
+        const spent = Number(headers.get('x-call-credits-spent') ?? NaN);
+        const costOverride = Number.isFinite(spent) ? spent : undefined;
+        if (status === 404) return { status: 'miss', missReason: 'no_match', output: {}, costOverride: costOverride ?? 0 };
+        if (status !== 200) return errorResult(status, body, body?.error?.message);
+        return { status: 'hit', output: { ...pick(body, ['name', 'employee_count', 'industry', 'founded', 'linkedin_url', 'size']), country: body.location?.country ?? null }, costOverride };
+      },
+      cost: costFromTable(PRICE.company_enrich),
     },
   },
 });
