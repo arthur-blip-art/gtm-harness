@@ -12,9 +12,9 @@ export const DEFAULT_FIT_MODEL: Model = {
   max_age_days: { headcount_band: 365, industry_software: 365, country_target: 365, tech_integration_signal: 365 },
 };
 export const DEFAULT_ENGAGEMENT_MODEL: Model = {
-  id: 'chift-account-engagement-v1', dimension: 'account_engagement', intercept: 0, validation: 'exploratory', event_window_days: 180,
-  weights: { funding_recent: 3, job_openings_90d: 2, headcount_growth: 1, integration_job_openings: 2 },
-  max_age_days: { funding_recent: 180, job_openings_90d: 90, headcount_growth: 180, integration_job_openings: 90 },
+  id: 'chift-account-engagement-v2', dimension: 'account_engagement', intercept: 0, validation: 'exploratory', event_window_days: 180,
+  weights: { funding_recent: 3, job_openings_90d: 2, headcount_growth: 1, integration_job_openings: 2, champion_job_change: 3, competitor_signal: 2, github_dev_signal: 2, site_visit: 1, inbound_lead: 4 },
+  max_age_days: { funding_recent: 180, job_openings_90d: 90, headcount_growth: 180, integration_job_openings: 90, champion_job_change: 180, competitor_signal: 180, github_dev_signal: 90, site_visit: 30, inbound_lead: 30 },
 };
 
 const TARGET_COUNTRIES = /^(fr|france|be|belgium|belgique|nl|netherlands|es|spain|espagne|de|germany|allemagne|uk|gb|united kingdom|it|italy|pt|portugal|lu|luxembourg|ch|switzerland)$/i;
@@ -64,5 +64,19 @@ export function engagementObservations(c: CompanyRow, signals: Signal[], now: st
     const pct = Number((growth.value as any).pct ?? 0);
     obs.push({ ...base, feature: 'headcount_growth', source_id: growth.source, value: Math.max(-1, Math.min(1, pct / 50)), known_at: ts(growth.observedAt)!, event_at: ts(growth.observedAt)! });
   } else obs.push({ ...base, feature: 'headcount_growth', source_id: 'none', value: null, known_at: base.retrieved_at, event_at: base.retrieved_at, status: 'missing' });
+
+  // Signals from the newer plays. Every feature always yields an observation (0 when absent), or scoreRow returns null.
+  const recent = (types: string[], days: number) => mine.filter((s) => types.includes(s.type) && s.observedAt && nowMs - Date.parse(s.observedAt) <= days * 86400000);
+  const flag = (feature: string, types: string[], days: number, val: (xs: Signal[]) => number) => {
+    const xs = recent(types, days);
+    const latest = xs.map((x) => ts(x.observedAt)!).sort().pop();
+    const at = latest && latest < base.retrieved_at ? latest : base.retrieved_at; // signal written in the same second → clamp
+    obs.push({ ...base, feature, source_id: xs[0]?.source ?? `signals.${types[0]}`, value: val(xs), known_at: at, event_at: at });
+  };
+  flag('champion_job_change', ['job_change'], 180, (xs) => (xs.some((x) => ['customer', 'champion', 'won_deal'].includes(String((x.value as any).relation))) ? 1 : xs.length ? 0.5 : 0));
+  flag('competitor_signal', ['competitor_customer', 'competitor_detected'], 180, (xs) => (xs.length ? 1 : 0));
+  flag('github_dev_signal', ['github_sdk_user', 'github_issue'], 90, (xs) => (xs.length ? 1 : 0));
+  flag('site_visit', ['site_visit'], 30, (xs) => Math.min(xs.length, 5) / 5);
+  flag('inbound_lead', ['inbound_lead'], 30, (xs) => (xs.length ? 1 : 0));
   return obs;
 }

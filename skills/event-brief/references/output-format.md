@@ -4,13 +4,14 @@ Slug: `<event>-<city>-<year>`, lowercase, hyphens. Example: `accountex-madrid-20
 
 ## event-people-<slug>.csv
 
-`event,company,domain,segment,headcount,headcount_source,roles_at_event,stand,person_name,person_title,sessions,first_session_time,room,source_url,status,priority,score,why`
+`event,company,domain,segment,headcount,headcount_source,roles_at_event,stand,person_name,person_title,sessions,first_session_time,room,source_url,status,priority,score,why,check`
 
-- `roles_at_event`: one or more of exhibitor, sponsor, speaker, partner, joined with `+`
+- `roles_at_event`: one or more of exhibitor, sponsor, speaker, partner, attendee, joined with `+`
 - `sessions`: every session, `YYYY-MM-DD HH:MM-HH:MM room: title`, joined with ` | `
 - `first_session_time`: `YYYY-MM-DD HH:MM`, empty when not read
 - `status`: target / already_targeted / customer / competitor / partner
 - `why`: one factual sentence, quotable as is, in the language of the brief
+- `check`: `confirmed` when the name, title and company were re-read at the source (step 5), `UNVERIFIED` for a guest-list row or a name read from a logo file that nothing confirmed yet. For a pasted list, `source_url` is the event URL and `why` says "pasted guest list, <date>"
 
 ## event-dropped-<slug>.csv
 
@@ -62,6 +63,7 @@ Three to five more names, one line each.
 - **Customers:** who, and what they are doing there.
 - **Competitors and adjacent offers:** who, stand or session.
 - **Accounts already targeted:** who, and how the event changes the approach.
+- **Attendees (guest list, UNVERIFIED):** source and date of the list, how many rows, the ones from target, customer or already targeted companies, how many had no stated company.
 - **Our own company on the site:** listed as exhibitor or sponsor, or not.
 
 ## Limits of this run

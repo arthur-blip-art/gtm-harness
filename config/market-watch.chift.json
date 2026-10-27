@@ -1,0 +1,7 @@
+{
+  "keywords": ["facture électronique PDP", "e-invoicing", "Codat", "Merge.dev", "Apideck", "unified API accounting", "Pennylane API", "API comptable"],
+  "sources": ["news", "hackernews"],
+  "window": "week",
+  "competitors": ["Codat", "Merge.dev", "Apideck", "Rutter", "Kombo"],
+  "notify": true
+}

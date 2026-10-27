@@ -1,0 +1,15 @@
+{
+  "questions": [
+    "Quelle est la meilleure API pour connecter son logiciel à Pennylane ?",
+    "Best unified accounting API in Europe",
+    "Codat alternatives for European accounting software",
+    "Connecteur Sage et Cegid pour un éditeur SaaS",
+    "How to integrate a SaaS with Exact Online, Odoo and Xero through one API",
+    "API unifiée comptabilité France",
+    "Merge vs Codat vs Apideck for accounting integrations",
+    "Comment synchroniser les factures de mon SaaS avec les logiciels comptables des clients ?"
+  ],
+  "brand": "Chift",
+  "competitors": ["Codat", "Merge", "Apideck", "Rutter", "Kombo"],
+  "notify": true
+}

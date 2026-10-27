@@ -4,6 +4,7 @@
 
 **Operations (adapter `src/providers/exa.ts`):**
 - `search` — `POST /search` `{query, numResults, type:'auto'}` → `results[{url,title}]`. The play takes the first result not on a social/directory domain.
+- `answer` — `POST /answer` `{query}` → `{answer, citations[{url,title}]}`. Used by `aeo-visibility` to count which brands an AI answer names for a buyer question.
 
 **Pricing basis:** per_call, ~$0.005 per search without contents (0.05 credit).
 

@@ -40,6 +40,15 @@ export class PgStore implements Store {
     return rows[0] ? toReceipt(rows[0]) : null;
   }
 
+  /** Ledger only: input and output payloads stay in the database. */
+  async listReceipts(since?: string) {
+    const rows = await this.sql<ReceiptRow[]>`
+      select id, provider, tool, input_hash, '{}'::jsonb as input, null as output, status, pricing_basis, cost_credits, cost_usd,
+        http_status, duration_ms, error, run_id, created_at
+      from tool_receipts ${since ? this.sql`where created_at >= ${since}` : this.sql``} order by created_at`;
+    return rows.map(toReceipt);
+  }
+
   async receiptStats() {
     const rows = await this.sql<{ provider: string; count: string; credits: string }[]>`
       select provider, count(*)::text as count, coalesce(sum(cost_credits),0)::text as credits
@@ -124,7 +133,7 @@ export class PgStore implements Store {
         funding_total_usd = coalesce(excluded.funding_total_usd, companies.funding_total_usd),
         funding_last_round = coalesce(excluded.funding_last_round, companies.funding_last_round),
         funding_last_date = coalesce(excluded.funding_last_date, companies.funding_last_date),
-        tech = case when jsonb_array_length(excluded.tech) > 0 then excluded.tech else companies.tech end,
+        tech = (select coalesce(jsonb_agg(distinct x), '[]'::jsonb) from jsonb_array_elements(companies.tech || excluded.tech) x), -- union: company-enrich and company-tech each add what they see
         field_sources = companies.field_sources || excluded.field_sources,
         raw = companies.raw || excluded.raw,
         updated_at = now()`;
@@ -151,8 +160,11 @@ export class PgStore implements Store {
         insert into signals (dedupe_key, domain, type, value, source, observed_at, receipt_id, company_id)
         values (${r.dedupeKey}, ${r.domain}, ${r.type}, ${this.sql.json(r.value as never)}, ${r.source}, ${r.observedAt ?? null}, ${r.receiptId ?? null},
           (select id from companies where domain = ${r.domain}))
-        on conflict (dedupe_key) do nothing`;
-      n += res.count;
+        on conflict (dedupe_key) do update set value = excluded.value, observed_at = excluded.observed_at, receipt_id = excluded.receipt_id
+          where excluded.type in ('page_snapshot', 'person_employer')
+        returning (xmax = 0) as inserted`;
+      // Events are immutable (first write wins); snapshots keep only their latest state, like the memory store.
+      n += res.filter((x) => x.inserted).length;
     }
     return n;
   }

@@ -3,7 +3,8 @@
 # Turns the SKILL.md policy into an enforced rule:
 #   allow  → read-only gtm commands, any --dry-run, pilots (`gtm run … --limit N`, N ≤ 3)
 #   ask    → paid full runs (gtm run without --dry-run and without a pilot limit),
-#            --refresh (re-buys cached calls), sync-hubspot without dry_run,
+#            --refresh (re-buys cached calls), sync-hubspot without dry_run, write:true (HubSpot),
+#            push-sequencer with dry_run_only:false (Instantly upload),
 #            `supabase db push`, `gtm signals pull` without --dry-run
 #   demo scripts → page reads and rehearsals allowed; live runs and HubSpot writes ask
 #   (silent) → anything else falls through to Claude Code's normal prompt
@@ -53,6 +54,8 @@ case "$sub" in
     if has '(^|[[:space:]])--dry-run([[:space:]]|$)'; then emit allow "gtm-gate: dry-run, mock providers, no spend"; fi
     if has '(^|[[:space:]])--refresh([[:space:]]|$)'; then emit ask "gtm-gate: --refresh re-buys cached provider calls"; fi
     if has 'sync-hubspot' && ! has '"dry_run":[[:space:]]*true'; then emit ask "gtm-gate: writes to HubSpot"; fi
+    if has 'push-sequencer' && has '"dry_run_only":[[:space:]]*false'; then emit ask "gtm-gate: creates a draft campaign and uploads leads to Instantly"; fi
+    if has '"write":[[:space:]]*true'; then emit ask "gtm-gate: writes properties to HubSpot"; fi
     if [ "$sub" = signals ]; then emit ask "gtm-gate: paid signal pull"; fi
     limit="$(printf '%s' "$norm" | sed -nE 's/.*--limit[[:space:]=]+([0-9]+).*/\1/p')"
     if [ -n "$limit" ] && [ "$limit" -le 3 ]; then emit allow "gtm-gate: pilot of $limit rows"; fi

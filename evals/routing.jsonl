@@ -18,3 +18,14 @@
 {"prompt": "Enrichis ces personnes avec leur email pro puis synchronise le CRM", "expect": "enriching-and-researching.md", "tier": "hard"}
 {"prompt": "Je veux savoir chaque matin quels CTO de ma liste ont publié", "expect": "recipes/linkedin-signals.md", "tier": "hard"}
 {"prompt": "C'est quoi le RGPD ici, on stocke quoi sur les gens ?", "expect": "references/schema.md", "tier": "hard"}
+{"prompt": "Trie les leads inbound d'hier et dis-moi qui rappeler", "expect": "recipes/inbound-triage.md", "tier": "core"}
+{"prompt": "Prépare mon call avec Billwise demain", "expect": "recipes/call-prep.md", "tier": "core"}
+{"prompt": "Pousse la séquence dans Instantly et lance la campagne", "expect": "recipes/outbound-launch.md", "tier": "core"}
+{"prompt": "Quels deals closed lost valent une relance ?", "expect": "recipes/revive-closed-lost.md", "tier": "core"}
+{"prompt": "Trouve-moi une intro chaude vers Payflow", "expect": "recipes/warm-paths.md", "tier": "core"}
+{"prompt": "Liste les clients de Codat qu'on pourrait déplacer", "expect": "recipes/competitor-displacement.md", "tier": "core"}
+{"prompt": "Construis la banque d'objections et de verbatims", "expect": "recipes/voice-of-market.md", "tier": "core"}
+{"prompt": "Quels posts commenter cette semaine pour le social selling", "expect": "recipes/social-selling.md", "tier": "core"}
+{"prompt": "Fais un check MEDDIC sur ce deal", "expect": "recipes/deal-check.md", "tier": "core"}
+{"prompt": "Prépare une démo personnalisée sur la sandbox", "expect": "recipes/custom-demo.md", "tier": "core"}
+{"prompt": "Lance la revue hebdo GTM de lundi", "expect": "recipes/weekly-gtm-review.md", "tier": "core"}

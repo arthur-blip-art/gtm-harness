@@ -78,6 +78,20 @@ Un agent de code n'a pas besoin de l'interface. Il lui faut une ligne de command
 
 Chaque play existe en version unitaire (`--input`) et, quand ça a du sens, en version lot sur CSV (`--csv --out`).
 
+### Inbound, outbound, veille (ajouts d'octobre 2026)
+
+| play | ce que ça fait |
+|---|---|
+| `inbound-triage` | lit les nouveaux contacts HubSpot, écarte tôt (email perso, stagiaire, concurrent, client), enrichit et score les autres, classe chaud / tiède / froid avec la prochaine action |
+| `site-visitors` | score d'intention par compte à partir de l'export d'un outil de dé-anonymisation (pages tarifs, connecteurs, comparatifs) |
+| `suppress` | retire d'une séquence les clients, partenaires, deals ouverts, désinscrits et contacts touchés depuis moins de 84 jours |
+| `push-sequencer` · `campaign-report` | séquence → brouillon Instantly (jamais activé), puis taux de réponse, d'opportunité et de bounce par étape et variante |
+| `people-moves` · `github-signals` · `company-tech` | champions qui changent d'entreprise, entreprises qui utilisent les SDK concurrents, stack technique gratuite (scripts + DNS) |
+| `competitor-customers` · `competitor-watch` · `market-watch` · `aeo-visibility` | clients nommés des concurrents, diff de leurs pages, veille presse et Hacker News, part de citation dans les réponses IA |
+| `deal-health` · `closed-lost-revival` | deals ouverts sans prochaine étape ou en retard ; deals perdus où un signal est apparu depuis la perte |
+
+Les recettes qui les enchaînent sont dans `recipes/` (préparation d'appel, lancement outbound, chemins chauds, déplacement concurrentiel, voix du marché, social selling, revue hebdo…). `gtm providers scorecard` mesure le taux de succès et le coût par résultat de chaque fournisseur à partir des reçus.
+
 ## Comment ça marche
 
 ```

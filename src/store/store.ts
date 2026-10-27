@@ -95,6 +95,7 @@ export interface Store {
   insertReceipt(r: NewReceipt): Promise<Receipt>;
   listReceiptsByRun(runId: string): Promise<Receipt[]>;
   getReceipt(id: string): Promise<Receipt | null>;
+  listReceipts(since?: string): Promise<Receipt[]>;
   receiptStats(): Promise<{ total: number; byProvider: Record<string, { count: number; credits: number }> }>;
   // runs
   createRun(play: string, inputSummary: Record<string, unknown>, datasetId?: string): Promise<Run>;

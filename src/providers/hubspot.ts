@@ -38,16 +38,17 @@ export const hubspot = defineAdapter({
         const filters = Array.isArray(i.filters)
           ? (i.filters as any[]).map((f) => ({ propertyName: String(f.propertyName), operator: String(f.operator ?? 'EQ'), ...(f.value !== undefined ? { value: String(f.value) } : {}), ...(f.values ? { values: strArr(f.values) } : {}) }))
           : i.propertyName ? [{ propertyName: String(i.propertyName), operator: String(i.operator ?? 'EQ'), value: String(i.value ?? '') }] : [];
-        return { objectType: objectType(i.objectType), filters, properties: strArr(i.properties), limit: Math.min(Number(i.limit ?? 10), 100) };
+        const sorts = Array.isArray(i.sorts) ? (i.sorts as any[]).map((s) => ({ propertyName: String(s.propertyName), direction: String(s.direction ?? 'DESCENDING') })) : [];
+        return { objectType: objectType(i.objectType), filters, properties: strArr(i.properties), limit: Math.min(Number(i.limit ?? 10), 100), ...(sorts.length ? { sorts } : {}), ...(i.after ? { after: String(i.after) } : {}) };
       },
       async execute(i, ctx) {
         const { status, body } = await httpJson(ctx, `${BASE}/crm/v3/objects/${i.objectType}/search`, { // verify against docs
           method: 'POST', headers: headers(),
-          body: JSON.stringify({ filterGroups: [{ filters: i.filters }], properties: i.properties, limit: i.limit }),
+          body: JSON.stringify({ filterGroups: [{ filters: i.filters }], properties: i.properties, limit: i.limit, ...(i.sorts ? { sorts: i.sorts } : {}), ...(i.after ? { after: i.after } : {}) }),
         });
         if (!ok(status)) return errorResult(status, body, errMsg(body));
         const results = ((body?.results ?? []) as any[]).map((r) => ({ id: r.id, properties: r.properties ?? {} }));
-        const out = { results, total: Number(body?.total ?? results.length), objectType: i.objectType };
+        const out = { results, total: Number(body?.total ?? results.length), objectType: i.objectType, next: body?.paging?.next?.after ?? null };
         return results.length ? { status: 'hit', output: out } : { status: 'miss', missReason: 'no_match', output: out };
       },
       cost: costFromTable(PRICE.search_objects),

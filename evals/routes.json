@@ -149,6 +149,110 @@
       "synchro",
       "pousser dans",
       "push to crm"
+    ],
+    "recipes/inbound-triage.md": [
+      "inbound",
+      "entrant",
+      "entrants",
+      "demande de demo",
+      "demo request",
+      "visiteurs",
+      "visitors",
+      "formulaire",
+      "trie les leads",
+      "triage"
+    ],
+    "recipes/call-prep.md": [
+      "prepare mon call",
+      "prépare mon call",
+      "call prep",
+      "brief avant",
+      "avant le call",
+      "avant mon rendez-vous",
+      "discovery call",
+      "appel decouverte",
+      "appel découverte"
+    ],
+    "recipes/outbound-launch.md": [
+      "instantly",
+      "lancer la campagne",
+      "launch the campaign",
+      "envoyer la sequence",
+      "envoyer la séquence",
+      "push la sequence",
+      "campagne cold",
+      "dans instantly",
+      "pousse",
+      "brouillon"
+    ],
+    "recipes/revive-closed-lost.md": [
+      "closed lost",
+      "closed-lost",
+      "deals perdus",
+      "perdus",
+      "relancer les perdus",
+      "no-show",
+      "reopen"
+    ],
+    "recipes/warm-paths.md": [
+      "intro",
+      "introduction",
+      "warm path",
+      "chemin chaud",
+      "investisseurs communs",
+      "mutual",
+      "ancien client"
+    ],
+    "recipes/competitor-displacement.md": [
+      "clients de codat",
+      "clients de merge",
+      "concurrents",
+      "competitor customers",
+      "displacement",
+      "remplacer codat",
+      "sdk",
+      "deplacer",
+      "déplacer",
+      "de codat",
+      "de merge"
+    ],
+    "recipes/voice-of-market.md": [
+      "verbatims",
+      "objections",
+      "avis g2",
+      "capterra",
+      "voice of",
+      "langage client"
+    ],
+    "recipes/social-selling.md": [
+      "commenter",
+      "social selling",
+      "kol",
+      "influenceurs"
+    ],
+    "recipes/deal-check.md": [
+      "meddic",
+      "meddicc",
+      "deal ouvert",
+      "sante des deals",
+      "santé des deals",
+      "deal health",
+      "pipe"
+    ],
+    "recipes/custom-demo.md": [
+      "demo personnalisee",
+      "démo personnalisée",
+      "custom demo",
+      "sandbox"
+    ],
+    "recipes/weekly-gtm-review.md": [
+      "revue hebdo",
+      "weekly review",
+      "routine",
+      "chaque lundi",
+      "every monday",
+      "aeo",
+      "veille"
     ]
   }
 }

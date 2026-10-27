@@ -26,6 +26,10 @@ describe('gtm-gate hook', () => {
     expect(decide('gtm run sync-hubspot --input \'{"dry_run": true}\'')).toBe('ask'); // still a paid-run shape without --dry-run flag
     expect(decide('gtm signals pull --domains d.txt')).toBe('ask');
     expect(decide('supabase db push')).toBe('ask');
+    expect(decide('gtm run push-sequencer --input \'{"dry_run_only": false}\'')).toBe('ask');
+    expect(decide('gtm run inbound-triage --input \'{"write": true}\'')).toBe('ask');
+    expect(decide('gtm run inbound-triage --input \'{"write": true}\' --dry-run')).toBe('allow');
+    expect(decide('gtm providers scorecard --since 2026-09-01')).toBe('allow');
   });
   it('classifies the demo scripts by what they spend or write', () => {
     expect(decide('node scripts/integrations-signal.mjs --domain getmoss.com --countries FR,DE')).toBe('allow');

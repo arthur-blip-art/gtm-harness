@@ -33,6 +33,9 @@ export class MemoryStore implements Store {
   async getReceipt(id: string) {
     return this.receipts.find((r) => r.id === id) ?? null;
   }
+  async listReceipts(since?: string) {
+    return this.receipts.filter((r) => !since || r.createdAt >= since);
+  }
   async receiptStats() {
     const byProvider: Record<string, { count: number; credits: number }> = {};
     for (const r of this.receipts) {
@@ -92,7 +95,9 @@ export class MemoryStore implements Store {
 
   async upsertCompany(c: GoldenCompany) {
     const prev = this.companies.get(c.domain);
-    this.companies.set(c.domain, mergeDefined(prev ?? { id: randomUUID(), domain: c.domain, fieldSources: {}, raw: {} }, c, ['fieldSources', 'raw']) as CompanyRow);
+    const merged = mergeDefined(prev ?? { id: randomUUID(), domain: c.domain, fieldSources: {}, raw: {} }, c, ['fieldSources', 'raw']) as CompanyRow;
+    if (prev?.tech?.length || c.tech?.length) merged.tech = [...new Set([...(prev?.tech ?? []), ...(c.tech ?? [])])].sort(); // union, as in Postgres
+    this.companies.set(c.domain, merged);
   }
   async upsertPerson(p: GoldenPerson) {
     const prev = this.people.get(p.personKey);

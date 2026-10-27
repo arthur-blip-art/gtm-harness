@@ -19,6 +19,7 @@ Adjust the weights with the user when they know their market better. Keep the re
 | Company below the band | -1; under about ten people, bench |
 | Size not checked | 0, and write "not checked" |
 | Fact not confirmed on re-read | -1 per fact, and drop the fact from the brief |
+| Attendee (guest list) whose title is still `UNVERIFIED` | no role points; score the company only, and no "findable" point (no session, no stand) |
 
 **Priority.** 1 = target or already targeted company with a decision or influencer role identified on site. 2 = target company with no named person, or only sales and marketing roles. 3 = context: customers, competitors, partners.
 
