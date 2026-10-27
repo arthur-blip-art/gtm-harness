@@ -54,6 +54,9 @@ export interface CompanyRow extends GoldenCompany {
   id: string;
 }
 
+/** Signal types whose dedupe key names a period or a subject: a rewrite keeps the latest state. Every other type is an event (first write wins). */
+export const SNAPSHOT_TYPES = ['page_snapshot', 'person_employer', 'campaign_stats', 'tech_stack', 'aeo_answer', 'site_visit'];
+
 export interface Signal {
   dedupeKey: string;
   domain: string;
@@ -95,6 +98,7 @@ export interface Store {
   insertReceipt(r: NewReceipt): Promise<Receipt>;
   listReceiptsByRun(runId: string): Promise<Receipt[]>;
   getReceipt(id: string): Promise<Receipt | null>;
+  listReceipts(since?: string): Promise<Receipt[]>;
   receiptStats(): Promise<{ total: number; byProvider: Record<string, { count: number; credits: number }> }>;
   // runs
   createRun(play: string, inputSummary: Record<string, unknown>, datasetId?: string): Promise<Run>;

@@ -1,0 +1,24 @@
+{
+  "_note": "URLs are plausible guesses: à vérifier (a 404 shows as fetch_failed). First run is a silent baseline.",
+  "pages": [
+    { "competitor": "Codat", "url": "https://www.codat.io/pricing/", "kind": "pricing" },
+    { "competitor": "Codat", "url": "https://www.codat.io/integrations/", "kind": "integrations" },
+    { "competitor": "Codat", "url": "https://www.codat.io/customers/", "kind": "customers" },
+    { "competitor": "Codat", "url": "https://docs.codat.io/updates", "kind": "changelog" },
+    { "competitor": "Merge", "url": "https://www.merge.dev/pricing", "kind": "pricing" },
+    { "competitor": "Merge", "url": "https://www.merge.dev/integrations", "kind": "integrations" },
+    { "competitor": "Merge", "url": "https://www.merge.dev/customers", "kind": "customers" },
+    { "competitor": "Merge", "url": "https://www.merge.dev/changelog", "kind": "changelog" },
+    { "competitor": "Apideck", "url": "https://www.apideck.com/pricing", "kind": "pricing" },
+    { "competitor": "Apideck", "url": "https://www.apideck.com/integrations", "kind": "integrations" },
+    { "competitor": "Apideck", "url": "https://www.apideck.com/customers", "kind": "customers" },
+    { "competitor": "Apideck", "url": "https://developers.apideck.com/changelog", "kind": "changelog" },
+    { "competitor": "Rutter", "url": "https://www.rutter.com/pricing", "kind": "pricing" },
+    { "competitor": "Rutter", "url": "https://www.rutter.com/integrations", "kind": "integrations" },
+    { "competitor": "Rutter", "url": "https://www.rutter.com/customers", "kind": "customers" },
+    { "competitor": "Kombo", "url": "https://www.kombo.dev/pricing", "kind": "pricing" },
+    { "competitor": "Kombo", "url": "https://www.kombo.dev/integrations", "kind": "integrations" },
+    { "competitor": "Kombo", "url": "https://www.kombo.dev/customers", "kind": "customers" }
+  ],
+  "notify": true
+}

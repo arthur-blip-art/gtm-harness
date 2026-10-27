@@ -26,3 +26,9 @@ Before scheduling anything paid, state **per-run cost × cadence = monthly burn*
 | Funding rounds | weekly | rounds are rare; daily scans of 500 accounts would cost 30× for nothing |
 | Job changes | every two weeks, on a curated segment | the most expensive signal; monthly on 300 beats weekly on 1,000 |
 | Account re-scoring | weekly, only rows never scored or older than 3 months | staleness gate, not a full recompute |
+| Inbound triage (`inbound-triage`) | weekdays 07:00 UTC (`gtm-watch.yml`) | a demo request answered within the hour converts; read-only from CI (`write` stays false) |
+| Competitor pages (`competitor-watch`), market news (`market-watch`), GitHub SDK users (`github-signals`), deal health | weekly, Monday | pages and news move weekly; all free except Serper news (~0.01 credit per keyword) |
+| AI-answer visibility (`aeo-visibility`) | monthly, on the 1st | answers move slowly; one month = one comparable data point (~0.05 credit per question) |
+| Champions who moved (`people-moves`) | every two weeks, on customers, partners and won-deal contacts | ~0.04 credit per profile; the list is short and high value |
+
+`.github/workflows/gtm-watch.yml` runs the daily, weekly and monthly sets; secrets missing → `--dry-run`, green.

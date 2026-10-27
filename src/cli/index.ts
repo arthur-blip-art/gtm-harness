@@ -7,6 +7,7 @@ import { openStore } from '../store/index.ts';
 import { providerTable } from '../providers/index.ts';
 import { exportCsv, loadCsv, summarizeCsv } from '../core/dataset.ts';
 import { renderReceipt } from '../core/receipt.ts';
+import { buildScorecard, renderScorecard } from '../core/scorecard.ts';
 import { AuditColumnError, auditCsv, renderAudit } from '../core/audit.ts';
 import { executePlay } from '../core/run.ts';
 import { plays, resolvePlay } from '../plays/index.ts';
@@ -17,11 +18,16 @@ const program = new Command();
 program.name('gtm').description('Self-hosted GTM engine: waterfall enrichment with your own provider keys.').version('0.2.0');
 const log = (m: string) => console.error(`[gtm] ${m}`);
 
-program.command('providers').description('List providers, whether their key is configured, and their price basis.').action(() => {
+const providersCmd = program.command('providers').description('List providers, whether their key is configured, and their price basis.').action(() => {
   console.log('| provider | configured | env | tools | pricing (credits) | verified |');
   console.log('|---|---|---|---|---|---|');
   for (const r of providerTable()) console.log(`| ${r.provider} | ${r.configured ? 'yes' : 'no'} | ${r.env} | ${r.tools} | ${r.pricing} | ${r.verifiedOn} |`);
   console.log(`\n.env location: ${path.join(GTM_HOME, '.env')}`);
+});
+providersCmd.command('scorecard').description('Hit rate, credits per hit and cut candidates per provider/tool, from stored receipts.').option('--since <date>', 'ISO date, e.g. 2026-09-01').action(async (o) => {
+  const store = openStore({});
+  console.log(renderScorecard(buildScorecard(await store.listReceipts(o.since)), o.since));
+  await store.close();
 });
 
 program.command('plays').description('List plays with their input schema.').option('--json', 'machine-readable', false).action((o) => {

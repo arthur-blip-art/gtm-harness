@@ -1,0 +1,13 @@
+{
+  "_note": "Domains and customer pages are plausible guesses: à vérifier before the first real run (open each URL).",
+  "competitors": [
+    { "name": "Codat", "domain": "codat.io", "customer_pages": ["https://www.codat.io/customers/"] },
+    { "name": "Merge", "domain": "merge.dev", "customer_pages": ["https://www.merge.dev/customers"] },
+    { "name": "Apideck", "domain": "apideck.com", "customer_pages": ["https://www.apideck.com/customers"] },
+    { "name": "Rutter", "domain": "rutter.com", "customer_pages": ["https://www.rutter.com/customers"] },
+    { "name": "Kombo", "domain": "kombo.dev", "customer_pages": ["https://www.kombo.dev/customers"] }
+  ],
+  "exclude_domains": ["chift.eu", "pennylane.com", "sage.com", "cegid.com", "xero.com", "quickbooks.intuit.com", "intuit.com", "exact.com", "odoo.com", "netsuite.com", "oracle.com"],
+  "enrich": false,
+  "notify": true
+}

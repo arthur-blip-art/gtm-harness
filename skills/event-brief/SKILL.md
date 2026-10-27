@@ -1,6 +1,6 @@
 ---
 name: event-brief
-description: "Prepare a trade show, conference, congress, summit, meetup or dinner before it happens: read the public speaker, programme, exhibitor and sponsor lists, keep the companies that fit the ICP, cross them with the customer list and the accounts already targeted, rank the people, and deliver a top 5 to meet with a one-page brief each, a route for the day, and a CSV of everyone found. Use this whenever the user mentions an upcoming event and wants to know who will be there, who matters, who to meet, who to book, or how to prepare it: 'qui sera à ce salon', 'prépare Accountex', 'top 5 à rencontrer', 'brief avant l'événement', 'liste des speakers', 'les exposants', 'who should we meet at Money20/20', 'build the event campaign', even if they only paste an event URL. Also use it to build a calendar of upcoming events for a market."
+description: "Prepare a trade show, conference, congress, summit, meetup or dinner before it happens: read the public speaker, programme, exhibitor and sponsor lists, plus the attendee list when there is one (Luma, Partiful, Eventbrite, Meetup, or a guest list the user pastes), keep the companies that fit the ICP, cross them with the customer list and the accounts already targeted, rank the people, and deliver a top 5 to meet with a one-page brief each, a route for the day, and a CSV of everyone found. Use this whenever the user mentions an upcoming event and wants to know who will be there, who matters, who to meet, who to book, or how to prepare it: 'qui sera à ce salon', 'prépare Accountex', 'top 5 à rencontrer', 'brief avant l'événement', 'liste des speakers', 'les exposants', 'qui est inscrit sur ce Luma', 'voici la liste des invités', 'who should we meet at Money20/20', 'build the event campaign', even if they only paste an event URL. Also use it to build a calendar of upcoming events for a market."
 ---
 
 # Event brief (read the room before walking into it)
@@ -22,7 +22,7 @@ Nothing here has a silent default. Look for it first, then ask. Ask the closed q
 | **Customers and competitors** | a CSV with a `domain` column, in a gtm-harness project `gtm-data/<project>/*exclusions*.csv` | ask. Without it, say in the brief that customers could not be separated from targets |
 | **Accounts already targeted** | `gtm-data/<project>/final-accounts.csv`, or a CRM export | optional. Say it was not used |
 | **Software we connect to or resell** | a catalog file named in the product context | optional but it matters: without it a partner looks like a prospect |
-| **An attendee list the user already has** | nothing, people never volunteer it | ask once: this year's, last year's, none. Last year's list says someone may come again, not that they are coming. Label it |
+| **An attendee list** | a Luma, Partiful, Eventbrite or Meetup link in the request; a file the user has | ask once: a link, a paste of the guest list, last year's list, none. Last year's list says someone may come again, not that they are coming. Label it. How to get and read it: `references/attendees.md` |
 | **Language** | the request | the brief is in the language the user asks for. Draft messages are in the language the person works in, which is usually the event's. Say which was used |
 | **Where the files go** | the project's data folder | decide, say so, move on. Scratch files go in a temp folder, never in the project |
 
@@ -30,11 +30,13 @@ Nothing here has a silent default. Look for it first, then ask. Ask the closed q
 
 ### 1. Find the lists
 
-An event site usually has four: speakers, programme, exhibitors, sponsors. Find all four before reading any.
+An event site usually has four: speakers, programme, exhibitors, sponsors. Find all four before reading any. A fifth, attendees, lives on the registration platform (Luma, Partiful, Eventbrite, Meetup) when it is public at all.
 
 Use `scripts/fetch_page.py <url>` rather than a summarising fetch: a summary silently returns the four names it could see out of fifty. For one page the script prints tables as rows (`--tables`), images with file name, alt text and upload month (`--images`), links grouped by pattern (so 111 session links read as one line), every page of the sitemap and its child sitemaps, and on a WordPress site the content types readable as JSON, which often give the whole speaker list in three calls. It writes the links to a file: feed that file back with `--urls-file` to read every speaker or session page in one command.
 
 When a list is not readable (JavaScript only, a login, a bot check, an attendee app), say so and move to the next source: the sitemap, one page per speaker, exhibitor press releases, sponsor logos and their file names. Names read from logo file names are unconfirmed until one page confirms them. Never fill a hole from last year's edition. The header saying this year proves little: date the content itself, by the upload month of the logos and the date of each press release. Stay on public pages, and do not try to pass a bot check.
+
+**Attendees.** When the guest list renders in JavaScript or only shows to registrants, do not fight the page: ask the user once to open it, select all and paste it here, and move on if they would rather not. Routes, platform notes (unverified) and privacy rules are in `references/attendees.md`; `scripts/parse_guest_list.py` turns the paste into rows.
 
 When several events share one site and one programme, keep the rooms and tracks of the event the user named, and say how many speakers of the co-located events were left unclassified.
 
@@ -43,6 +45,8 @@ When we go without a booth, read the visitor terms. Some events forbid visitors 
 ### 2. Extract people and companies
 
 One row per person, or per company when nobody is named. Keep the columns of `references/output-format.md` and the URL each row was read on. A row without a source is a rumour.
+
+A guest list is self-declared: a title or company is filled only when the guest wrote it, every attendee row is `UNVERIFIED` until step 5 confirms it, and a guest with no stated company stays a row, unranked. Personal e-mails and phone numbers never enter the files.
 
 Take every session a person has, with date, start, end and room: this is what makes the message specific and tells the AE where to stand. The programme grid often gives only the start time. The session's own page gives the end and the room.
 
@@ -79,7 +83,7 @@ One person per company in the top 5. List the others as other doors into the sam
 
 For the top 5 and five reserves, fetch each person's own speaker and session pages again, fresh, and confirm name, title, company, session title, date, time and room. This is where errors are caught: a time read on a multi-track grid, a changed title, a replaced speaker. If a fact cannot be confirmed, keep the person and drop the fact, and say which.
 
-Use only the professional information the event and the company publish.
+Use only the professional information the event and the company publish, and what guests wrote about themselves on the guest list. Attendee rows confirmed here move from `UNVERIFIED` to `confirmed`.
 
 ### 6. Write the brief
 
@@ -101,13 +105,14 @@ Everything after this costs money or touches a system, so it is the user's call,
 
 ## What this skill touches
 
-- **Reads:** public pages of the event and of the companies kept; the project's context and list files.
+- **Reads:** public pages of the event and of the companies kept; a guest list the user pastes; the project's context and list files.
 - **Writes:** the three output files, and scratch files in a temp folder.
-- **Never:** sends a message, books a meeting, enriches an email, writes to a CRM, logs in anywhere, or reads an attendee list behind a login or a bot check.
+- **Never:** sends a message, books a meeting, enriches an email, writes to a CRM, logs in anywhere, or reads an attendee list behind a login or a bot check itself (a list the user can see and chooses to paste is theirs to share).
 
 ## What this skill does not claim
 
-- It lists who is on stage, exhibiting or sponsoring. It does not know who attends as a visitor.
+- It lists who is on stage, exhibiting or sponsoring. It knows visitors only through a guest list that was public or pasted, and registered is not present.
+- An attendee's title and company are what they wrote on the platform, `UNVERIFIED` unless the brief says it was confirmed.
 - A status of `target` means the company looks like the ICP from public pages. Nobody checked a budget or a project.
 - A customer absent from the exclusion list will be treated as a target.
 - Headcounts are whatever source is written next to them, often a band the company declared.
@@ -134,6 +139,8 @@ When the user asks which events matter for a market, list candidates, then open 
 | The top 5 is five people from two large groups | no size rule, several people per company | one per company, apply the size rule, name the others as other doors |
 | A session time that turns out wrong | read from a multi-track grid | re-read on the session's own page |
 | Hours spent classifying | every company researched to the same depth | sieve first, research only what passes |
+| A Luma or Partiful page returns no guests | the list renders in JavaScript or shows only to registrants | ask once for a select-all paste or screenshots, then `parse_guest_list.py`; no paste, say the attendee layer is missing |
+| Attendee titles look complete and confident | filled from a guess, not from the guest's own words | only explicit "title at company"; the rest stays in `raw_bio`, and rows stay `UNVERIFIED` |
 | No exhibitor list anywhere | the button points to a template or a blocked host | `--images` on the page with the logo wall, press releases dated this year, and say about how much is unseen |
 
 ---

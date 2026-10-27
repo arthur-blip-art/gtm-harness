@@ -4,7 +4,7 @@ Two dimensions, kept apart: **fit** (does this account look like the ones we win
 
 ## What exists in the engine
 
-- `gtm run score-accounts --input '{"domains":[...]}'` — rules-based `account_fit` and `account_engagement` from `companies` + `signals`, graded A/B/C/D by percentile against the scored population frozen at run start (`src/core/scoring-rules.ts`, models `chift-account-fit-v1` / `chift-account-engagement-v1`, `validation: exploratory`). Every score carries `reasons` (feature, value, source) and a `miss_reason` when a feature lacks exactly one fresh observation.
+- `gtm run score-accounts --input '{"domains":[...]}'` — rules-based `account_fit` and `account_engagement` from `companies` + `signals`, graded A/B/C/D by percentile against the scored population frozen at run start (`src/core/scoring-rules.ts`, models `chift-account-fit-v1` / `chift-account-engagement-v2`, `validation: exploratory`). Every score carries `reasons` (feature, value, source) and a `miss_reason` when a feature lacks exactly one fresh observation.
 - `src/core/scoring-contract.ts` — the pure replay scorer. It enforces the point-in-time contract: `known_at`, `event_at` and `retrieved_at` all strictly before the scoring instant; source classes by dimension (fit reads external sources, engagement reads first-party events, AE facts are excluded); staleness windows per feature (`max_age_days`); midrank percentile grading against a frozen `Reference`. A score is `null`, never a guess, when any weighted feature lacks exactly one eligible observation.
 - Feeds: `company-signals` (funding, job openings, headcount growth) and `linkedin-signals` write the `signals` table; `company-enrich` fills `companies`. Scoring makes no provider call.
 

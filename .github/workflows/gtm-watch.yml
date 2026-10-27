@@ -1,0 +1,93 @@
+# Wakes the watch plays. Nothing pushes to us: each play pulls, diffs against Supabase, and posts what is new to Slack.
+#   daily   07:00 UTC weekdays → inbound-triage (HubSpot read, free) — never writes HubSpot from CI
+#   weekly  Monday 05:30 UTC   → competitor-watch, market-watch, github-signals, deal-health
+#   monthly 1st 05:00 UTC      → aeo-visibility
+# A play whose key is missing skips its legs; without DATABASE_URL the whole job runs in --dry-run and stays green.
+name: gtm-watch
+
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'
+    - cron: '30 5 * * 1'
+    - cron: '0 5 1 * *'
+  workflow_dispatch:
+    inputs:
+      cadence:
+        description: 'Which set to run'
+        type: choice
+        options: [daily, weekly, monthly]
+        default: weekly
+      dry_run:
+        description: 'Force --dry-run (mock providers, no database)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash   # explicit bash = -eo pipefail, so a failing play behind `| tee` fails the job
+
+concurrency:
+  group: gtm-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_TOKEN }}
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+      EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GH_SEARCH_TOKEN || github.token }}   # code search wants a user token (fine-grained PAT, public read); github.token is the fallback
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GTM_MAX_CREDITS_PER_RUN: '10'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Decide cadence and mode
+        id: mode
+        run: |
+          cadence="${{ inputs.cadence }}"
+          if [ -z "$cadence" ]; then
+            case "${{ github.event.schedule }}" in
+              '0 7 * * 1-5') cadence=daily ;;
+              '0 5 1 * *') cadence=monthly ;;
+              *) cadence=weekly ;;
+            esac
+          fi
+          echo "cadence=$cadence" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ -z "$DATABASE_URL" ]; then
+            echo "flag=--dry-run" >> "$GITHUB_OUTPUT"; echo "::notice::DATABASE_URL missing or dry_run requested → --dry-run"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Daily — inbound triage
+        if: steps.mode.outputs.cadence == 'daily'
+        run: node bin/gtm.mjs run inbound-triage --input '{"since_hours":24}' ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+      - name: Weekly — competitor pages, market, GitHub, deal health
+        if: steps.mode.outputs.cadence == 'weekly'
+        run: |
+          node bin/gtm.mjs run competitor-watch --input @config/competitor-watch.chift.json ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+          node bin/gtm.mjs run market-watch --input @config/market-watch.chift.json ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+          node bin/gtm.mjs run github-signals --input '{}' ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+          node bin/gtm.mjs run deal-health --input '{}' ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+      - name: Monthly — AI answer visibility
+        if: steps.mode.outputs.cadence == 'monthly'
+        run: node bin/gtm.mjs run aeo-visibility --input @config/aeo-visibility.chift.json ${{ steps.mode.outputs.flag }} | tee -a watch-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gtm-watch-${{ github.run_id }}
+          path: watch-run.log
+          retention-days: 30

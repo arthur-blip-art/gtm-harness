@@ -8,6 +8,9 @@ Inputs: an enriched export (email, confidence, company fields, signals) and a co
 
 **Sequence JSON**: 3 steps by default (`step` 1..3, see `recipes/account-to-sequence.md` for the flow, rules and copy audit; 4 only when the user asks), each mapped to a pain or risk from the qualification summary; 8 subject-line variants max 7 words each; no clickbait, no ALL CAPS, no exclamation marks; concise, no fluff, no markdown; no claims unsupported by inputs.
 
+Copy rules (formats, lengths, the 8 checks, the Swap Test, the source check) live in one place: the `cold-outreach`
+skill (`~/.claude/skills/cold-outreach/SKILL.md`). Find the angle first with `account-pains`.
+
 ## Personalization
 
 Avoid mail-merge output: every email cites something specific (mission, product, recent news, job opening, tech stack, funding). Three paths: a deterministic template from columns; an AI column (Claude writes from the row + context); research column then generation column. Whatever the path, the first line must name the evidence (a job opening, a funding round, a post, a case study) and the row that carries it, so a reviewer can check it against the export.

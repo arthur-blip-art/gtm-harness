@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Cells, NewReceipt, Receipt, Run, RunStatus } from '../core/types.ts';
-import type { CompanyRow, CrmSync, DatasetRow, GoldenCompany, GoldenPerson, PersonRow, Score, Signal, Store } from './store.ts';
+import { SNAPSHOT_TYPES, type CompanyRow, type CrmSync, type DatasetRow, type GoldenCompany, type GoldenPerson, type PersonRow, type Score, type Signal, type Store } from './store.ts';
 
 /** In-memory store for --dry-run and tests. Same semantics as Postgres, nothing persisted. */
 export class MemoryStore implements Store {
@@ -32,6 +32,9 @@ export class MemoryStore implements Store {
   }
   async getReceipt(id: string) {
     return this.receipts.find((r) => r.id === id) ?? null;
+  }
+  async listReceipts(since?: string) {
+    return this.receipts.filter((r) => !since || r.createdAt >= since);
   }
   async receiptStats() {
     const byProvider: Record<string, { count: number; credits: number }> = {};
@@ -92,7 +95,9 @@ export class MemoryStore implements Store {
 
   async upsertCompany(c: GoldenCompany) {
     const prev = this.companies.get(c.domain);
-    this.companies.set(c.domain, mergeDefined(prev ?? { id: randomUUID(), domain: c.domain, fieldSources: {}, raw: {} }, c, ['fieldSources', 'raw']) as CompanyRow);
+    const merged = mergeDefined(prev ?? { id: randomUUID(), domain: c.domain, fieldSources: {}, raw: {} }, c, ['fieldSources', 'raw']) as CompanyRow;
+    if (prev?.tech?.length || c.tech?.length) merged.tech = [...new Set([...(prev?.tech ?? []), ...(c.tech ?? [])])].sort(); // union, as in Postgres
+    this.companies.set(c.domain, merged);
   }
   async upsertPerson(p: GoldenPerson) {
     const prev = this.people.get(p.personKey);
@@ -112,6 +117,7 @@ export class MemoryStore implements Store {
     let n = 0;
     for (const r of rows) {
       if (!this.signals.has(r.dedupeKey)) n++;
+      else if (!SNAPSHOT_TYPES.includes(r.type)) continue; // same rule as pg: events are first-write-wins
       this.signals.set(r.dedupeKey, r);
     }
     return n;

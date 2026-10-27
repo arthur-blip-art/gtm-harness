@@ -151,7 +151,30 @@ tool('theirstack.job_search', 'per_result', 0.5, async (i) => ({ status: 'hit', 
 // ---- hubspot (never cached)
 const hsId = (s: string) => `hs_${[...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7)}`;
 tool('hubspot.search_objects', 'free', 0, async (i) => {
-  const v = String((i.filters as any)?.[0]?.value ?? '');
+  const filters = ((i.filters as any[]) ?? []);
+  const v = String(filters[0]?.value ?? '');
+  const ot = String(i.objectType ?? 'contacts');
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  // inbound: contacts created in a window → three fresh leads
+  if (ot === 'contacts' && filters.some((f) => f.propertyName === 'createdate')) {
+    const lead = (k: number, email: string, title: string, src: string) => ({ id: `hs_lead_${k}`, properties: { email, firstname: ['Inès', 'Paul', 'Zoé'][k], lastname: ['Garnier', 'Mercier', 'Blanc'][k], jobtitle: title, company: email.split('@')[1].split('.')[0], hs_analytics_source: src, createdate: daysAgo(1), lifecyclestage: 'lead', message: k === 0 ? 'We need to connect our invoicing app to Pennylane and Exact before Q1' : '' } });
+    return { status: 'hit', output: { results: [lead(0, 'ines.garnier@billwise.io', 'CTO', 'ORGANIC_SEARCH'), lead(1, 'paul.mercier@gmail.com', 'Founder', 'DIRECT_TRAFFIC'), lead(2, 'zoe.blanc@retailco.fr', 'Marketing intern', 'PAID_SOCIAL')], total: 3, next: null } };
+  }
+  // deals: one stale open deal, one closed-lost 90 days ago
+  if (ot === 'deals') {
+    return { status: 'hit', output: { results: [
+      { id: 'hs_deal_1', properties: { dealname: 'Billwise — API', dealstage: 'appointmentscheduled', amount: '12000', closedate: '', hs_next_step: '', notes_last_updated: daysAgo(40), hs_lastmodifieddate: daysAgo(40), createdate: daysAgo(70), hs_is_closed: 'false', hs_is_closed_won: 'false', closed_lost_reason: '', associated_domain: 'billwise.io' } },
+      { id: 'hs_deal_2', properties: { dealname: 'Payflow — unified API', dealstage: 'closedlost', amount: '20000', closedate: daysAgo(90), hs_next_step: '', notes_last_updated: daysAgo(90), hs_lastmodifieddate: daysAgo(90), createdate: daysAgo(150), hs_is_closed: 'true', hs_is_closed_won: 'false', closed_lost_reason: 'Built in-house', associated_domain: 'payflow.com' } },
+    ], total: 2, next: null } };
+  }
+  if (ot === 'companies' && v) {
+    const stage = v.includes('customer') ? 'customer' : v.includes('partner') ? 'partner' : v.includes('known') ? 'opportunity' : null;
+    return stage ? { status: 'hit', output: { results: [{ id: hsId(v), properties: { domain: v, lifecyclestage: stage, hs_num_open_deals: stage === 'opportunity' ? '1' : '0' } }] } } : miss('not_found');
+  }
+  if (ot === 'contacts' && v.includes('@')) {
+    if (v.includes('recent')) return { status: 'hit', output: { results: [{ id: hsId(v), properties: { email: v, notes_last_contacted: daysAgo(10), hs_email_optout: 'false' } }] } };
+    if (v.includes('optout')) return { status: 'hit', output: { results: [{ id: hsId(v), properties: { email: v, hs_email_optout: 'true' } }] } };
+  }
   return v.includes('known') ? { status: 'hit', output: { results: [{ id: hsId(v), properties: { email: v, domain: v } }] } } : miss('not_found');
 }, { normalize: (i) => ({ ...i }), noCache: true });
 tool('hubspot.batch_upsert', 'free', 0, async (i) => ({ status: 'hit', output: { results: ((i.inputs as any[]) ?? []).map((x) => ({ id: hsId(String(x.id)), properties: x.properties })) } }), { normalize: (i) => ({ ...i }), noCache: true });
@@ -181,6 +204,65 @@ tool('harvestapi.post_comments', 'per_result', 0.02, async (i) => ({ status: 'hi
   { name: 'Nina Rossi', title: 'Head of Partnerships at Billwise', linkedin_url: 'https://www.linkedin.com/in/nina-rossi', reaction: 'comment', text: 'Does it cover Exact and Odoo?' },
 ], count: 1 }, costOverride: 0.02 }), { normalize: (i) => ({ post: String(i.post ?? '') }) });
 tool('harvestapi.get_profile', 'per_hit', 0.04, async (i) => ({ status: 'hit', output: { linkedin_url: i.url, headline: 'CTO', title: 'CTO', company: 'TrackedCo' } }), { normalize: (i) => ({ url: String(i.url ?? '') }) });
+
+// ---- news, answers (AEO)
+tool('serper.news_search', 'per_call', 0.01, async (i) => {
+  const q = String(i.q ?? '');
+  const name = q.replace(/"/g, '').split(/\s+/)[0] || 'acme';
+  return { status: 'hit', output: { results: [
+    { title: `${name} acquiert Factoo pour accélérer sur la facturation`, link: `https://news.example.com/${nameToken(name)}-acquisition`, snippet: `${name} annonce l'acquisition de Factoo.`, date: '2 days ago', source: 'Maddyness' },
+    { title: `${name} lance son module de paiement en Espagne`, link: `https://news.example.com/${nameToken(name)}-espagne`, snippet: `Nouveau marché : l'Espagne.`, date: '5 days ago', source: 'Les Echos' },
+  ], q } };
+}, { normalize: (i) => ({ q: String(i.q ?? i.query ?? ''), tbs: String(i.tbs ?? 'qdr:w') }) });
+tool('exa.answer', 'per_call', 0.05, async (i) => {
+  const q = String(i.query ?? '').toLowerCase();
+  const answer = q.includes('pennylane') || q.includes('france')
+    ? 'For French accounting integrations, Chift and Codat are the most cited unified APIs; Chift covers Pennylane, Cegid and Sage.'
+    : 'Popular unified accounting APIs include Codat, Merge and Apideck.';
+  return { status: 'hit', output: { answer, citations: [{ url: 'https://www.chift.eu/blog/unified-api', title: 'Chift blog' }, { url: 'https://www.codat.io/', title: 'Codat' }] } };
+}, { normalize: (i) => ({ query: String(i.query ?? '') }) });
+
+// ---- web pages and DNS
+tool('web.fetch_page', 'free', 0, async (i) => {
+  const url = String(i.url ?? '');
+  const host = (() => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'example.com'; } })();
+  const isCustomers = /customers|case-stud|clients|temoignages/.test(url);
+  const text = isCustomers
+    ? `Trusted by Billwise, Payflow and Retailco. Read how Billwise ships accounting integrations with ${host.split('.')[0]}.`
+    : /pricing|tarifs/.test(url) ? `Starter €0 · Growth €499/month · Enterprise on demand — ${host}`
+    : /integrations|marketplace|apps/.test(url) ? `Integrations: Pennylane, Sage, Stripe${host.includes('codatuser') ? ', powered by Codat' : ''}`
+    : `Welcome to ${host}. We help finance teams. Built with HubSpot and Segment.`;
+  const links = isCustomers ? ['https://www.billwise.io/', 'https://payflow.com/about', 'https://www.retailco.fr/', `https://${host}/blog`] : [`https://${host}/pricing`];
+  return { status: 'hit', output: { url, final_url: url, title: host, text, text_hash: nameToken(text).slice(0, 32), links, scripts: [`https://js.hs-scripts.com/123.js`, 'https://cdn.segment.com/analytics.js'], generator: null, length: text.length } };
+}, { normalize: (i) => ({ url: String(i.url ?? '') }), noCache: true });
+tool('web.dns', 'free', 0, async (i) => ({ status: 'hit', output: { domain: i.domain, mx: ['aspmx.l.google.com'], txt: ['v=spf1 include:_spf.google.com include:mail.zendesk.com ~all', 'hubspot-developer-verification=abc'] } }), { normalize: (i) => ({ domain: String(i.domain ?? '') }) });
+
+// ---- github
+tool('github.search_code', 'free', 0, async () => ({ status: 'hit', output: { items: [
+  { repo: 'billwise/backend', owner: 'billwise', owner_type: 'Organization', path: 'package.json', url: 'https://github.com/billwise/backend/blob/main/package.json', fork: false },
+  { repo: 'jdoe/codat-demo', owner: 'jdoe', owner_type: 'User', path: 'package.json', url: 'https://github.com/jdoe/codat-demo/blob/main/package.json', fork: false },
+  { repo: 'billwise/backend-fork', owner: 'someone', owner_type: 'User', path: 'package.json', url: 'https://github.com/someone/x', fork: true },
+], count: 3, total: 3 } }), { normalize: (i) => ({ q: String(i.q ?? '') }) });
+tool('github.search_repos', 'free', 0, async () => ({ status: 'hit', output: { items: [{ repo: 'payflow/accounting-sync', owner: 'payflow', owner_type: 'Organization', description: 'Sync invoices to Xero and QuickBooks', stars: 12, pushed_at: '2026-10-01T00:00:00Z', url: 'https://github.com/payflow/accounting-sync', fork: false }], count: 1, total: 1 } }), { normalize: (i) => ({ q: String(i.q ?? '') }) });
+tool('github.stargazers', 'free', 0, async () => ({ status: 'hit', output: { users: [{ login: 'retailco', type: 'Organization', starred_at: '2026-10-05T00:00:00Z' }, { login: 'dependabot', type: 'Bot', starred_at: '2026-10-05T00:00:00Z' }], count: 2 } }), { normalize: (i) => ({ repo: String(i.repo ?? ''), page: i.page === 'last' ? 'last' : Number(i.page ?? 1) }) });
+tool('github.issues', 'free', 0, async () => ({ status: 'hit', output: { issues: [
+  { number: 41, title: 'Support for Exact Online integration', url: 'https://github.com/comp/sdk/issues/41', author: 'billwise', created_at: '2026-10-02T00:00:00Z', reactions: 9, comments: 4, labels: ['enhancement'] },
+  { number: 42, title: 'Typo in README', url: 'https://github.com/comp/sdk/issues/42', author: 'jdoe', created_at: '2026-10-03T00:00:00Z', reactions: 0, comments: 0, labels: [] },
+], count: 2 } }), { normalize: (i) => ({ repo: String(i.repo ?? ''), state: String(i.state ?? 'open') }) });
+tool('github.owner', 'free', 0, async (i) => {
+  const login = String(i.login ?? '');
+  const known: Record<string, Record<string, string>> = { billwise: { name: 'Billwise', blog: 'https://www.billwise.io', location: 'Paris' }, retailco: { name: 'Retailco', blog: 'retailco.fr', location: 'Lyon' }, payflow: { name: 'Payflow', blog: 'https://payflow.com', location: 'Brussels' } };
+  return known[login] ? { status: 'hit', output: { login, type: 'Organization', ...known[login] } } : { status: 'hit', output: { login, type: 'User', company: null, blog: null } };
+}, { normalize: (i) => ({ login: String(i.login ?? '') }) });
+
+// ---- hacker news
+tool('hackernews.search', 'free', 0, async (i) => ({ status: 'hit', output: { hits: [{ id: '4242', type: 'comment', title: 'Ask HN: unified accounting APIs?', text: `We tried ${String(i.query)} and ended up building connectors ourselves`, author: 'founder42', url: 'https://news.ycombinator.com/item?id=4242', link: null, points: null, created_at: '2026-10-10T09:00:00Z' }], count: 1 } }), { normalize: (i) => ({ query: String(i.query ?? ''), since: Number(i.since ?? 0) }) });
+
+// ---- instantly (never cached)
+tool('instantly.create_campaign', 'free', 0, async (i) => ({ status: 'hit', output: { id: `camp_${hsId(String(i.name))}`, name: i.name, status: 0 } }), { normalize: (i) => ({ ...i }), noCache: true });
+tool('instantly.add_leads', 'free', 0, async (i) => ({ status: 'hit', output: { uploaded: ((i.leads as unknown[]) ?? []).length, skipped: 0 } }), { normalize: (i) => ({ ...i }), noCache: true });
+tool('instantly.campaign_analytics', 'free', 0, async (i) => ({ status: 'hit', output: { campaigns: ((i.ids as string[]) ?? ['camp_a', 'camp_b']).map((id, k) => ({ id, name: `Campaign ${k + 1}`, sent: 200, opened: 0, replied: k === 0 ? 14 : 3, bounced: k === 0 ? 4 : 18, opportunities: k === 0 ? 4 : 0, leads: 100 })) } }), { normalize: (i) => ({ ...i }), noCache: true });
+tool('instantly.step_analytics', 'free', 0, async () => ({ status: 'hit', output: { steps: [{ step: 0, variant: 'A', sent: 100, opened: 0, replied: 9, opportunities: 3 }, { step: 0, variant: 'B', sent: 100, opened: 0, replied: 2, opportunities: 0 }, { step: 1, variant: 'A', sent: 150, opened: 0, replied: 3, opportunities: 1 }] } }), { normalize: (i) => ({ ...i }), noCache: true });
 
 // ---- shared fallbacks by bare tool name (used by unit tests)
 tools.people_match = tools['apollo.people_match']; table.people_match = table['apollo.people_match'];

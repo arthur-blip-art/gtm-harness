@@ -17,3 +17,5 @@
 - Private-app limits: ~100 requests / 10 s overall and ~4 search requests / s; the runner is sequential and backs off on 429.
 - Search is eventually consistent (seconds after a write); do not search-then-create in a tight loop or you will create duplicates — batch the dedupe pass first.
 - Only send properties that exist in the portal; unknown property names fail the whole batch with `PROPERTY_DOESNT_EXIST`.
+
+**Paging and sorting:** `search_objects` accepts `sorts[{propertyName, direction}]` and `after` (the `next` value of the previous page). Plays that read deals or new contacts (`inbound-triage`, `deal-health`, `revive-closed-lost`) page with it; HubSpot caps a search at 10,000 results.

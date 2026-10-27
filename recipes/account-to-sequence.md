@@ -63,11 +63,9 @@ Any reply stops the sequence and opens an AE task. A click on the coverage map a
 7. Never claim a gap we did not read: "Sage" on a page is not "Sage 100 missing". Never promise a country Chift does
    not cover (Italy and Poland have no local ledger in the catalog today).
 8. Every first email ends with: "Not the right person? Tell me and I won't write again."
-9. **Copy audit, 8 checks**: no em or en dash; no rhetorical question as a hook; no compliment without a fact; no
-   jargon (leverage, seamless, robust, game-changer, innovative, holistic, best-in-class, empower, streamline,
-   unlock, next-level); the body does not start with "I"; no meeting ask in step 1; length; subject of 6 words or
-   fewer, sentence case.
-10. **Lengths**: step 1 email 120 words, LinkedIn 60, steps 2 and 3 150.
+9. **Copy audit**: run the `cold-outreach` skill in audit mode (the 8 checks, the Swap Test at 30 % for a named
+   account, the source check). Word counts by script, not by eye.
+10. **Lengths**: step 1 email 120 words, LinkedIn 60, steps 2 and 3 150 (same table as `cold-outreach`).
 
 ## Persona line (second paragraph of step 1)
 

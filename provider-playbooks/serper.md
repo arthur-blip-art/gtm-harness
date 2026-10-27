@@ -5,6 +5,8 @@
 **Operations (adapter `src/providers/serper.ts`, header `X-API-KEY`):**
 - `google_search` — `POST https://google.serper.dev/search {q, num (default 10), gl (default 'fr'), hl?}` → `{results[{title,link,snippet,position}], q, credits}`. Hit when `organic` is non-empty.
 
+- `news_search` — `POST /news` `{q, gl, tbs}` (`qdr:d|w|m`) → `results[{title,link,snippet,date,source}]`. Used by `company-signals` (company events: acquisition, new country, launch) and `market-watch` (sector keywords).
+
 **Pricing basis:** per_call 0.01 credit (~$0.001, 1 Serper credit) — billed even when there are no organic results. Verified on: estimate 2026-09-24, verify against docs.
 
 **Pitfalls:**

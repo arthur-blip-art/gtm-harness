@@ -39,6 +39,26 @@
         "Praxedo is flagged as already targeted",
         "The brief says the audience is generalist and keeps resellers and integrators out of the targets"
       ]
+    },
+    {
+      "id": 3,
+      "name": "luma-pasted-guest-list",
+      "prompt": "Je vais à un apéro SaaS sur Luma jeudi à Bruxelles, la page n'affiche pas les invités alors je t'ai collé la liste dans evals/files/guest-list-luma-paste.txt. Pour Chift : qui vaut le coup de voir ? Contexte projet : /Users/arthurgrebertgmail.com/Documents/Corpo/gtm-harness/gtm-data/chift-test/",
+      "expected_output": "Le skill parse la liste collée avec scripts/parse_guest_list.py, garde une ligne par invité (avec ou sans société), ne remplit titre et société que quand l'invité les a écrits, marque les lignes UNVERIFIED, retire e-mail et téléphone, puis rapproche les sociétés déclarées de l'ICP et des comptes, et dit que la couche participants est auto-déclarée.",
+      "files": [
+        "evals/files/guest-list-luma-paste.txt"
+      ],
+      "assertions": [
+        "The paste is parsed into 9 people: the duplicate Julien Mercier is merged and the '+2', 'View all' and count lines are not people",
+        "Inès Benali, Jan van der Meer, Marc D. and Léa Martin are kept as rows with an empty company, not dropped and not given a guessed company",
+        "Only Fakturo, Billtrail, Payplanr and Boekhoud.io appear as companies, each with the title the guest wrote, and 'Gent' is not part of a company name",
+        "Every attendee row is marked UNVERIFIED (check column) unless the brief names the page that confirmed it",
+        "The personal e-mail and phone number of Thomas Lefèvre appear in no output file",
+        "Camille Rousseau is identified as the host",
+        "roles_at_event is 'attendee' for these rows and source_url or why says the list was pasted, with a date",
+        "The brief says the attendee list is self-declared and that registered does not mean present",
+        "No message is sent and no e-mail is enriched; enrichment or a sequence is offered only at the hand-over gate"
+      ]
     }
   ]
 }

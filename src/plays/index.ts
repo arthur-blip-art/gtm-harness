@@ -11,6 +11,20 @@ import * as scoreAccounts from './score-accounts.ts';
 import * as syncHubspot from './sync-hubspot.ts';
 import * as icpToPipeline from './icp-to-pipeline.ts';
 import * as linkedinSignals from './linkedin-signals.ts';
+import * as suppress from './suppress.ts';
+import * as inboundTriage from './inbound-triage.ts';
+import * as siteVisitors from './site-visitors.ts';
+import * as peopleMoves from './people-moves.ts';
+import * as githubSignals from './github-signals.ts';
+import * as companyTech from './company-tech.ts';
+import * as pushSequencer from './push-sequencer.ts';
+import * as campaignReport from './campaign-report.ts';
+import * as dealHealth from './deal-health.ts';
+import * as closedLostRevival from './closed-lost-revival.ts';
+import * as competitorCustomers from './competitor-customers.ts';
+import * as competitorWatch from './competitor-watch.ts';
+import * as marketWatch from './market-watch.ts';
+import * as aeoVisibility from './aeo-visibility.ts';
 
 const all: Play[] = [
   nameDomainToEmail.scalar, nameDomainToEmail.batch,
@@ -22,6 +36,11 @@ const all: Play[] = [
   companySignals.play, companySignals.batch,
   scoreAccounts.play, syncHubspot.play, icpToPipeline.play,
   linkedinSignals.play,
+  suppress.play,
+  inboundTriage.play, siteVisitors.play,
+  peopleMoves.play, githubSignals.play, companyTech.play, companyTech.batch,
+  pushSequencer.play, campaignReport.play, dealHealth.play, closedLostRevival.play,
+  competitorCustomers.play, competitorWatch.play, marketWatch.play, aeoVisibility.play,
 ];
 
 export const plays: Record<string, Play> = Object.fromEntries(all.map((p) => [p.name, p]));

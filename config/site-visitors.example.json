@@ -1,0 +1,8 @@
+{
+  "visits": [
+    { "domain": "billwise.io", "pages": ["/pricing", "/integrations/pennylane", "/docs/api/invoices", "/vs/codat"], "visits": 3, "last_seen": "2026-10-12", "source": "snitcher" },
+    { "domain": "www.payflow.com", "pages": ["/blog/accounting-api-guide", "/"], "visits": 1, "last_seen": "2026-10-11", "source": "leadfeeder" },
+    { "domain": "orange.fr", "pages": ["/pricing"], "visits": 2, "last_seen": "2026-10-12", "source": "rb2b" }
+  ],
+  "min_score": 4
+}
