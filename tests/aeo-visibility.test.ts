@@ -38,6 +38,10 @@ describe('aeo-visibility (mock)', () => {
   it('ranks whole-word mentions only', () => {
     expect(mentionRanks('Apideck then codat; Merged docs', ['Chift', 'Codat', 'Merge', 'Apideck'])).toEqual({ Chift: null, Codat: 2, Merge: null, Apideck: 1 });
   });
+  it('does not count the verb "merge" as Merge', () => {
+    expect(mentionRanks('You merge the ledgers, then Codat', ['Merge', 'Codat'])).toEqual({ Merge: null, Codat: 1 });
+    expect(mentionRanks('Merge and Codat', ['Merge', 'Codat'])).toEqual({ Merge: 1, Codat: 2 });
+  });
   it('the Chift config parses', () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'config', 'aeo-visibility.chift.json'), 'utf8'));
     expect(play.input.parse(cfg).questions.length).toBe(8);

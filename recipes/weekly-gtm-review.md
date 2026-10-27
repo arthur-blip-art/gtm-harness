@@ -46,9 +46,9 @@ Question: which deals have no next step. Decision: one `recipes/deal-check.md` p
 ### 3. Competitors — 5 min — [search]
 
 ```bash
-gtm run competitor-watch --input @config/competitor-watch.json --dry-run && gtm run competitor-watch --input @config/competitor-watch.json
+gtm run competitor-watch --input @config/competitor-watch.chift.json --dry-run && gtm run competitor-watch --input @config/competitor-watch.chift.json
 ```
-`config/competitor-watch.json` = `{"pages":[{"competitor":"Codat","url":"https://codat.io/pricing/","kind":"pricing"},{"competitor":"Merge","url":"https://merge.dev/integrations","kind":"integrations"},{"competitor":"Apideck","url":"https://www.apideck.com/changelog","kind":"changelog"},{"competitor":"Rutter","url":"https://www.rutter.com/integrations","kind":"integrations"}]}`
+`config/competitor-watch.chift.json` = `{"pages":[{"competitor":"Codat","url":"https://codat.io/pricing/","kind":"pricing"},{"competitor":"Merge","url":"https://merge.dev/integrations","kind":"integrations"},{"competitor":"Apideck","url":"https://www.apideck.com/changelog","kind":"changelog"},{"competitor":"Rutter","url":"https://www.rutter.com/integrations","kind":"integrations"}]}`
 (verify URLs once). Question: new ledger in FR/Benelux, price change, new positioning. Decision: update the
 battlecard lines in `recipes/competitor-displacement.md` angles, or nothing.
 

@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import type { Cells, NewReceipt, Receipt, Run, RunStatus } from '../core/types.ts';
-import type { CompanyRow, CrmSync, DatasetRow, GoldenCompany, GoldenPerson, PersonRow, Score, Signal, Store } from './store.ts';
+import { SNAPSHOT_TYPES, type CompanyRow, type CrmSync, type DatasetRow, type GoldenCompany, type GoldenPerson, type PersonRow, type Score, type Signal, type Store } from './store.ts';
 
 /** Supabase Postgres store. One connection (session pooler), plain SQL, no ORM. */
 export class PgStore implements Store {
@@ -161,9 +161,9 @@ export class PgStore implements Store {
         values (${r.dedupeKey}, ${r.domain}, ${r.type}, ${this.sql.json(r.value as never)}, ${r.source}, ${r.observedAt ?? null}, ${r.receiptId ?? null},
           (select id from companies where domain = ${r.domain}))
         on conflict (dedupe_key) do update set value = excluded.value, observed_at = excluded.observed_at, receipt_id = excluded.receipt_id
-          where excluded.type in ('page_snapshot', 'person_employer')
+          where excluded.type in (${this.sql(SNAPSHOT_TYPES)})
         returning (xmax = 0) as inserted`;
-      // Events are immutable (first write wins); snapshots keep only their latest state, like the memory store.
+      // Events are immutable (first write wins); snapshots keep only their latest state.
       n += res.filter((x) => x.inserted).length;
     }
     return n;

@@ -5,7 +5,7 @@
 **Operations (adapter `src/providers/github.ts`, `GITHUB_TOKEN`, REST API 2022-11-28):**
 - `search_code` — `GET /search/code?q=` → `items[{repo, owner, owner_type, path, url, fork}]`. Typical query: `"@codat/accounting" filename:package.json` or `"merge-api-client" filename:requirements.txt`.
 - `search_repos` — `GET /search/repositories?q=` → repos with owner, description, stars, last push. Typical: `pennylane api in:name,description`.
-- `stargazers` — `GET /repos/{repo}/stargazers` (star+json accept) → `users[{login, type, starred_at}]`.
+- `stargazers` — `GET /repos/{repo}/stargazers` (star+json accept) → `users[{login, type, starred_at}]`, oldest first. `page: "last"` follows the `Link` header to the newest 100 and returns them newest first (what a weekly watch needs).
 - `issues` — `GET /repos/{repo}/issues?state=open` (pull requests dropped) → title, author, reactions, labels.
 - `owner` — `GET /orgs/{login}` or `/users/{login}` → `blog`, `company`, `email`, `location`: the bridge from a login to a company domain.
 

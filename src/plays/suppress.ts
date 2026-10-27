@@ -10,7 +10,7 @@ export const NAME = 'suppress';
 export const DESCRIPTION = 'Drop people who must not be sequenced: HubSpot customer/partner/open deal at their company, contacted or touched by the harness within the cooldown, opted out. Returns kept and dropped rows with a reason. Free.';
 
 /** Who we never write to cold, whatever the signal. Order matters: the first reason found is the one logged. */
-export type SuppressReason = 'customer' | 'partner' | 'open_deal' | 'opted_out' | 'recently_contacted' | 'recently_touched' | 'no_identity';
+export type SuppressReason = 'customer' | 'partner' | 'open_deal' | 'opted_out' | 'recently_contacted' | 'recently_touched' | 'no_identity' | 'hubspot_unavailable';
 
 export interface Person { email?: string; domain?: string; linkedin_url?: string; [k: string]: unknown }
 export interface SuppressResult<T extends Person = Person> { kept: T[]; dropped: Array<T & { suppress_reason: SuppressReason; suppress_detail?: string }> }
@@ -35,6 +35,7 @@ export async function suppressPeople<T extends Person>(rows: T[], ctx: PlayCtx, 
   const cooldown = opts.cooldown_days ?? 84;
   const since = new Date(Date.now() - cooldown * 86400000).toISOString();
   const hubspot = (opts.check_hubspot ?? true) && legEnabled(ctx, 'hubspot');
+  if ((opts.check_hubspot ?? true) && !hubspot) ctx.log('suppress: WARNING HubSpot check requested but HUBSPOT_TOKEN is missing; only local touches are checked (customers, open deals and opt-outs are NOT excluded)');
   const meta: LegMeta = { leg: 'suppress', provider: hubspot ? 'hubspot' : 'local', tool: hubspot ? 'search_objects' : 'signals', rowsReached: rows.length, accepted: 0, receiptIds: [] };
   ctx.metas.push(meta);
 
@@ -46,9 +47,10 @@ export async function suppressPeople<T extends Person>(rows: T[], ctx: PlayCtx, 
   const search = async (objectType: string, propertyName: string, value: string, properties: string[]) => {
     const rc = await ctx.runner.execute({ provider: 'hubspot', tool: 'search_objects', input: { objectType, filters: [{ propertyName, operator: 'EQ', value }], properties, limit: 1 }, runId: ctx.runId });
     meta.receiptIds!.push(rc.id);
+    if (rc.status === 'error') return 'error' as const; // fail closed: an unreadable CRM never lets a lead through
     return rc.status === 'hit' ? ((rc.output as any)?.results?.[0]?.properties ?? {}) as Record<string, string> : null;
   };
-  const companyState = new Map<string, Record<string, string> | null>();
+  const companyState = new Map<string, Record<string, string> | null | 'error'>();
   const kept: T[] = [];
   const dropped: SuppressResult<T>['dropped'] = [];
   const drop = (p: T, reason: SuppressReason, detail?: string) => dropped.push({ ...p, suppress_reason: reason, ...(detail ? { suppress_detail: detail } : {}) });
@@ -60,6 +62,7 @@ export async function suppressPeople<T extends Person>(rows: T[], ctx: PlayCtx, 
     if (hubspot && domain) {
       if (!companyState.has(domain)) companyState.set(domain, await search('companies', 'domain', domain, ['domain', 'lifecyclestage', 'hs_num_open_deals']));
       const co = companyState.get(domain);
+      if (co === 'error') { drop(p, 'hubspot_unavailable', domain); continue; }
       const stage = String(co?.lifecyclestage ?? '').toLowerCase();
       if (stage === 'customer') { drop(p, 'customer', domain); continue; }
       if (stage === 'partner' || stage === 'evangelist') { drop(p, 'partner', domain); continue; }
@@ -68,6 +71,7 @@ export async function suppressPeople<T extends Person>(rows: T[], ctx: PlayCtx, 
     const email = normalizeEmail(p.email);
     if (hubspot && email) {
       const c = await search('contacts', 'email', email, ['email', 'hs_email_optout', 'notes_last_contacted', 'hs_last_sales_activity_timestamp']);
+      if (c === 'error') { drop(p, 'hubspot_unavailable', email); continue; }
       if (String(c?.hs_email_optout ?? '') === 'true') { drop(p, 'opted_out'); continue; }
       const last = c?.notes_last_contacted || c?.hs_last_sales_activity_timestamp;
       if (last && Date.parse(last) >= Date.parse(since)) { drop(p, 'recently_contacted', String(last).slice(0, 10)); continue; }

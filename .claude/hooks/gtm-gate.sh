@@ -1,10 +1,11 @@
 #!/bin/sh
 # GTM Harness approval gate (Claude Code PreToolUse hook on the Bash tool).
 # Turns the SKILL.md policy into an enforced rule:
-#   allow  → read-only gtm commands, any --dry-run, pilots (`gtm run … --limit N`, N ≤ 3)
+#   allow  → read-only gtm commands, any --dry-run, CSV pilots (`gtm run … --csv … --limit N`, N ≤ 3;
+#            --limit only trims CSV rows, so a scalar run is never a pilot)
 #   ask    → paid full runs (gtm run without --dry-run and without a pilot limit),
 #            --refresh (re-buys cached calls), sync-hubspot without dry_run, write:true (HubSpot),
-#            push-sequencer with dry_run_only:false (Instantly upload),
+#            push-sequencer unless "dry_run_only": true is inline (Instantly upload),
 #            `supabase db push`, `gtm signals pull` without --dry-run
 #   demo scripts → page reads and rehearsals allowed; live runs and HubSpot writes ask
 #   (silent) → anything else falls through to Claude Code's normal prompt
@@ -53,13 +54,16 @@ case "$sub" in
   run|signals)
     if has '(^|[[:space:]])--dry-run([[:space:]]|$)'; then emit allow "gtm-gate: dry-run, mock providers, no spend"; fi
     if has '(^|[[:space:]])--refresh([[:space:]]|$)'; then emit ask "gtm-gate: --refresh re-buys cached provider calls"; fi
-    if has 'sync-hubspot' && ! has '"dry_run":[[:space:]]*true'; then emit ask "gtm-gate: writes to HubSpot"; fi
-    if has 'push-sequencer' && has '"dry_run_only":[[:space:]]*false'; then emit ask "gtm-gate: creates a draft campaign and uploads leads to Instantly"; fi
-    if has '"write":[[:space:]]*true'; then emit ask "gtm-gate: writes properties to HubSpot"; fi
+    # Write flags may sit in an @file the hook cannot read: only an inline safe value counts as safe.
+    if has 'sync-hubspot' && ! has '"dry_run"[[:space:]]*:[[:space:]]*true'; then emit ask "gtm-gate: writes to HubSpot"; fi
+    if has 'push-sequencer' && ! has '"dry_run_only"[[:space:]]*:[[:space:]]*true'; then emit ask "gtm-gate: creates a draft campaign and uploads leads to Instantly"; fi
+    if has '"write"[[:space:]]*:[[:space:]]*true'; then emit ask "gtm-gate: writes properties to HubSpot"; fi
     if [ "$sub" = signals ]; then emit ask "gtm-gate: paid signal pull"; fi
-    limit="$(printf '%s' "$norm" | sed -nE 's/.*--limit[[:space:]=]+([0-9]+).*/\1/p')"
-    if [ -n "$limit" ] && [ "$limit" -le 3 ]; then emit allow "gtm-gate: pilot of $limit rows"; fi
-    if has '(^|[[:space:]])--csv([[:space:]]|$)'; then emit ask "gtm-gate: full paid run over a CSV — pilot with --limit 3 first, or confirm"; fi
+    if has '(^|[[:space:]])--csv([[:space:]]|$)'; then
+      limit="$(printf '%s' "$norm" | sed -nE 's/.*--limit[[:space:]=]+([0-9]+).*/\1/p')"
+      if [ -n "$limit" ] && [ "$limit" -le 3 ]; then emit allow "gtm-gate: pilot of $limit rows"; fi
+      emit ask "gtm-gate: full paid run over a CSV — pilot with --limit 3 first, or confirm"
+    fi
     emit ask "gtm-gate: paid run — confirm scope and cap (--max-credits)"
     ;;
 esac

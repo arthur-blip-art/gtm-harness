@@ -31,6 +31,14 @@ describe('gtm-gate hook', () => {
     expect(decide('gtm run inbound-triage --input \'{"write": true}\' --dry-run')).toBe('allow');
     expect(decide('gtm providers scorecard --since 2026-09-01')).toBe('allow');
   });
+  it('never treats a scalar run or an @file write as a pilot', () => {
+    expect(decide('gtm run push-sequencer --input @seq.json --limit 3')).toBe('ask');
+    expect(decide('gtm run push-sequencer --input \'{"dry_run_only" : false}\' --limit 1')).toBe('ask');
+    expect(decide('gtm run push-sequencer --input \'{"dry_run_only": true}\'')).toBe('ask'); // scalar, no --dry-run: still a confirm
+    expect(decide('gtm run inbound-triage --input @cfg.json --limit 2')).toBe('ask');
+    expect(decide('gtm run inbound-triage --input \'{"write" : true}\' --limit 1')).toBe('ask');
+    expect(decide('gtm run push-sequencer --input @seq.json --dry-run')).toBe('allow');
+  });
   it('classifies the demo scripts by what they spend or write', () => {
     expect(decide('node scripts/integrations-signal.mjs --domain getmoss.com --countries FR,DE')).toBe('allow');
     expect(decide('node scripts/demo-one-account.mjs --domain getmoss.com --rehearse')).toBe('allow');

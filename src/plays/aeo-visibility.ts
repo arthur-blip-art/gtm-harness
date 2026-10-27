@@ -24,7 +24,7 @@ export const DEFAULT_QUESTIONS = [
 export const Input = z.object({
   questions: z.array(z.string().min(3)).min(1).default(DEFAULT_QUESTIONS).describe('buyer questions, FR and EN'),
   brand: z.string().default('Chift'),
-  competitors: z.array(z.string()).default(['Codat', 'Merge', 'Apideck', 'Rutter', 'Kombo']),
+  competitors: z.array(z.string()).default(['Codat', 'Merge', 'Apideck', 'Rutter', 'Kombo']).describe('brand names; one that is also an English word (Merge) only matches capitalised'),
   notify: z.boolean().default(true),
 });
 export type Input = z.infer<typeof Input>;
@@ -41,8 +41,12 @@ const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
 const prevMonth = (m: string) => { const d = new Date(`${m}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); };
 
 /** Rank of first mention per name (1 = cited first), null when absent. */
+
+/** Brand names that are also English words: "merge the data" is not a mention of Merge. */
+const WORD_BRANDS = /^(merge)$/i;
+
 export function mentionRanks(text: string, names: string[]): Record<string, number | null> {
-  const pos = names.map((n) => [n, wordRe(n).exec(text)?.index ?? -1] as const);
+  const pos = names.map((n) => [n, (WORD_BRANDS.test(n) ? new RegExp(wordRe(n).source, 'u') : wordRe(n)).exec(text)?.index ?? -1] as const);
   const order = pos.filter(([, i]) => i >= 0).sort((a, b) => a[1] - b[1]).map(([n]) => n);
   return Object.fromEntries(names.map((n) => [n, order.includes(n) ? order.indexOf(n) + 1 : null]));
 }

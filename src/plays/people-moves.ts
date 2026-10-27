@@ -4,6 +4,7 @@ import { sha256 } from '../core/hash.ts';
 import { apexDomain, ascii, norm, normalizeLinkedin } from '../core/normalize.ts';
 import { createNotifier } from '../core/notify.ts';
 import { legEnabled } from './name-domain-to-email.ts';
+import { executeFresh } from './market-watch.ts';
 import type { LegMeta } from '../core/types.ts';
 import type { Signal } from '../store/store.ts';
 
@@ -22,6 +23,7 @@ export const Input = z.object({
   people: z.array(PersonIn).default([]).describe('people to watch; or from_store'),
   from_store: z.boolean().default(false).describe('also watch every stored person with a linkedin_url and a domain'),
   max_profiles: z.number().int().min(1).max(500).default(50),
+  max_age_days: z.number().min(0).default(7).describe('a cached profile older than this is bought again; the watch is blind without it'),
   notify: z.boolean().default(true),
 });
 export type Input = z.infer<typeof Input>;
@@ -84,7 +86,7 @@ export const play = definePlay<Input, Output>({
     let baselines = 0, unchanged = 0;
     for (const p of list) {
       const url = p.linkedin_url;
-      const rc = await ctx.runner.execute({ provider: 'harvestapi', tool: 'get_profile', input: { url }, runId: ctx.runId });
+      const rc = await executeFresh(ctx, 'harvestapi', 'get_profile', { url }, input.max_age_days * 86400000);
       profMeta.receiptIds!.push(rc.id);
       if (!rc.cached) ctx.spent.credits += rc.costCredits;
       const prof = (rc.output as any) ?? {};

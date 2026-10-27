@@ -54,12 +54,16 @@ export const github = defineAdapter({
       cost: costFromTable(PRICE.search_repos),
     },
     stargazers: {
-      description: 'People who starred a repo, most recent page first is not guaranteed: pass page.',
-      normalize: (i) => ({ repo: repoOf(i.repo), page: Number(i.page ?? 1) }),
+      description: 'People who starred a repo, oldest first. page: "last" reads the newest 100 (via the Link header), newest first.',
+      normalize: (i) => ({ repo: repoOf(i.repo), page: i.page === 'last' ? 'last' : Number(i.page ?? 1) }),
       async execute(i, ctx) {
-        const { status, body } = await httpJson(ctx, `${BASE}/repos/${i.repo}/stargazers?per_page=100&page=${i.page}`, { headers: headers('application/vnd.github.star+json') });
+        const get = (page: unknown) => httpJson(ctx, `${BASE}/repos/${i.repo}/stargazers?per_page=100&page=${page}`, { headers: headers('application/vnd.github.star+json') });
+        let { status, body, headers: h } = await get(i.page === 'last' ? 1 : i.page);
+        const last = i.page === 'last' ? Number(/[?&]page=(\d+)>; rel="last"/.exec(h.get('link') ?? '')?.[1] ?? 1) : 1;
+        if (status === 200 && last > 1) ({ status, body } = await get(last));
         if (status !== 200) return errorResult(status, body, body?.message);
         const items = ((body ?? []) as any[]).map((x) => ({ login: x.user?.login ?? x.login, type: x.user?.type ?? x.type, starred_at: x.starred_at ?? null }));
+        if (i.page === 'last') items.reverse();
         return list(items, 'users', 'no_stargazers');
       },
       cost: costFromTable(PRICE.stargazers),

@@ -4,6 +4,7 @@ import { sha256 } from '../core/hash.ts';
 import { apexDomain, norm } from '../core/normalize.ts';
 import { createNotifier } from '../core/notify.ts';
 import { legEnabled } from './name-domain-to-email.ts';
+import { executeFresh } from './market-watch.ts';
 import type { LegMeta } from '../core/types.ts';
 import type { Signal } from '../store/store.ts';
 
@@ -15,6 +16,7 @@ export const Input = z.object({
     .describe('GitHub code search queries; the competitor is read from the query'),
   repos: z.array(z.string()).default([]).describe('competitor repos (owner/name or URL) whose stargazers and issues we read'),
   issue_keywords: z.string().default('integration|connector|support for|missing|accounting|ledger|xero|quickbooks|sage|pennylane|exact|odoo|datev').describe('regex (word-bounded, case-insensitive) on issue titles'),
+  max_age_days: z.number().min(0).default(6).describe('cached searches older than this are fetched again (weekly watch)'),
   enrich: z.boolean().default(false).describe('company-enrich + score-accounts on domains not yet in the store (paid legs)'),
   notify: z.boolean().default(true),
 });
@@ -22,7 +24,7 @@ export type Input = z.infer<typeof Input>;
 export interface Output { new_signals: number; by_type: Record<string, number>; domains: string[]; ignored_logins: string[]; enriched: number; notified: 'sent' | 'skipped' | 'failed' | 'none'; signals: Signal[] }
 
 const key = (...parts: unknown[]) => sha256(parts.map(String).join('|')).slice(0, 32);
-const COMPETITORS = /codat|merge|apideck|rutter/i;
+const COMPETITORS = /codat|merge|apideck|rutter|kombo/i;
 /** Hosts that say nothing about an employer: code hosting, blogs, link-in-bio, free mail. */
 const PERSONAL_HOSTS = /(^|\.)(github\.io|github\.com|gitlab\.io|gitlab\.com|gmail\.com|googlemail\.com|outlook\.com|hotmail\.com|yahoo\.[a-z.]+|proton\.me|protonmail\.com|icloud\.com|medium\.com|linkedin\.com|twitter\.com|x\.com|vercel\.app|netlify\.app|herokuapp\.com|wordpress\.com|blogspot\.com|substack\.com|dev\.to|hashnode\.dev|notion\.site|about\.me|linktr\.ee|carrd\.co|pages\.dev|wixsite\.com|youtube\.com|instagram\.com|facebook\.com|bsky\.app|mastodon\.social|keybase\.io|stackoverflow\.com|npmjs\.com)$/;
 const isBot = (u: { login?: string; type?: string }) => u.type === 'Bot' || /\[bot\]$|^dependabot|^renovate|-bot$/i.test(u.login ?? '');
@@ -37,10 +39,11 @@ export const play = definePlay<Input, Output>({
     const empty: Output = { new_signals: 0, by_type: {}, domains: [], ignored_logins: [], enriched: 0, notified: 'none', signals: [] };
     if (!legEnabled(ctx, 'github')) { ctx.log('GITHUB_TOKEN missing: nothing to pull (use --dry-run to exercise the flow)'); return empty; }
     const issueRe = new RegExp(`\\b(${input.issue_keywords})\\b`, 'i');
+    const maxAge = input.max_age_days * 86400000;
     const call = async (leg: string, tool: string, inp: Record<string, unknown>) => {
       const meta: LegMeta = { leg, provider: 'github', tool, rowsReached: 1, accepted: 0, receiptIds: [] };
       ctx.metas.push(meta);
-      const rc = await ctx.runner.execute({ provider: 'github', tool, input: inp, runId: ctx.runId });
+      const rc = await executeFresh(ctx, 'github', tool, inp, tool === 'owner' ? undefined : maxAge);
       meta.receiptIds!.push(rc.id);
       if (!rc.cached) ctx.spent.credits += rc.costCredits;
       const out = (rc.output as any) ?? {};
@@ -56,7 +59,7 @@ export const play = definePlay<Input, Output>({
     for (const raw of input.repos) {
       const repo = repoName(raw);
       const competitor = competitorOf(repo);
-      const stars = await call(`stargazers:${repo}`, 'stargazers', { repo });
+      const stars = await call(`stargazers:${repo}`, 'stargazers', { repo, page: 'last' });
       for (const u of (stars?.out.users ?? []) as any[]) if (u.login && !isBot(u)) leads.push({ type: 'github_stargazer', login: u.login, ownerType: u.type, repo, evidence_url: `https://github.com/${repo}/stargazers`, competitor, observedAt: u.starred_at ?? undefined });
       const issues = await call(`issues:${repo}`, 'issues', { repo });
       for (const i of (issues?.out.issues ?? []) as any[]) if (i.author && !isBot({ login: i.author }) && issueRe.test(String(i.title ?? ''))) leads.push({ type: 'github_issue', login: i.author, repo, evidence_url: i.url, competitor, observedAt: i.created_at ?? undefined, title: i.title });

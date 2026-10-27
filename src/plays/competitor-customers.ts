@@ -91,8 +91,9 @@ export const play = definePlay<Input, Output>({
     const fresh = freshIdx.map((i) => candidates[i]);
 
     const existing = new Map((await ctx.store.listCompanies(domains)).map((c) => [c.domain, c]));
-    for (const d of domains) {
-      const of = new Set<string>([...((existing.get(d)?.raw?.competitor_customer_of as string[] | undefined) ?? []), ...candidates.filter((c) => c.domain === d).map((c) => c.competitor)]);
+    // a low-confidence guess (snippet regex, one stray link) stays a signal, never a company row
+    for (const d of domains.filter((d) => candidates.some((c) => c.domain === d && c.confidence !== 'low'))) {
+      const of = new Set<string>([...((existing.get(d)?.raw?.competitor_customer_of as string[] | undefined) ?? []), ...candidates.filter((c) => c.domain === d && c.confidence !== 'low').map((c) => c.competitor)]);
       await ctx.store.upsertCompany({ domain: d, fieldSources: { competitor_customer: NAME }, raw: { competitor_customer_of: [...of].sort() } });
     }
     await ctx.store.upsertSignals(signals);

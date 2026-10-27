@@ -94,7 +94,7 @@ gtm cache stats · gtm db ping
 | The weekly routine: campaigns, deals, competitor and market watch, AEO, people moves | [recipes/weekly-gtm-review.md](recipes/weekly-gtm-review.md) |
 | Provider hit rates, cost per hit, which legs to cut | `gtm providers scorecard --since <date>` |
 | Scheduling, cron, alerts, "how do we get pinged" | [references/scheduling.md](references/scheduling.md) |
-| Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (18 files) |
+| Provider pricing, payloads, pitfalls | `provider-playbooks/<provider>.md` (23 files) |
 | Tables, columns, RGPD | [references/schema.md](references/schema.md) |
 | Which statuses are sendable | [references/email-status-policy.md](references/email-status-policy.md) |
 | Reading a receipt | [references/cost-receipt.md](references/cost-receipt.md) |
@@ -104,7 +104,7 @@ gtm cache stats · gtm db ping
 
 ## Policy
 
-**Pilot → price → fix → full run.** Every paid run starts with `--limit 3` (or the whole file when it has ≤ 25 rows and the user stated the scope). Read the receipt: per-leg hits, misses, credits. Fix the route (`--legs`) before scaling. Do not buy the same failure at full scale. **The pilot is never the deliverable**: the task ends when the FULL input has run and the export sits at the exact `--out` path the user asked for.
+**Pilot → price → fix → full run.** Every paid CSV run starts with `--limit 3` (a scalar play takes its own `limit` in `--input`; `--limit` only trims CSV rows) (or the whole file when it has ≤ 25 rows and the user stated the scope). Read the receipt: per-leg hits, misses, credits. Fix the route (`--legs`) before scaling. Do not buy the same failure at full scale. **The pilot is never the deliverable**: the task ends when the FULL input has run and the export sits at the exact `--out` path the user asked for.
 
 **Approval gate.** A user-stated bounded scope (“these 30 contacts”, “everyone in this CSV”) is the approval: pilot, complete, report cost with the result. Stop and ask only when the scope is open-ended (`icp-to-companies` without a limit, "build me a big list"), the pilot reveals a problem, or projected spend exceeds a stated budget. Then use exactly these four headers and end with `Approve full run?`:
 

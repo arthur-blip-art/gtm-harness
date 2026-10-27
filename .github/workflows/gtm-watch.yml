@@ -22,6 +22,13 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash   # explicit bash = -eo pipefail, so a failing play behind `| tee` fails the job
+
 concurrency:
   group: gtm-watch
   cancel-in-progress: false
@@ -35,7 +42,7 @@ jobs:
       HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_TOKEN }}
       SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
       EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GH_SEARCH_TOKEN || github.token }}   # code search wants a user token (fine-grained PAT, public read); github.token is the fallback
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       GTM_MAX_CREDITS_PER_RUN: '10'
     steps:

@@ -36,15 +36,19 @@ const WINDOW_MS = { day: 86400000, week: 7 * 86400000 } as const;
 export async function callTool(ctx: PlayCtx, leg: string, provider: string, tool: string, input: Record<string, unknown>, maxAgeMs?: number): Promise<{ out: any; receipt: Receipt } | null> {
   const meta: LegMeta = { leg, provider, tool, rowsReached: 1, accepted: 0, receiptIds: [] };
   ctx.metas.push(meta);
-  let rc = await ctx.runner.execute({ provider, tool, input, runId: ctx.runId });
-  if (rc.cached && maxAgeMs !== undefined && Date.now() - Date.parse(rc.createdAt) > maxAgeMs) {
-    rc = await new ToolRunner(ctx.store, registry, { dryRun: ctx.dryRun, refresh: true, log: ctx.log }).execute({ provider, tool, input, runId: ctx.runId });
-  }
+  const rc = await executeFresh(ctx, provider, tool, input, maxAgeMs);
   meta.receiptIds!.push(rc.id);
   if (!rc.cached) ctx.spent.credits += rc.costCredits;
   if (rc.status !== 'hit') return null;
   meta.accepted = 1;
   return { out: (rc.output as any) ?? {}, receipt: rc };
+}
+
+/** runner.execute, but a cached receipt older than `maxAgeMs` is fetched again. */
+export async function executeFresh(ctx: PlayCtx, provider: string, tool: string, input: Record<string, unknown>, maxAgeMs?: number): Promise<Receipt> {
+  const rc = await ctx.runner.execute({ provider, tool, input, runId: ctx.runId });
+  if (!rc.cached || maxAgeMs === undefined || Date.now() - Date.parse(rc.createdAt) <= maxAgeMs) return rc;
+  return new ToolRunner(ctx.store, registry, { dryRun: ctx.dryRun, refresh: true, log: ctx.log }).execute({ provider, tool, input, runId: ctx.runId });
 }
 
 /** Canonical URL for dedupe: no fragment, no tracking params, no trailing slash, lowercase host. */

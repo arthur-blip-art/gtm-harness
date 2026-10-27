@@ -34,7 +34,7 @@ Software vendors with a sourced gap (free): `recipes/find-accounts.md`. Or by IC
 ```bash
 gtm run icp-to-pipeline --input @gtm-data/waves/YYYY-MM/icp.json --dry-run
 gtm run icp-to-companies --input '{"…":"…","size_only":true}'          # size before buying
-gtm run icp-to-pipeline --input @gtm-data/waves/YYYY-MM/icp.json --limit 3   # pilot, read the receipt
+gtm run icp-to-pipeline --input @gtm-data/waves/YYYY-MM/icp-pilot.json   # pilot: same file with "limit": 3, read the receipt
 ```
 
 **Checkpoint:** 20–40 accounts per wave, one segment (same proof, same persona line). Over-provision ×1.4.

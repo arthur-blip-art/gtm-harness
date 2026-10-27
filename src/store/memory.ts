@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Cells, NewReceipt, Receipt, Run, RunStatus } from '../core/types.ts';
-import type { CompanyRow, CrmSync, DatasetRow, GoldenCompany, GoldenPerson, PersonRow, Score, Signal, Store } from './store.ts';
+import { SNAPSHOT_TYPES, type CompanyRow, type CrmSync, type DatasetRow, type GoldenCompany, type GoldenPerson, type PersonRow, type Score, type Signal, type Store } from './store.ts';
 
 /** In-memory store for --dry-run and tests. Same semantics as Postgres, nothing persisted. */
 export class MemoryStore implements Store {
@@ -117,6 +117,7 @@ export class MemoryStore implements Store {
     let n = 0;
     for (const r of rows) {
       if (!this.signals.has(r.dedupeKey)) n++;
+      else if (!SNAPSHOT_TYPES.includes(r.type)) continue; // same rule as pg: events are first-write-wins
       this.signals.set(r.dedupeKey, r);
     }
     return n;
